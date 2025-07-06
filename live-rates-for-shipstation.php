@@ -8,9 +8,6 @@
  * Author URI: https://iqcomputing.com/
  * Text Domain: live-rates-for-shipstation
  * Requires Plugins: woocommerce, woocommerce-shipstation-integration
- *
- * Test Comment.
- * Another Test Comment.
  */
 namespace IQLRSS;
 
