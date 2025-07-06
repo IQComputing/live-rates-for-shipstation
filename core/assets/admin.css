@@ -1,0 +1,22 @@
+.iqcss-err	{font-style: italic; color: red;}
+
+table.nottoofat th,
+table.nottoofat td	{padding: 9px 7px;}
+th.no-padleft		{padding-left: 0;}
+
+#carrierServices input[type=text]	{width: 100%;}
+
+#customBoxes							{display: none;}
+#customBoxes tbody label				{display: flex; align-items: center;}
+#customBoxes tbody input[type=text]		{width: 75px; margin-right: 4px;}
+#customBoxes tbody input[type=checkbox]	{margin-left: 8px;}
+#customBoxes tfoot th				{vertical-align: middle;}
+#customBoxes tfoot p				{margin-bottom: 0; font-size: 90%;}
+#customBoxes .boxactions			{display: flex;}
+#customBoxes .boxactions button		{line-height: 1; font-size: 90%;}
+#customBoxes .boxactions button:first-child	{margin-right: 12px;}
+#customBoxes tr.mimic				{display: none !important;}
+
+#customBoxes input::-webkit-outer-spin-button,
+#customBoxes input::-webkit-inner-spin-button	{-webkit-appearance: none; margin: 0;}
+#customBoxes input[type=text]					{-moz-appearance: textfield;}

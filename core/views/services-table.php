@@ -1,0 +1,153 @@
+<?php
+/**
+ * Display a table as a WooCommerce WC_Settings callback `generate_services_html()`
+ * `services` being the field key / name.
+ *
+ * Generate a table based on saved carriers and their rates.
+ * Pull in new rates based on selected carriers.
+ *
+ * @param \IQLRSS\Core\Shipping_Method_Shipstation $this
+ * @param \IQLRSS\Core\Shipstation_Api $shipStationAPI
+ * @param String $prefix - Plugin prefix
+ * @param Array $saved_services - Saved Zone Services
+ * @param Array $saved_carriers - Saved ShipStation Carriers
+ */
+
+if( ! defined( 'ABSPATH' ) ) {
+	return;
+}
+
+$api_key = \IQLRSS\Driver::get_ss_opt( 'api_key', '', true );
+
+?>
+
+<tr valign="top" id="carrierServices">
+	<th scope="row" class="titledesc no-padleft"><?php esc_html_e( 'Services', 'live-rates-for-shipstation' ); ?></th>
+	<td class="forminp">
+		<table class="widefat nottoofat">
+			<thead>
+				<tr>
+					<th style="width: 50px;"><?php esc_html_e( 'Enabled', 'live-rates-for-shipstation' ); ?></th>
+					<th><?php esc_html_e( 'Name', 'live-rates-for-shipstation' ); ?></th>
+					<th><?php esc_html_e( 'Carrier', 'live-rates-for-shipstation' ); ?></th>
+					<th><?php esc_html_e( 'Service Code', 'live-rates-for-shipstation' ); ?></th>
+				</tr>
+			</thead>
+			<tbody><?php
+
+				if( empty( $api_key ) ) {
+					printf( '<tr><th colspan="">%s</th></td>', esc_html__( 'The ShipStation API Key could not be found.', 'live-rates-for-shipstation' ) );
+				}
+
+				// Saved Services first.
+				foreach( $saved_services as $carrier_code => $carrier_arr ) {
+					foreach( $carrier_arr as $service_code => $service_arr ) {
+
+						$attr_name = sprintf( '%s[%s][%s]', $prefix, $service_arr['carrier_code'], $service_arr['service_code'] );
+
+						$saved_atts = array(
+							'enabled' => ( isset( $service_arr['enabled'] ) ) ? $service_arr['enabled'] : false,
+							'nickname' => ( isset( $service_arr['nickname'] ) ) ? $service_arr['nickname'] : '',
+						);
+
+						print( '<tr>' );
+
+							// Service Checkbox and Metadata
+							print( '<td style="width: 50px;">' );
+								printf( '<input type="checkbox" name="%s"%s>',
+									esc_attr( $attr_name . '[enabled]' ),
+									checked( $saved_atts['enabled'], true, false ),
+								);
+
+								// Metadata
+								printf( '<input type="hidden" name="%s" value="%s">',
+									esc_attr( $attr_name . '[service_name]' ),
+									$service_arr['service_name']
+								);
+								printf( '<input type="hidden" name="%s" value="%s">',
+									esc_attr( $attr_name . '[carrier_code]' ),
+									$service_arr['carrier_code']
+								);
+								printf( '<input type="hidden" name="%s" value="%s">',
+									esc_attr( $attr_name . '[carrier_name]' ),
+									$service_arr['carrier_name']
+								);
+							print( '</td>' );
+
+							// Service Nickname
+							printf( '<td><input type="text" name="%s" value="%s" placeholder="%s"></td>',
+								esc_attr( $attr_name . '[nickname]' ),
+								esc_attr( $saved_atts['nickname'] ),
+								esc_attr( $service_arr['service_name'] ),
+							);
+
+							// Carrier Name
+							printf( '<td><strong>%s</strong></td>', esc_html( $service_arr['carrier_name'] ) );
+
+							// Service Code
+							printf( '<td><strong>%s</strong></td>', esc_html( $service_arr['service_code'] ) );
+
+						print( '</tr>' );
+
+					}
+				}
+
+				// Remaining Services next.
+				foreach( $saved_carriers as $carrier_code ) {
+
+					$response = $shipStationAPI->get_carrier( $carrier_code );
+					if( is_wp_error( $response ) ) {
+						printf( '<tr><td colspan="4" class="iqcss-err">%s - %s</td></tr>', $response->get_code(), $response->get_message() );
+						continue;
+					}
+
+					foreach( $response['services'] as $service_arr ) {
+
+						$service_arr = ( ! is_array( $service_arr ) ) ? (array)$service_arr : $service_arr;
+						if( isset( $saved_services[ $carrier_code ][ $service_arr['service_code'] ] ) ) continue;
+
+						print( '<tr>' );
+
+							$attr_name = sprintf( '%s[%s][%s]', $prefix, $carrier_code, $service_arr['service_code'] );
+
+							// Service Checkbox and Metadata
+							print( '<td style="width: 50px;">' );
+								printf( '<input type="checkbox" name="%s">', esc_attr( $attr_name . '[enabled]' ) );
+
+								// Metadata
+								printf( '<input type="hidden" name="%s" value="%s">',
+									esc_attr( $attr_name . '[service_name]' ),
+									$service_arr['name']
+								);
+								printf( '<input type="hidden" name="%s" value="%s">',
+									esc_attr( $attr_name . '[carrier_code]' ),
+									$response['carrier']['carrier_code']
+								);
+								printf( '<input type="hidden" name="%s" value="%s">',
+									esc_attr( $attr_name . '[carrier_name]' ),
+									$response['carrier']['friendly_name']
+								);
+							print( '</td>' );
+
+							// Service Name
+							printf( '<td><input type="text" name="%s" value="" placeholder="%s"></td>',
+								esc_attr( $attr_name . '[nickname]' ),
+								esc_attr( $service_arr['name'] ),
+							);
+
+							// Carrier Name
+							printf( '<td><strong>%s</strong></td>', esc_html( $response['carrier']['friendly_name'] ) );
+
+							// Service Code
+							printf( '<td><strong>%s</strong></td>', esc_html( $service_arr['service_code'] ) );
+
+						print( '</tr>' );
+
+					}
+
+				}
+
+			?></tbody>
+		</table>
+	</td>
+</tr>

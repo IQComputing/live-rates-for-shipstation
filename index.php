@@ -1,0 +1,2 @@
+<?php
+/* Sound of silence. */
