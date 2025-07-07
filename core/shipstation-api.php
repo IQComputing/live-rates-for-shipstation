@@ -301,6 +301,12 @@ class Shipstation_Api  {
 				$error = array_shift( $body['errors'] );
 				$err_code = ( isset( $error['error_code'] ) && 'unspecified' != $error['error_code'] ) ? $error['error_code'] : $err_code;
 				$err_msg = ( isset( $error['message'] ) ) ? $error['message'] : $err_msg;
+
+				// Add a bit more context.
+				if( 'unauthorized' == $err_code ) {
+					$err_msg .= ' ' . esc_html__( '(API Key may be invalid)', 'live-rates-for-shipstation' );
+				}
+
 			}
 
 			return $this->log( new \WP_Error( $err_code, $err_msg ) );

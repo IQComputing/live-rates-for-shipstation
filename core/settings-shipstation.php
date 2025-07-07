@@ -36,8 +36,72 @@ Class Settings_Shipstation {
 	 */
 	private function action_hooks() {
 
+		add_action( 'admin_enqueue_scripts',					array( $this, 'register_admin_assets' ), 3 );
+
+		add_action( 'admin_head',								array( $this, 'localize_script_vars' ) );
 		add_action( 'admin_enqueue_scripts',					array( $this, 'enqueue_admin_assets' ) );
-		add_action( 'woocommerce_cart_totals_after_order_total',array( $this, 'display_cart_weight' ) );
+		add_action( 'woocommerce_cart_totals_after_order_total',array( $this, 'display_cart_weight' ) ) ;
+		add_action( 'rest_api_init',							array( $this, 'api_verification_endpoint' ) );
+
+	}
+
+
+	/**
+	 * Register assets to enqueue.
+	 *
+	 * @return void
+	 */
+	public function register_admin_assets() {
+
+		// CSS
+		wp_register_style(
+			\IQLRSS\Driver::plugin_prefix( 'admin', '-' ),
+			\IQLRSS\Driver::get_asset_url( 'admin.css' ),
+			array(),
+			\IQLRSS\Driver::get( 'version', '1.0.0' )
+		);
+
+		// JS
+		wp_register_script_module(
+			\IQLRSS\Driver::plugin_prefix( 'admin', '-' ),
+			\IQLRSS\Driver::get_asset_url( 'admin.js' ),
+			array( 'jquery' ),
+			\IQLRSS\Driver::get( 'version', '1.0.0' )
+		);
+
+
+	}
+
+
+	/**
+	 * Localize script variables as needed.
+	 * JS Modules do not allow localization.
+	 *
+	 * @return void
+	 */
+	public function localize_script_vars() {
+
+		if( ! $this->maybe_enqueue( 'admin' ) ) {
+			return;
+		}
+
+		$data = array(
+			'api_verified' => false,
+			'rest' => array(
+				'nonce'		=> wp_create_nonce( 'wp_rest' ),
+				'apiverify'	=> get_rest_url( null, sprintf( '/%s/v1/apiverify',
+					\IQLRSS\Driver::get( 'slug' )
+				) ),
+			),
+			'text' => array(
+				'button_api_verify'		=> esc_html__( 'Verify API', 'live-rates-for-shipstation' ),
+				'error_rest_generic'	=> esc_html__( 'Something went wrong with the REST Request.', 'live-rates-for-shipstation' ),
+			),
+		);
+
+		?><script type="text/javascript">
+			var iqlrss = JSON.parse( '<?php echo json_encode( $data ); ?>' );
+		</script><?php
 
 	}
 
@@ -49,15 +113,12 @@ Class Settings_Shipstation {
 	 */
 	public function enqueue_admin_assets() {
 
-		$screen = get_current_screen();
-		$screen_id = ( is_a( $screen, 'WP_Screen' ) ) ? $screen->id : '';
-
-		if( 'woocommerce_page_wc-settings' !== $screen_id || ! isset( $_GET, $_GET['instance_id'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if( ! $this->maybe_enqueue( 'admin' ) ) {
 			return;
 		}
 
-		// Styles
-		wp_enqueue_style( \IQLRSS\Driver::plugin_prefix( 'admin', '-' ), \IQLRSS\Driver::get_asset_url( 'admin.css' ), array(), \IQLRSS\Driver::get( 'version', '1.0.0' ) );
+		wp_enqueue_style( \IQLRSS\Driver::plugin_prefix( 'admin', '-' ) );
+		wp_enqueue_script_module( \IQLRSS\Driver::plugin_prefix( 'admin', '-' ) );
 
 	}
 
@@ -76,6 +137,71 @@ Class Settings_Shipstation {
 			esc_html__( 'Total Weight', 'live-rates-for-shipstation' ),
 			esc_html( WC()->cart->get_cart_contents_weight() )
 		);
+
+	}
+
+
+	/**
+	 * REST Endpoint to validate the users API Key.
+	 *
+	 * IF the Endpoint needs expanded, move to separate controller file.
+	 *
+	 * @return void
+	 */
+	public function api_verification_endpoint() {
+
+		$prefix = \IQLRSS\Driver::get( 'slug' );
+
+		// Handle ajax requests
+		register_rest_route( "{$prefix}/v1", 'apiverify', array(
+			'methods' => array( 'POST' ),
+			'permission_callback' => fn() => is_user_logged_in(),
+			'callback' => function( $request ) {
+
+				$params = $request->get_params();
+
+				// Error - Missing API Key.
+				if( empty( $params['key'] ) ) {
+					wp_send_json_error( esc_html__( 'API Key not found.', 'live-rates-for-shipstation' ), 400 );
+				}
+
+				$apikeys = array(
+					'old' => '',
+					'new' => sanitize_text_field( $params['key'] ),
+				);
+				$shipstation_opt_slug 	= 'woocommerce_shipstation_settings';
+				$api_settings_key 		= \IQLRSS\Driver::plugin_prefix( 'api_key' );
+				$settings = get_option( $shipstation_opt_slug, array() );
+
+				// Save the old key in case we need to revert.
+				if( ! empty( $settings[ $api_settings_key ] ) ) {
+					$apikeys['old'] = $settings[ $api_settings_key ];
+				}
+
+				// The API pulls the API Key directly from the ShipStation Settings on init.
+				$settings[ $api_settings_key ] = $apikeys['new'];
+				update_option( $shipstation_opt_slug, $settings );
+
+				$shipStationAPI = new Shipstation_Api( \IQLRSS\Driver::get( 'slug' ), true );
+				$carriers = $shipStationAPI->get_carriers();
+
+				// Error - Something went wrong, the API should let us know.
+				if( is_wp_error( $carriers ) ) {
+
+					// Revert to old key
+					if( ! empty( $apikeys['old'] ) ) {
+						$settings = get_option( $shipstation_opt_slug, array() );
+						$settings[ $api_settings_key ] = $apikeys['old'];
+						update_option( $shipstation_opt_slug, $settings );
+					}
+
+					wp_send_json_error( $carriers );
+				}
+
+				wp_send_json_success();
+
+			}
+		) );
 
 	}
 
@@ -208,6 +334,29 @@ Class Settings_Shipstation {
 		}
 
 		return $carriers;
+
+	}
+
+
+	/**
+	 * Maybe enqueue JS modules as needed.
+	 *
+	 * @param String $slug
+	 *
+	 * @return Boolean $enqueue
+	 */
+	protected function maybe_enqueue( $slug = '' ) {
+
+		$screen = get_current_screen();
+		$screen_id = ( is_a( $screen, 'WP_Screen' ) ) ? $screen->id : '';
+
+		$enqueue = false;
+		if( 'admin' == $slug ) {
+			$enqueue = ( 'woocommerce_page_wc-settings' == $screen_id );
+			$enqueue = ( $enqueue || isset( $_GET, $_GET['instance_id'] ) );
+			$enqueue = ( $enqueue || ( isset( $_GET, $_GET['section'] ) && 'shipstation' == $_GET['section'] ) );
+		}
+		return $enqueue;
 
 	}
 

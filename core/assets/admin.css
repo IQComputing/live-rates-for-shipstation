@@ -20,3 +20,6 @@ th.no-padleft		{padding-left: 0;}
 #customBoxes input::-webkit-outer-spin-button,
 #customBoxes input::-webkit-inner-spin-button	{-webkit-appearance: none; margin: 0;}
 #customBoxes input[type=text]					{-moz-appearance: textfield;}
+
+.iqlrss-api-row fieldset		{position: relative; display: block; width: fit-content;}
+.iqlrss-api-row fieldset button	{position: absolute; top: 0px; right: 0;}
