@@ -178,7 +178,7 @@ class WC_Boxpack {
 
 			// Display a packing error for admins
 			if ( current_user_can( 'manage_options' ) ) {
-				echo 'Packing error: ',  $e->getMessage(), "\n";
+				echo 'Packing error: ' .  esc_html( $e->getMessage() ) . "\n";
 			}
     	}
 	}

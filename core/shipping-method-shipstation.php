@@ -176,15 +176,24 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 */
 	public function validate_services_field() {
 
-		if ( ! isset( $_POST['_wpnonce'] ) || ! wp_verify_nonce( $_POST['_wpnonce'], 'woocommerce-settings' ) ) {
+		if( ! isset( $_POST['_wpnonce'] ) ) {
 			return;
 		}
 
 		$prefix = $this->plugin_prefix;
-		$services = array();
-		$posted_services = ( isset( $_POST[ $prefix ] ) ) ? $_POST[ $prefix ] : array();
+		$nonce  = sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) );
+
+		if( ! wp_verify_nonce( $nonce, 'woocommerce-settings' ) ) {
+			return;
+		} else if( ! isset( $_POST[ $prefix ] ) || ! is_array( $_POST[ $prefix ] ) ) {
+			return;
+		}
+
+		// Input sanitized during processing.
+		$posted_services = wp_unslash( $_POST[ $prefix ] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 
 		// Group by Carriers then Services
+		$services = array();
 		foreach( $posted_services as $carrier_code => $carrier_services ) {
 			foreach( $carrier_services as $service_code => $service_arr ) {
 
@@ -196,14 +205,14 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				$services[ $carrier_code ][ $service_code ] = array_filter( array(
 
 					// User Input
-					'enabled'		=> ( isset( $service_arr['enabled'] ) ),
+					'enabled'		=> boolval( ( isset( $service_arr['enabled'] ) ) ),
 					'nickname'		=> sanitize_text_field( $service_arr['nickname'] ),
 
 					// Metadata
 					'service_name'	=> sanitize_text_field( $service_arr['service_name'] ),
 					'service_code'	=> sanitize_text_field( $service_code ),
 					'carrier_name'	=> sanitize_text_field( $service_arr['carrier_name'] ),
-					'carrier_code'	=> $carrier_code,
+					'carrier_code'	=> sanitize_text_field( $carrier_code ),
 				) );
 
 			}
@@ -221,13 +230,21 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 */
 	public function validate_customboxes_field() {
 
-		if ( ! isset( $_POST['_wpnonce'] ) || ! wp_verify_nonce( $_POST['_wpnonce'], 'woocommerce-settings' ) ) {
+		if( ! isset( $_POST['_wpnonce'] ) ) {
 			return;
 		}
 
-		$boxes = array();
-		$posted_boxes = ( isset( $_POST[ 'custombox' ] ) ) ? $_POST[ 'custombox' ] : array();
+		$nonce = sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) );
+		if( ! wp_verify_nonce( $nonce, 'woocommerce-settings' ) ) {
+			return;
+		} else if( ! isset( $_POST['custombox'] ) || ! is_array( $_POST['custombox'] ) ) {
+			return;
+		}
 
+		// Input sanitized during processing.
+		$posted_boxes = wp_unslash( $_POST['custombox'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+
+		$boxes = array();
 		foreach( $posted_boxes as $box_arr ) {
 
 			$vals = array_filter( $box_arr, 'is_numeric' );
@@ -235,17 +252,17 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 			$boxes[] = array(
 				'outer' => array(
-					'length'	=> $box_arr['ol'],
-					'width'		=> $box_arr['ow'],
-					'height'	=> $box_arr['oh'],
+					'length'	=> floatval( $box_arr['ol'] ),
+					'width'		=> floatval( $box_arr['ow'] ),
+					'height'	=> floatval( $box_arr['oh'] ),
 				),
 				'inner' => array(
-					'length'	=> $box_arr['il'],
-					'width'		=> $box_arr['iw'],
-					'height'	=> $box_arr['ih'],
+					'length'	=> floatval( $box_arr['il'] ),
+					'width'		=> floatval( $box_arr['iw'] ),
+					'height'	=> floatval( $box_arr['ih'] ),
 				),
-				'weight'	=> $box_arr['w'],
-				'weight_max'=> $box_arr['wm'],
+				'weight'	=> floatval( $box_arr['w'] ),
+				'weight_max'=> floatval( $box_arr['wm'] ),
 			);
 
 		}
@@ -290,9 +307,9 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			'to_city_locality'	=> $packages['destination']['city'],
 			'to_state_province'	=> $packages['destination']['state'],
 
-			'confirmation' => 'none',
+			'confirmation'	=> 'none',
+			'ship_date'		=> gmdate( 'c' ),
 			'address_residential_indicator' => 'unknown',
-			'ship_date' => date( 'c' ),
 		);
 
 		// Individual Packaging
@@ -413,7 +430,9 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			// Return Early - Product missing one of the 4 key dimensions.
 			if( count( $physicals ) < 4 ) {
 				$this->log( sprintf(
-					esc_html__( 'Product ID #%d missing (%s) dimensions. Shipping calculations terminated.', 'live-rates-for-shipstation' ),
+
+					/* translators: %1$d is the Product ID. %2$s is the Product Dimensions separated by a comma. */
+					esc_html__( 'Product ID #%1$d missing (%2$s) dimensions. Shipping calculations terminated.', 'live-rates-for-shipstation' ),
 					$item['product_id'],
 					implode( ', ', array_diff_key( $this->dimension_keys, $physicals ) )
 				) );
@@ -493,7 +512,9 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			// Return Early - Product missing one of the 4 key dimensions.
 			if( count( $physicals ) < 4 ) {
 				$this->log( sprintf(
-					esc_html__( 'Product ID #%d missing (%s) dimensions. Shipping calculations terminated.', 'live-rates-for-shipstation' ),
+
+					/* translators: %1$d is the Product ID. %2$s is the Product Dimensions separated by a comma. */
+					esc_html__( 'Product ID #%1$d missing (%2$s) dimensions. Shipping calculations terminated.', 'live-rates-for-shipstation' ),
 					$item['product_id'],
 					implode( ', ', array_diff_key( $this->dimension_keys, $physicals ) )
 				) );
@@ -596,10 +617,6 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 			$this->logger->log( $level, $error_msg, array_merge( $context, array( 'source' => 'live-rates-for-shipstation' ) ) );
 
-		} else if( defined( 'WP_DEBUG' ) && WP_DEBUG && defined( 'WP_DEBUG_LOG' ) && WP_DEBUG_LOG ) {
-
-			error_log( '---------- Plugin: Live Rates for Ship Station ----------' );
-			error_log( $error_msg );
 		}
 
 		return $error;

@@ -52,7 +52,7 @@ Class Settings_Shipstation {
 		$screen = get_current_screen();
 		$screen_id = ( is_a( $screen, 'WP_Screen' ) ) ? $screen->id : '';
 
-		if( 'woocommerce_page_wc-settings' !== $screen_id || ! isset( $_GET, $_GET['instance_id'] ) ) {
+		if( 'woocommerce_page_wc-settings' !== $screen_id || ! isset( $_GET, $_GET['instance_id'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			return;
 		}
 
@@ -74,7 +74,7 @@ Class Settings_Shipstation {
 
 		printf( '<tr><th>%s</th><td>%s lbs</td></tr>',
 			esc_html__( 'Total Weight', 'live-rates-for-shipstation' ),
-			WC()->cart->get_cart_contents_weight()
+			esc_html( WC()->cart->get_cart_contents_weight() )
 		);
 
 	}

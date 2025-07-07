@@ -6,6 +6,7 @@
  * Version: 1.0.0
  * Author: IQComputing
  * Author URI: https://iqcomputing.com/
+ * License: GPL2
  * Text Domain: live-rates-for-shipstation
  * Requires Plugins: woocommerce, woocommerce-shipstation-integration
  */

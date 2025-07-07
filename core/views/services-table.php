@@ -62,15 +62,15 @@ $api_key = \IQLRSS\Driver::get_ss_opt( 'api_key', '', true );
 								// Metadata
 								printf( '<input type="hidden" name="%s" value="%s">',
 									esc_attr( $attr_name . '[service_name]' ),
-									$service_arr['service_name']
+									esc_attr( $service_arr['service_name'] )
 								);
 								printf( '<input type="hidden" name="%s" value="%s">',
 									esc_attr( $attr_name . '[carrier_code]' ),
-									$service_arr['carrier_code']
+									esc_attr( $service_arr['carrier_code'] )
 								);
 								printf( '<input type="hidden" name="%s" value="%s">',
 									esc_attr( $attr_name . '[carrier_name]' ),
-									$service_arr['carrier_name']
+									esc_attr( $service_arr['carrier_name'] )
 								);
 							print( '</td>' );
 
@@ -97,7 +97,10 @@ $api_key = \IQLRSS\Driver::get_ss_opt( 'api_key', '', true );
 
 					$response = $shipStationAPI->get_carrier( $carrier_code );
 					if( is_wp_error( $response ) ) {
-						printf( '<tr><td colspan="4" class="iqcss-err">%s - %s</td></tr>', $response->get_code(), $response->get_message() );
+						printf( '<tr><td colspan="4" class="iqcss-err">%s - %s</td></tr>',
+							esc_html( $response->get_code() ),
+							wp_kses_post( $response->get_message() )
+						);
 						continue;
 					}
 
@@ -117,15 +120,15 @@ $api_key = \IQLRSS\Driver::get_ss_opt( 'api_key', '', true );
 								// Metadata
 								printf( '<input type="hidden" name="%s" value="%s">',
 									esc_attr( $attr_name . '[service_name]' ),
-									$service_arr['name']
+									esc_attr( $service_arr['name'] )
 								);
 								printf( '<input type="hidden" name="%s" value="%s">',
 									esc_attr( $attr_name . '[carrier_code]' ),
-									$response['carrier']['carrier_code']
+									esc_attr( $response['carrier']['carrier_code'] )
 								);
 								printf( '<input type="hidden" name="%s" value="%s">',
 									esc_attr( $attr_name . '[carrier_name]' ),
-									$response['carrier']['friendly_name']
+									esc_attr( $response['carrier']['friendly_name'] )
 								);
 							print( '</td>' );
 

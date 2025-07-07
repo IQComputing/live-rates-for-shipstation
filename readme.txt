@@ -1,6 +1,6 @@
 === Live Rates for ShipStation ===
 Contributors: iqcomputing
-Tags: woocommerce, shipstation, usps, ups, fedex, shipping-method
+Tags: woocommerce, shipstation, usps, ups, fedex
 Requires at least: 4.9
 Tested up to: 6.8
 Stable tag: 1.0.0

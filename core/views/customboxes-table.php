@@ -36,51 +36,51 @@ if( ! defined( 'ABSPATH' ) ) {
 				foreach( $saved_boxes as $idx => $box_arr ) {
 
 					print( '<tr>' );
-						printf( '<td><input type="checkbox" name="custombox[%d][remove]" /></td>', $idx );
+						printf( '<td><input type="checkbox" name="custombox[%d][remove]" /></td>', esc_attr( $idx ) );
 						printf( '<td><label><input type="text" name="custombox[%d][ol]" value="%s" /><strong>%s</strong><span class="screen-reader-text">%s</span></label></td>',
-							$idx,
+							esc_attr( $idx ),
 							esc_attr( $box_arr['outer']['length'] ),
 							esc_html__( '(IN)', 'live-rates-for-shipstation' ),
 							esc_html__( 'Outer Length in Inches', 'live-rates-for-shipstation' )
 						);
 						printf( '<td><label><input type="text" name="custombox[%d][ow]" value="%s" /><strong>%s</strong><span class="screen-reader-text">%s</span></label></td>',
-							$idx,
+							esc_attr( $idx ),
 							esc_attr( $box_arr['outer']['width'] ),
 							esc_html__( '(IN)', 'live-rates-for-shipstation' ),
 							esc_html__( 'Outer Width in Inches (IN)', 'live-rates-for-shipstation' )
 						);
 						printf( '<td><label><input type="text" name="custombox[%d][oh]" value="%s" /><strong>%s</strong><span class="screen-reader-text">%s</span></label></td>',
-							$idx,
+							esc_attr( $idx ),
 							esc_attr( $box_arr['outer']['height'] ),
 							esc_html__( '(IN)', 'live-rates-for-shipstation' ),
 							esc_html__( 'Outer Height in Inches (IN)', 'live-rates-for-shipstation' )
 						);
 						printf( '<td><label><input type="text" name="custombox[%d][il]" value="%s" /><strong>%s</strong><span class="screen-reader-text">%s</span></label></td>',
-							$idx,
+							esc_attr( $idx ),
 							esc_attr( $box_arr['inner']['length'] ),
 							esc_html__( '(IN)', 'live-rates-for-shipstation' ),
 							esc_html__( 'Inner Length in Inches (IN)', 'live-rates-for-shipstation' )
 						);
 						printf( '<td><label><input type="text" name="custombox[%d][iw]" value="%s" /><strong>%s</strong><span class="screen-reader-text">%s</span></label></td>',
-							$idx,
+							esc_attr( $idx ),
 							esc_attr( $box_arr['inner']['width'] ),
 							esc_html__( '(IN)', 'live-rates-for-shipstation' ),
 							esc_html__( 'Inner Width in Inches (IN)', 'live-rates-for-shipstation' )
 						);
 						printf( '<td><label><input type="text" name="custombox[%d][ih]" value="%s" /><strong>%s</strong><span class="screen-reader-text">%s</span></label></td>',
-							$idx,
+							esc_attr( $idx ),
 							esc_attr( $box_arr['inner']['height'] ),
 							esc_html__( '(IN)', 'live-rates-for-shipstation' ),
 							esc_html__( 'Inner Height in Inches (IN)', 'live-rates-for-shipstation' )
 						);
 						printf( '<td><label><input type="text" name="custombox[%d][w]" value="%s" /><strong>%s</strong><span class="screen-reader-text">%s</span></label></td>',
-							$idx,
+							esc_attr( $idx ),
 							esc_attr( $box_arr['weight'] ),
 							esc_html__( '(LBS)', 'live-rates-for-shipstation' ),
 							esc_html__( 'Weight of Empty Box in Pounds (LBS)', 'live-rates-for-shipstation' )
 						);
 						printf( '<td><label><input type="text" name="custombox[%d][wm]" value="%s" /><strong>%s</strong><span class="screen-reader-text">%s</span></label></td>',
-							$idx,
+							esc_attr( $idx ),
 							esc_attr( ( ! empty( $box_arr['weight_max'] ) ) ? $box_arr['weight_max'] : '' ),
 							esc_html__( '(LBS)', 'live-rates-for-shipstation' ),
 							esc_html__( 'Max Weight Box Can Safely Hold In Pounds (LBS)', 'live-rates-for-shipstation' )
@@ -124,7 +124,7 @@ if( ! defined( 'ABSPATH' ) ) {
 					</td>
 					<td>
 						<label>
-							<input type="text" name="custombox[mimic][ih]" /><strong><?php esc_html_e( '(IN)' ); ?></strong>
+							<input type="text" name="custombox[mimic][ih]" /><strong><?php esc_html_e( '(IN)', 'live-rates-for-shipstation' ); ?></strong>
 							<span class="screen-reader-text"><?php esc_html_e( 'Inner Height in Inches (IN)', 'live-rates-for-shipstation' ); ?></span>
 						</label>
 					</td>
@@ -155,7 +155,7 @@ if( ! defined( 'ABSPATH' ) ) {
 			</tfoot>
 		</table>
 		<script type="text/javascript">
-			let confirmMsg = '<?php esc_html_e( 'Please confirm you would like to completely remove (x) custom boxes.' ); ?>'
+			let confirmMsg = '<?php esc_html_e( 'Please confirm you would like to completely remove (x) custom boxes.', 'live-rates-for-shipstation' ); ?>'
 
 			/* Add */
 			document.querySelector( '#customBoxes button[name=add]' ).addEventListener( 'click', () => {

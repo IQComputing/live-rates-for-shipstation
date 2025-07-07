@@ -307,7 +307,8 @@ class Shipstation_Api  {
 		}
 
 		// Log API Request Result
-		$this->log( sprintf( esc_html__( 'ShipStation API Request to %s' ), $endpoint ), 'info', array(
+		/* translators: %s is the API endpoint (example: carriers/rates). */
+		$this->log( sprintf( esc_html__( 'ShipStation API Request to %s', 'live-rates-for-shipstation' ), $endpoint ), 'info', array(
 			'args'		=> $args,
 			'code'		=> $code,
 			'reponse'	=> $body,
@@ -379,10 +380,6 @@ class Shipstation_Api  {
 
 			$this->logger->log( $level, $error_msg, array_merge( $context, array( 'source' => 'live-rates-for-shipstation' ) ) );
 
-		} else if( defined( 'WP_DEBUG' ) && WP_DEBUG && defined( 'WP_DEBUG_LOG' ) && WP_DEBUG_LOG ) {
-
-			error_log( '---------- Plugin: Live Rates for Ship Station ----------' );
-			error_log( $error_msg );
 		}
 
 		return $error;
