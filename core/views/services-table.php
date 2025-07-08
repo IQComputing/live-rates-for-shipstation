@@ -24,6 +24,7 @@ $api_key = \IQLRSS\Driver::get_ss_opt( 'api_key', '', true );
 <tr valign="top" id="carrierServices">
 	<th scope="row" class="titledesc no-padleft"><?php esc_html_e( 'Services', 'live-rates-for-shipstation' ); ?></th>
 	<td class="forminp">
+		<p style="margin:0 0 1.1em;font-style:italic;"><?php esc_html_e( 'If using ShipStation Carriers, Be sure to activate any service(s) in ShipStation as well as enabling them below:', 'live-rates-for-shipstation' ); ?></p>
 		<table class="widefat nottoofat">
 			<thead>
 				<tr>
