@@ -19,14 +19,6 @@ if( ! defined( 'ABSPATH' ) ) {
 class Driver {
 
 	/**
-	 * Singleton Instance
-	 *
-	 * @var Object \IQLRSS\Driver
-	 */
-	protected static $_instance = null;
-
-
-	/**
 	 * Plugin Version
 	 *
 	 * @var String
@@ -40,17 +32,6 @@ class Driver {
 	 * @var String
 	 */
 	protected static $slug = 'iqlrss';
-
-
-	/**
-	 * Singleton!
-	 *
-	 * @return Objet \IQLRSS\Driver
-	 */
-	public static function instance() {
-		if( is_null( static::$_instance ) ) static::$_instance = new self();
-		return static::$_instance;
-	}
 
 
 	/**
@@ -121,9 +102,12 @@ class Driver {
 
 
 	/**
-	 * Kick off the plugin integration.
+	 * Initialize the core controllers
+	 * Vroom!
+	 *
+	 * @return void
 	 */
-	protected function __construct() {
+	public static function drive() {
 		Core\Settings_Shipstation::initialize();
 	}
 
@@ -154,4 +138,4 @@ spl_autoload_register( function( $class ) {
 	}
 
 } );
-add_action( 'plugins_loaded', array( '\IQLRSS\Driver', 'instance' ), 15 );
+add_action( 'plugins_loaded', array( '\IQLRSS\Driver', 'drive' ), 15 );
