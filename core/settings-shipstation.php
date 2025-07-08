@@ -272,7 +272,27 @@ Class Settings_Shipstation {
 					'title'			=> esc_html__( 'Shipping Carriers', 'live-rates-for-shipstation' ),
 					'type'			=> 'multiselect',
 					'class'			=> 'chosen_select',
-					'options'		=> $this->get_carrier_options(),
+					'options'		=> ( function() { // Closure since it's only used once.
+
+						$carriers = array();
+						$shipStationAPI = new Shipstation_Api( \IQLRSS\Driver::get( 'slug' ), true );
+						$response = $shipStationAPI->get_carriers();
+
+						if( ! is_a( $response, 'WP_Error' ) ) {
+							foreach( $response as $carrier ) {
+
+								$name = $carrier['friendly_name'];
+								if( ! $carrier['is_shipstation'] ) {
+									$name .= esc_html__( ' (Personal)', 'live-rates-for-shipstation' );
+								}
+
+								$carriers[ $carrier['carrier_id'] ] = $name;
+							}
+						}
+
+						return $carriers;
+
+					} )(),
 					'description'	=> $carrier_desc,
 					'desc_tip'		=> esc_html__( 'Services from selected carriers will appear when settings up Shipping Zones.', 'live-rates-for-shipstation' ),
 					'default'		=> '',
@@ -313,34 +333,6 @@ Class Settings_Shipstation {
 	/**------------------------------------------------------------------------------------------------ **/
 	/** :: Helper Methods :: **/
 	/**------------------------------------------------------------------------------------------------ **/
-	/**
-	 * Return an array of Carriers keyed by their carrier code.
-	 *
-	 * @return Array $carriers
-	 */
-	protected function get_carrier_options() {
-
-		$carriers = array();
-		$shipStationAPI = new Shipstation_Api( \IQLRSS\Driver::get( 'slug' ), true );
-		$response = $shipStationAPI->get_carriers();
-
-		if( ! is_a( $response, 'WP_Error' ) ) {
-			foreach( $response as $carrier ) {
-
-				$name = $carrier['friendly_name'];
-				if( ! $carrier['is_shipstation'] ) {
-					$name .= esc_html__( ' (Personal)', 'live-rates-for-shipstation' );
-				}
-
-				$carriers[ $carrier['carrier_id'] ] = $name;
-			}
-		}
-
-		return $carriers;
-
-	}
-
-
 	/**
 	 * Maybe enqueue JS modules as needed.
 	 *
