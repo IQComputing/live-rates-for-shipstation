@@ -96,7 +96,7 @@ Class Settings_Shipstation {
 			),
 			'text' => array(
 				'button_api_verify'		=> esc_html__( 'Verify API', 'live-rates-for-shipstation' ),
-				'error_rest_generic'	=> esc_html__( 'Something went wrong with the REST Request.', 'live-rates-for-shipstation' ),
+				'error_rest_generic'	=> esc_html__( 'Something went wrong with the REST Request. Please resave permalinks and try again.', 'live-rates-for-shipstation' ),
 			),
 		);
 
@@ -206,7 +206,7 @@ Class Settings_Shipstation {
 
 				// Return Early - Maybe we don't need to make a call at all?
 				if( $apikeys['old'] == $apikeys['new'] && isset( $settings[ $prefixed['valid_time'] ] ) ) {
-					if( absint( $settings[ $prefixed['valid_time'] ] ) >= gmdate( 'Ymd', 'today' ) ) {
+					if( absint( $settings[ $prefixed['valid_time'] ] ) >= gmdate( 'Ymd', strtotime( 'today' ) ) ) {
 						wp_send_json_success();
 					}
 				}
@@ -233,7 +233,7 @@ Class Settings_Shipstation {
 
 				// Denote a valid key.
 				$settings[ $prefixed['valid'] ] = true;
-				$settings[ $prefixed['valid_time'] ] = gmdate( 'Ymd', 'today' );
+				$settings[ $prefixed['valid_time'] ] = gmdate( 'Ymd', strtotime( 'today' ) );
 				update_option( $shipstation_opt_slug, $settings );
 
 				wp_send_json_success();
