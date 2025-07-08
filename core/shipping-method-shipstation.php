@@ -28,7 +28,12 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 *
 	 * @var Array
 	 */
-	protected $dimension_keys;
+	protected $dimension_keys = array(
+		'width'		=> 'width',
+		'height'	=> 'height',
+		'length'	=> 'length',
+		'weight'	=> 'weight',
+	);
 
 
 	/**
@@ -63,7 +68,6 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		$this->method_title 		= esc_html__( 'ShipStation Live Rates', 'live-rates-for-shipstation' );
 		$this->method_description 	= esc_html__( 'Get live shipping rates from all ShipStation supported carriers.', 'live-rates-for-shipstation' );
 		$this->supports 			= array( 'shipping-zones', 'instance-settings', );
-		$this->dimension_keys 		= array( 'width' => 'width', 'length' => 'length', 'weight' => 'weight', 'height' => 'height' );
 
 		$this->init_instance_form_fields();
 		$this->init_instance_options();
