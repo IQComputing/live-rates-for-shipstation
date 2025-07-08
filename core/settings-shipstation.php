@@ -282,6 +282,7 @@ Class Settings_Shipstation {
 					'title'			=> esc_html__( 'Display Cart Weight', 'live-rates-for-shipstation' ),
 					'label'			=> esc_html__( 'Show total cart weight on the cart page.', 'live-rates-for-shipstation' ),
 					'type'			=> 'checkbox',
+					'default'		=> 0,
 				);
 
 				$appended_fields[ \IQLRSS\Driver::plugin_prefix( 'return_lowest' ) ] = array(
@@ -289,12 +290,14 @@ Class Settings_Shipstation {
 					'label'			=> esc_html__( 'Enable lowest shipping rate', 'live-rates-for-shipstation' ),
 					'type'			=> 'checkbox',
 					'description'	=> esc_html__( 'Only show the lowest shipping rate from all enabled carrier rates.', 'live-rates-for-shipstation' ),
+					'default'		=> 0,
 				);
 
 				$appended_fields[ \IQLRSS\Driver::plugin_prefix( 'return_lowest_label' ) ] = array(
 					'title'			=> esc_html__( 'Single Lowest Label', 'live-rates-for-shipstation' ),
 					'type'			=> 'text',
 					'description'	=> esc_html__( 'Overrides the shipping rate nickname.', 'live-rates-for-shipstation' ),
+					'default'		=> '',
 				);
 
 			}
