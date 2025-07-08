@@ -79,7 +79,7 @@ class Driver {
 
 		if( $prefix ) $key = static::plugin_prefix( $key );
 		$settings = get_option( 'woocommerce_shipstation_settings' );
-		return ( isset( $settings[ $key ] ) ) ? $settings[ $key ] : $default;
+		return ( isset( $settings[ $key ] ) && '' !== $settings[ $key ] ) ? $settings[ $key ] : $default;
 
 	}
 
