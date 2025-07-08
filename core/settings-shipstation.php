@@ -355,9 +355,15 @@ Class Settings_Shipstation {
 
 		$enqueue = false;
 		if( 'admin' == $slug ) {
-			$enqueue = ( 'woocommerce_page_wc-settings' == $screen_id );
-			$enqueue = ( $enqueue || isset( $_GET, $_GET['instance_id'] ) );
-			$enqueue = ( $enqueue || ( isset( $_GET, $_GET['section'] ) && 'shipstation' == $_GET['section'] ) );
+
+			// Shipping Zone settings page
+			$enqueue = ( isset( $_GET, $_GET['instance_id'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+			// Integration > ShipStation settings page
+			$enqueue = ( isset( $_GET, $_GET['section'] ) && 'shipstation' == $_GET['section'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+			// Overprotective WooCommerce settings page check
+			$enqueue = ( $enqueue && 'woocommerce_page_wc-settings' == $screen_id );
 		}
 		return $enqueue;
 
