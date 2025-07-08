@@ -3,26 +3,17 @@
  */
 export class shipStationSettings {
 
+	/**
+	 * Setup events.
+	 */
 	constructor() {
 
 		/* Missing API Key field? */
 		if( ! document.querySelector( '[name*=iqlrss_api_key]' ) ) return;
 
-		/* API is valid - don't hide fields */
-		if( document.body.classList.contains( 'iqrlss-api-v' ) ) return;
-
-		/* Hide fields until API is validated. */
-		const $elms = document.querySelectorAll( '[name*=iqlrss]' );
-		if( $elms ) {
-			$elms.forEach( ( $elm ) => {
-				if( $elm.getAttribute( 'name' ).includes( 'api_key' ) ) return;
-				if( $elm.getAttribute( 'name' ).includes( 'cart_weight' ) ) return;
-				$elm.closest( 'tr' ).style.display = 'none';
-			} );
-		}
-
-		/* Add API Buttons */
-		this.addApiButtons()
+		/* Settings Setup */
+		this.apiButtonSetup();
+		this.singleLowestSetup();
 
 	}
 
@@ -30,7 +21,7 @@ export class shipStationSettings {
 	/**
 	 * Add API Buttons to the API Row for verification purposes.
 	 */
-	addApiButtons() {
+	apiButtonSetup() {
 
 		const $apiRow = document.querySelector( '[name*=iqlrss_api_key]' ).closest( 'tr' );
 		if( ! $apiRow ) return;
@@ -43,52 +34,177 @@ export class shipStationSettings {
 			$button.type = 'button';
 			$button.classList.add( 'iqlrss-api-verify', 'button-primary' );
 
-			/* Try to get response from API using their API Key */
+			/**
+			 * Event: Click
+			 * Hide any previous errors and try to get response from ShipStation REST API.
+			 */
 			$button.addEventListener( 'click', () => {
 
-				const apiVal = document.querySelector( '[name*=iqlrss_api_key]' ).value;
-				if( ! apiVal ) return;
+				if( ! document.querySelector( '[name*=iqlrss_api_key]' ).value ) return;
+				if( $button.classList.contains( 'active' ) ) return;
 
 				/* Button doing work! */
 				$button.classList.add( 'active' );
 
 				/* Remove previous errors */
-				$apiRow.querySelectorAll( '.description.error' ).forEach( function() {
-					this.remove();
-				} );
+				this.rowClearError( $apiRow );
 
-				fetch( iqlrss.rest.apiverify, {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-						'X-WP-Nonce': iqlrss.rest.nonce,
-					},
-					body: JSON.stringify( {
-						'key': apiVal,
-					} ),
-				} ).then( response => response.json() )
-				.then( ( json ) => {
-
-					/* Error */
-					if( ! json.success ) {
-
-						let $err = document.createElement( 'p' );
-							$err.classList.add( 'description', 'error' );
-							$err.innerText = ( json.data.length ) ? json.data[0].message : iqlrss.text.error_rest_generic;
-						$apiRow.querySelector( 'fieldset' ).appendChild( $err );
-						return;
-
-					}
-
-					/* Denote success and show fields */
-
-				} );
-
+				/* Make API Request */
+				this.apiButtonFetch( $apiRow ).then( () => $button.classList.remove( 'active' ) );
 
 			} );
 
 		$apiRow.querySelector( 'fieldset' ).appendChild( $button );
 		$button.style.right = '-' + ( $button.getBoundingClientRect().width + 8 ) + 'px';
+
+	}
+
+
+	/**
+	 * Try to make an API request to ensure the REST key is valid.
+	 *
+	 * @param {DOMObject} $apiRow - Table row where the button lives.
+	 */
+	async apiButtonFetch( $apiRow ) {
+
+		return await fetch( iqlrss.rest.apiverify, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'X-WP-Nonce': iqlrss.rest.nonce,
+			},
+			body: JSON.stringify( {
+				'key': document.querySelector( '[name*=iqlrss_api_key]' ).value,
+			} ),
+		} ).then( response => response.json() )
+		.then( ( json ) => {
+
+			/* Error- slidedown */
+			if( ! json.success ) {
+				return this.rowAddError( $apiRow, ( json.data.length ) ? json.data[0].message : iqlrss.text.error_rest_generic );
+			}
+
+			/* Denote success and show fields - fadein */
+			document.querySelectorAll( '[name*=iqlrss]' ).forEach( ( $elm ) => {
+
+				const $row = $elm.closest( 'tr' );
+				if( ! $row || 'none' != $row.style.display ) return;
+
+				/* Skip the Return Lowest Label if related isn't checked */
+				if( -1 != $elm.name.indexOf( 'return_lowest_label' ) && ! document.querySelectorAll( '[type=checkbox][name*=return_lowest_label]' ).checked ) {
+					return;
+				}
+
+				this.rowMakeVisible( $row, true );
+
+			} );
+
+		} );
+
+	}
+
+
+	/**
+	 * Show / Hide the Single Lowest label
+	 */
+	singleLowestSetup() {
+
+		const $lowestcb 	= document.querySelector( '[type=checkbox][name*=return_lowest' );
+		const $lowestLabel 	= document.querySelector( '[type=text][name*=return_lowest_label' );
+
+		/**
+		 * Event: Change
+		 * Toggle the Lowest Rate Label row visibility.
+		 */
+		$lowestcb.addEventListener( 'change', () => {
+			this.rowMakeVisible( $lowestLabel.closest( 'tr' ), $lowestcb.checked );
+		} );
+
+		/* Eh, just trigger it */
+		if( 'none' != $lowestcb.closest( 'tr' ).style.display ) {
+			$lowestcb.dispatchEvent( new Event( 'change' ) );
+		}
+
+	}
+
+
+	/**
+	 * Toggle row visibility
+	 *
+	 * @param {DOMObject} $row
+	 * @param {Boolean} visible
+	 */
+	rowMakeVisible( $row, visible ) {
+
+		if( visible ) {
+
+			$row.setAttribute( 'style', 'opacity:0' );
+			$row.animate( {
+				opacity: [ 1 ]
+			}, {
+				duration: 300
+			} ).onfinish = () => $row.removeAttribute( 'style' );
+
+		} else {
+
+			$row.animate( {
+				opacity: [ 0 ]
+			}, {
+				duration: 300
+			} ).onfinish = () => $row.setAttribute( 'style', 'display:none;' );
+
+		}
+
+	}
+
+
+	/**
+	 * Add settings row error
+	 * SlideDown
+	 *
+	 * @param {DOMObject} $row
+	 * @param {String} message
+	 */
+	rowAddError( $row, message ) {
+
+		let $err = document.createElement( 'p' );
+			$err.classList.add( 'description', 'iqcss-err' );
+			$err.innerText = message;
+
+		$row.querySelector( 'fieldset' ).appendChild( $err );
+		const errHeight = $err.getBoundingClientRect().height;
+		$err.remove();
+
+		$err.setAttribute( 'style', 'height:0px;opacity:0;overflow:hidden;' );
+		$row.querySelector( 'fieldset' ).appendChild( $err );
+
+		$err.animate( {
+			height: [ errHeight + 'px' ],
+			opacity: [ 1 ]
+		}, {
+			duration: 300
+		} ).onfinish = () => $err.removeAttribute( 'style' );
+
+	}
+
+
+	/**
+	 * Clear settings row errors.
+	 * SlideUp
+	 *
+	 * @param {DOMObject} $row
+	 */
+	rowClearError( $row ) {
+
+		$row.querySelectorAll( '.description.iqcss-err' ).forEach( ( $err ) => {
+			$err.style.overflow = 'hidden';
+			$err.animate( {
+				height: [ $err.getBoundingClientRect().height + 'px', '0px' ],
+				opacity: [ 1, 0 ]
+			}, {
+				duration: 300
+			} ).onfinish = () => $err.remove();
+		} );
 
 	}
 

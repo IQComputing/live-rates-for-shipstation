@@ -38,7 +38,7 @@ Class Settings_Shipstation {
 
 		add_action( 'admin_enqueue_scripts',					array( $this, 'register_admin_assets' ), 3 );
 
-		add_action( 'admin_head',								array( $this, 'localize_script_vars' ) );
+		add_action( 'admin_footer',								array( $this, 'localize_script_vars' ), 3 );
 		add_action( 'admin_enqueue_scripts',					array( $this, 'enqueue_admin_assets' ) );
 		add_action( 'woocommerce_cart_totals_after_order_total',array( $this, 'display_cart_weight' ) ) ;
 		add_action( 'rest_api_init',							array( $this, 'api_verification_endpoint' ) );
@@ -76,6 +76,7 @@ Class Settings_Shipstation {
 	/**
 	 * Localize script variables as needed.
 	 * JS Modules do not allow localization.
+	 * Hide unauthenticated API settings.
 	 *
 	 * @return void
 	 */
@@ -86,7 +87,7 @@ Class Settings_Shipstation {
 		}
 
 		$data = array(
-			'api_verified' => false,
+			'api_verified' => \IQLRSS\Driver::get_ss_opt( 'api_key_valid', false, true ),
 			'rest' => array(
 				'nonce'		=> wp_create_nonce( 'wp_rest' ),
 				'apiverify'	=> get_rest_url( null, sprintf( '/%s/v1/apiverify',
@@ -100,7 +101,27 @@ Class Settings_Shipstation {
 		);
 
 		?><script type="text/javascript">
-			var iqlrss = JSON.parse( '<?php echo json_encode( $data ); ?>' );
+
+			const iqlrss = JSON.parse( '<?php echo json_encode( $data ); ?>' );
+
+			<?php
+				/**
+				 * Modules load too late to effectively immediately hide elements.
+				 * This runs on the ShipStation settings page to hide additional
+				 * settings whenever the API is unauthenticated.
+				 */
+				if( ! $data['api_verified'] ) :
+			?>
+
+				if( document.getElementById( 'woocommerce_shipstation_iqlrss_api_key' ) ) { ( () => {
+					document.querySelectorAll( '[name*=iqlrss]' ).forEach( ( $elm ) => {
+						if( $elm.getAttribute( 'name' ).includes( 'api_key' ) ) return;
+						if( $elm.getAttribute( 'name' ).includes( 'cart_weight' ) ) return;
+						$elm.closest( 'tr' ).style.display = 'none';
+					} );
+				} )(); }
+
+			<?php endif; ?>
 		</script><?php
 
 	}
@@ -169,17 +190,29 @@ Class Settings_Shipstation {
 					'old' => '',
 					'new' => sanitize_text_field( $params['key'] ),
 				);
-				$shipstation_opt_slug 	= 'woocommerce_shipstation_settings';
-				$api_settings_key 		= \IQLRSS\Driver::plugin_prefix( 'api_key' );
+				$prefixed = array( // Array of Prefixed Setting Slugs
+					'key' => \IQLRSS\Driver::plugin_prefix( 'api_key' ),
+					'valid' => \IQLRSS\Driver::plugin_prefix( 'api_key_valid' ),
+					'valid_time' => \IQLRSS\Driver::plugin_prefix( 'api_key_vt' ),
+				);
+
+				$shipstation_opt_slug = 'woocommerce_shipstation_settings';
 				$settings = get_option( $shipstation_opt_slug, array() );
 
 				// Save the old key in case we need to revert.
-				if( ! empty( $settings[ $api_settings_key ] ) ) {
-					$apikeys['old'] = $settings[ $api_settings_key ];
+				if( ! empty( $settings[ $prefixed['key'] ] ) ) {
+					$apikeys['old'] = $settings[ $prefixed['key'] ];
+				}
+
+				// Return Early - Maybe we don't need to make a call at all?
+				if( $apikeys['old'] == $apikeys['new'] && isset( $settings[ $prefixed['valid_time'] ] ) ) {
+					if( absint( $settings[ $prefixed['valid_time'] ] ) >= gmdate( 'Ymd', 'today' ) ) {
+						wp_send_json_success();
+					}
 				}
 
 				// The API pulls the API Key directly from the ShipStation Settings on init.
-				$settings[ $api_settings_key ] = $apikeys['new'];
+				$settings[ $prefixed['key'] ] = $apikeys['new'];
 				update_option( $shipstation_opt_slug, $settings );
 
 				$shipStationAPI = new Shipstation_Api( \IQLRSS\Driver::get( 'slug' ), true );
@@ -191,12 +224,17 @@ Class Settings_Shipstation {
 					// Revert to old key
 					if( ! empty( $apikeys['old'] ) ) {
 						$settings = get_option( $shipstation_opt_slug, array() );
-						$settings[ $api_settings_key ] = $apikeys['old'];
+						$settings[ $prefixed['key'] ] = $apikeys['old'];
 						update_option( $shipstation_opt_slug, $settings );
 					}
 
 					wp_send_json_error( $carriers );
 				}
+
+				// Denote a valid key.
+				$settings[ $prefixed['valid'] ] = true;
+				$settings[ $prefixed['valid_time'] ] = gmdate( 'Ymd', 'today' );
+				update_option( $shipstation_opt_slug, $settings );
 
 				wp_send_json_success();
 
@@ -247,13 +285,9 @@ Class Settings_Shipstation {
 	 */
 	public function append_shipstation_integration_settings( $fields ) {
 
+		$appended_fields = array();
 		$carrier_desc = esc_html__( 'Select which ShipStation carriers you would like to see live shipping rates from.', 'live-rates-for-shipstation' );
 
-		if( ! isset( $settings[ \IQLRSS\Driver::get_ss_opt( 'api_key', '', true ) ] ) ) {
-			$carrier_desc = esc_html__( 'Please enter your ShipStation REST API Key first.', 'live-rates-for-shipstation' );
-		}
-
-		$appended_fields = array();
 		foreach( $fields as $key => $field ) {
 
 			$appended_fields[ $key ] = $field;
@@ -294,7 +328,7 @@ Class Settings_Shipstation {
 
 					} )(),
 					'description'	=> $carrier_desc,
-					'desc_tip'		=> esc_html__( 'Services from selected carriers will appear when settings up Shipping Zones.', 'live-rates-for-shipstation' ),
+					'desc_tip'		=> esc_html__( 'Services from selected carriers will be available when setting up Shipping Zones.', 'live-rates-for-shipstation' ),
 					'default'		=> '',
 				);
 
