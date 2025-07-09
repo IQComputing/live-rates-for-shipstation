@@ -38,17 +38,17 @@ $api_key = \IQLRSS\Driver::get_ss_opt( 'api_key', '', true );
 
 				if( empty( $api_key ) || ! \IQLRSS\Driver::get_ss_opt( 'api_key_valid', false, true ) ) {
 					print( '<tr><th colspan="4">' );
-						printf(
+						echo wp_kses( sprintf(
 
 							/* translators: %1$s is the opening html anchor tag linking to ShipStation settings page. %2$s is the closing html anchor tag. */
 							__( 'Please visit WooCommerce Integration > %1$sShipStation settings screen%2$s to validate your ShipStation API Key.', 'live-rates-for-shipstation' ),
-							sprintf( '<a href="%s" target="_blank">', add_query_arg( array(
+							sprintf( '<a href="%s" target="_blank">', esc_url( add_query_arg( array(
 								'page'		=> 'wc-settings',
 								'tab'		=> 'integration',
 								'section'	=> 'shipstation',
-							), admin_url( 'admin.php' ) ) ),
+							), admin_url( 'admin.php' ) ) ) ),
 							'</a>',
-						);
+						), array( 'a' => array( 'href' => array() ) ) );
 					print( '</th></tr>' );
 				}
 
