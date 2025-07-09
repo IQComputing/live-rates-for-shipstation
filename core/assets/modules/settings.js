@@ -1,5 +1,8 @@
 /**
  * WooCommerce ShipStation Settings Page
+ *
+ * Not really meant to be used as an object but more for
+ * encapsulation and organization.
  */
 export class shipStationSettings {
 
@@ -20,6 +23,8 @@ export class shipStationSettings {
 
 	/**
 	 * Add API Buttons to the API Row for verification purposes.
+	 *
+	 * @note this method may be doing a bit too much.
 	 */
 	apiButtonSetup() {
 
@@ -50,7 +55,39 @@ export class shipStationSettings {
 				this.rowClearError( $apiRow );
 
 				/* Make API Request */
-				this.apiButtonFetch( $apiRow ).then( () => $button.classList.remove( 'active' ) );
+				this.apiButtonFetch( $apiRow ).then( ( success ) => {
+
+					$button.classList.remove( 'active' );
+
+					/* Return - API Error */
+					if( ! success ) return false;
+
+					/* Remove button and show validated check icon */
+					$button.animate( {
+						opacity: [ 0 ]
+					}, {
+						duration: 300
+					} ).onfinish = () =>  {
+
+						$button.remove();
+
+						/* Success check-circle dashicon animate in */
+						const $ico = document.createElement( 'span' )
+							$ico.classList.add( 'dashicons', 'dashicons-yes-alt', 'iqlrss-success' );
+						$apiRow.querySelector( 'fieldset' ).appendChild( $ico );
+						setTimeout( () => {
+							$ico.animate( {
+								color: [ 'green', 'limegreen', 'green' ],
+								transform: [ 'scale(1)', 'scale(1.2)', 'scale(1)' ],
+							}, {
+								duration: 600,
+								easing: 'ease-in-out',
+							} );
+						}, 300 );
+
+					}
+
+				} );
 
 			} );
 
@@ -64,6 +101,8 @@ export class shipStationSettings {
 	 * Try to make an API request to ensure the REST key is valid.
 	 *
 	 * @param {DOMObject} $apiRow - Table row where the button lives.
+	 *
+	 * @return {Promise} - Boolean of success
 	 */
 	async apiButtonFetch( $apiRow ) {
 
@@ -81,7 +120,8 @@ export class shipStationSettings {
 
 			/* Error- slidedown */
 			if( ! json.success ) {
-				return this.rowAddError( $apiRow, ( json.data.length ) ? json.data[0].message : iqlrss.text.error_rest_generic );
+				this.rowAddError( $apiRow, ( json.data.length ) ? json.data[0].message : iqlrss.text.error_rest_generic );
+				return false;
 			}
 
 			/* Denote success and show fields - fadein */
@@ -96,8 +136,11 @@ export class shipStationSettings {
 				}
 
 				this.rowMakeVisible( $row, true );
-
 			} );
+
+			/* Trigger the return lowest checkbox - this may display it's connected label input. */
+			document.querySelector( '[type=checkbox][name*=return_lowest' ).dispatchEvent( new Event( 'change' ) );
+			return true;
 
 		} );
 
