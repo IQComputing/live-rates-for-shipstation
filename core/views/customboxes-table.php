@@ -23,13 +23,13 @@ if( ! defined( 'ABSPATH' ) ) {
 		<table class="widefat nottoofat">
 			<thead>
 				<th style="width: 50px;"><input type="checkbox" name="customboxes_removeall"></th>
-				<th><?php esc_html_e( 'Outer Length', 'live-rates-for-shipstation' ); ?><sup>*</sup></th>
-				<th><?php esc_html_e( 'Outer Width', 'live-rates-for-shipstation' ); ?></th>
-				<th><?php esc_html_e( 'Outer Height', 'live-rates-for-shipstation' ); ?></th>
-				<th><?php esc_html_e( 'Inner Length', 'live-rates-for-shipstation' ); ?></th>
-				<th><?php esc_html_e( 'Inner Width', 'live-rates-for-shipstation' ); ?></th>
-				<th><?php esc_html_e( 'Inner Height', 'live-rates-for-shipstation' ); ?></th>
-				<th><?php esc_html_e( 'Weight of Box', 'live-rates-for-shipstation' ); ?></th>
+				<th><?php esc_html_e( 'Outer Length', 'live-rates-for-shipstation' ); ?>*</th>
+				<th><?php esc_html_e( 'Outer Width', 'live-rates-for-shipstation' ); ?>*</th>
+				<th><?php esc_html_e( 'Outer Height', 'live-rates-for-shipstation' ); ?>*</th>
+				<th><?php esc_html_e( 'Inner Length', 'live-rates-for-shipstation' ); ?>*</th>
+				<th><?php esc_html_e( 'Inner Width', 'live-rates-for-shipstation' ); ?>*</th>
+				<th><?php esc_html_e( 'Inner Height', 'live-rates-for-shipstation' ); ?>*</th>
+				<th><?php esc_html_e( 'Weight of Box', 'live-rates-for-shipstation' ); ?>*</th>
 				<th><?php esc_html_e( 'Max Weight', 'live-rates-for-shipstation' ); ?></th>
 			</thead>
 			<tbody><?php
@@ -37,43 +37,43 @@ if( ! defined( 'ABSPATH' ) ) {
 
 					print( '<tr>' );
 						printf( '<td><input type="checkbox" name="custombox[%d][remove]" /></td>', esc_attr( $idx ) );
-						printf( '<td><label><input type="text" name="custombox[%d][ol]" value="%s" /><strong>%s</strong><span class="screen-reader-text">%s</span></label></td>',
+						printf( '<td><label><input type="text" name="custombox[%d][ol]" value="%s" required /><strong>%s</strong><span class="screen-reader-text">%s</span></label></td>',
 							esc_attr( $idx ),
 							esc_attr( $box_arr['outer']['length'] ),
 							esc_html__( '(IN)', 'live-rates-for-shipstation' ),
 							esc_html__( 'Outer Length in Inches', 'live-rates-for-shipstation' )
 						);
-						printf( '<td><label><input type="text" name="custombox[%d][ow]" value="%s" /><strong>%s</strong><span class="screen-reader-text">%s</span></label></td>',
+						printf( '<td><label><input type="text" name="custombox[%d][ow]" value="%s" required /><strong>%s</strong><span class="screen-reader-text">%s</span></label></td>',
 							esc_attr( $idx ),
 							esc_attr( $box_arr['outer']['width'] ),
 							esc_html__( '(IN)', 'live-rates-for-shipstation' ),
 							esc_html__( 'Outer Width in Inches (IN)', 'live-rates-for-shipstation' )
 						);
-						printf( '<td><label><input type="text" name="custombox[%d][oh]" value="%s" /><strong>%s</strong><span class="screen-reader-text">%s</span></label></td>',
+						printf( '<td><label><input type="text" name="custombox[%d][oh]" value="%s" required /><strong>%s</strong><span class="screen-reader-text">%s</span></label></td>',
 							esc_attr( $idx ),
 							esc_attr( $box_arr['outer']['height'] ),
 							esc_html__( '(IN)', 'live-rates-for-shipstation' ),
 							esc_html__( 'Outer Height in Inches (IN)', 'live-rates-for-shipstation' )
 						);
-						printf( '<td><label><input type="text" name="custombox[%d][il]" value="%s" /><strong>%s</strong><span class="screen-reader-text">%s</span></label></td>',
+						printf( '<td><label><input type="text" name="custombox[%d][il]" value="%s" required /><strong>%s</strong><span class="screen-reader-text">%s</span></label></td>',
 							esc_attr( $idx ),
 							esc_attr( $box_arr['inner']['length'] ),
 							esc_html__( '(IN)', 'live-rates-for-shipstation' ),
 							esc_html__( 'Inner Length in Inches (IN)', 'live-rates-for-shipstation' )
 						);
-						printf( '<td><label><input type="text" name="custombox[%d][iw]" value="%s" /><strong>%s</strong><span class="screen-reader-text">%s</span></label></td>',
+						printf( '<td><label><input type="text" name="custombox[%d][iw]" value="%s" required /><strong>%s</strong><span class="screen-reader-text">%s</span></label></td>',
 							esc_attr( $idx ),
 							esc_attr( $box_arr['inner']['width'] ),
 							esc_html__( '(IN)', 'live-rates-for-shipstation' ),
 							esc_html__( 'Inner Width in Inches (IN)', 'live-rates-for-shipstation' )
 						);
-						printf( '<td><label><input type="text" name="custombox[%d][ih]" value="%s" /><strong>%s</strong><span class="screen-reader-text">%s</span></label></td>',
+						printf( '<td><label><input type="text" name="custombox[%d][ih]" value="%s" required /><strong>%s</strong><span class="screen-reader-text">%s</span></label></td>',
 							esc_attr( $idx ),
 							esc_attr( $box_arr['inner']['height'] ),
 							esc_html__( '(IN)', 'live-rates-for-shipstation' ),
 							esc_html__( 'Inner Height in Inches (IN)', 'live-rates-for-shipstation' )
 						);
-						printf( '<td><label><input type="text" name="custombox[%d][w]" value="%s" /><strong>%s</strong><span class="screen-reader-text">%s</span></label></td>',
+						printf( '<td><label><input type="text" name="custombox[%d][w]" value="%s" required /><strong>%s</strong><span class="screen-reader-text">%s</span></label></td>',
 							esc_attr( $idx ),
 							esc_attr( $box_arr['weight'] ),
 							esc_html__( '(LBS)', 'live-rates-for-shipstation' ),
