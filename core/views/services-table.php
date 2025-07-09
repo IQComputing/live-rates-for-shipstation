@@ -24,7 +24,7 @@ $api_key = \IQLRSS\Driver::get_ss_opt( 'api_key', '', true );
 <tr valign="top" id="carrierServices">
 	<th scope="row" class="titledesc no-padleft"><?php esc_html_e( 'Services', 'live-rates-for-shipstation' ); ?></th>
 	<td class="forminp">
-		<p style="margin:0 0 1.1em;font-style:italic;"><?php esc_html_e( 'If using ShipStation Carriers, Be sure to activate any service(s) in ShipStation as well as enabling them below:', 'live-rates-for-shipstation' ); ?></p>
+		<p style="margin:0 0 1.1em;font-style:italic;"><?php esc_html_e( 'If using ShipStation Carriers, be sure to activate any service(s) in ShipStation as well as enabling them below:', 'live-rates-for-shipstation' ); ?></p>
 		<table class="widefat nottoofat">
 			<thead>
 				<tr>
@@ -36,8 +36,20 @@ $api_key = \IQLRSS\Driver::get_ss_opt( 'api_key', '', true );
 			</thead>
 			<tbody><?php
 
-				if( empty( $api_key ) ) {
-					printf( '<tr><th colspan="">%s</th></td>', esc_html__( 'The ShipStation API Key could not be found.', 'live-rates-for-shipstation' ) );
+				if( empty( $api_key ) || ! \IQLRSS\Driver::get_ss_opt( 'api_key_valid', false, true ) ) {
+					print( '<tr><th colspan="4">' );
+						printf(
+
+							/* translators: %1$s is the opening html anchor tag linking to ShipStation settings page. %2$s is the closing html anchor tag. */
+							__( 'Please visit WooCommerce Integration > %1$sShipStation settings screen%2$s to validate your ShipStation API Key.', 'live-rates-for-shipstation' ),
+							sprintf( '<a href="%s" target="_blank">', add_query_arg( array(
+								'page'		=> 'wc-settings',
+								'tab'		=> 'integration',
+								'section'	=> 'shipstation',
+							), admin_url( 'admin.php' ) ) ),
+							'</a>',
+						);
+					print( '</th></tr>' );
 				}
 
 				// Saved Services first.
