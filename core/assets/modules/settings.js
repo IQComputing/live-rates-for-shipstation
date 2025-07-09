@@ -7,6 +7,14 @@
 export class shipStationSettings {
 
 	/**
+	 * API Input.
+	 *
+	 * @var {DOMObject}
+	 */
+	#apiInput;
+
+
+	/**
 	 * Setup events.
 	 */
 	constructor() {
@@ -14,8 +22,12 @@ export class shipStationSettings {
 		/* Missing API Key field? */
 		if( ! document.querySelector( '[name*=iqlrss_api_key]' ) ) return;
 
+		/* Set instance APIInput */
+		this.#apiInput = document.querySelector( '[name*=iqlrss_api_key]' );
+
 		/* Settings Setup */
 		this.apiButtonSetup();
+		this.apiInputChange();
 		this.singleLowestSetup();
 
 	}
@@ -28,7 +40,7 @@ export class shipStationSettings {
 	 */
 	apiButtonSetup() {
 
-		const $apiRow = document.querySelector( '[name*=iqlrss_api_key]' ).closest( 'tr' );
+		const $apiRow = this.#apiInput.closest( 'tr' );
 		if( ! $apiRow ) return;
 
 		/* Class to denote our API Row. */
@@ -37,7 +49,8 @@ export class shipStationSettings {
 		let $button = document.createElement( 'button' );
 			$button.innerText = iqlrss.text.button_api_verify;
 			$button.type = 'button';
-			$button.classList.add( 'iqlrss-api-verify', 'button-primary' );
+			$button.id = 'iqlrssVerifyButton';
+			$button.classList.add( 'button-primary' );
 
 			/**
 			 * Event: Click
@@ -45,7 +58,7 @@ export class shipStationSettings {
 			 */
 			$button.addEventListener( 'click', () => {
 
-				if( ! document.querySelector( '[name*=iqlrss_api_key]' ).value ) return;
+				if( ! this.#apiInput.value ) return;
 				if( $button.classList.contains( 'active' ) ) return;
 
 				/* Button doing work! */
@@ -91,8 +104,11 @@ export class shipStationSettings {
 
 			} );
 
+		if( ! this.#apiInput.value ) {
+			$button.style.opacity = 0;
+		}
+
 		$apiRow.querySelector( 'fieldset' ).appendChild( $button );
-		$button.style.right = '-' + ( $button.getBoundingClientRect().width + 8 ) + 'px';
 
 	}
 
@@ -113,7 +129,7 @@ export class shipStationSettings {
 				'X-WP-Nonce': iqlrss.rest.nonce,
 			},
 			body: JSON.stringify( {
-				'key': document.querySelector( '[name*=iqlrss_api_key]' ).value,
+				'key': this.#apiInput.value,
 			} ),
 		} ).then( response => response.json() )
 		.then( ( json ) => {
@@ -141,6 +157,34 @@ export class shipStationSettings {
 			/* Trigger the return lowest checkbox - this may display it's connected label input. */
 			document.querySelector( '[type=checkbox][name*=return_lowest' ).dispatchEvent( new Event( 'change' ) );
 			return true;
+
+		} );
+
+	}
+
+
+	/**
+	 * Show / Hide the Verify API button depending if the
+	 * input value exists or not.
+	 */
+	apiInputChange() {
+
+		const $button = document.getElementById( 'iqlrssVerifyButton' );
+		if( ! $button ) return
+
+		/* Initial animation */
+		if( this.#apiInput.value ) {
+			$button.animate( { opacity: 1 }, 300 );
+		}
+
+		this.#apiInput.addEventListener( 'input', ( e ) => {
+
+			if( e.target.value ) {
+				$button.animate( { opacity: 1 }, { duration: 300, fill: 'forwards' } )
+			} else {
+				$button.animate( { opacity: 0 }, { duration: 300, fill: 'forwards' } );
+				this.rowClearError( document.querySelector( '.iqlrss-api-row' )  );
+			}
 
 		} );
 

@@ -21,8 +21,8 @@ th.no-padleft		{padding-left: 0;}
 #customBoxes input::-webkit-inner-spin-button	{-webkit-appearance: none; margin: 0;}
 #customBoxes input[type=text]					{-moz-appearance: textfield;}
 
-.iqlrss-api-row fieldset		{position: relative; display: block; width: fit-content;}
-.iqlrss-api-row fieldset button	{position: absolute; top: 0px; right: 0;}
-.iqlrss-api-row fieldset button:after			{content: ''; position: absolute; top: 3px; right: -24px; display: block; width: 20px; aspect-ratio: 1; background: url( 'images/spinner.gif' ) no-repeat center/contain; opacity: 0; transition: opacity 0.3s;}
-.iqlrss-api-row fieldset button.active:after	{opacity: 1;}
-.iqlrss-api-row fieldset .iqlrss-success		{position: absolute; top: 5px; right: -24px; border-radius: 100%; color: green;}
+.iqlrss-api-row fieldset							{position: relative; display: block; width: fit-content;}
+.iqlrss-api-row #iqlrssVerifyButton					{position: absolute; top: 0px; right: 0; margin-top: -1px; margin-right: -85px;}
+.iqlrss-api-row #iqlrssVerifyButton:after			{content: ''; position: absolute; top: 3px; right: -24px; display: block; width: 20px; aspect-ratio: 1; background: url( 'images/spinner.gif' ) no-repeat center/contain; opacity: 0; transition: opacity 0.3s;}
+.iqlrss-api-row #iqlrssVerifyButton.active:after	{opacity: 1;}
+.iqlrss-api-row fieldset .iqlrss-success			{position: absolute; top: 5px; right: -24px; border-radius: 100%; color: green;}
