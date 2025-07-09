@@ -3,6 +3,8 @@
  *
  * Not really meant to be used as an object but more for
  * encapsulation and organization.
+ *
+ * @global {Object} iqlrss - Localized object of saved values.
  */
 export class shipStationSettings {
 
@@ -26,8 +28,9 @@ export class shipStationSettings {
 		this.#apiInput = document.querySelector( '[name*=iqlrss_api_key]' );
 
 		/* Settings Setup */
-		this.apiButtonSetup();
-		this.apiInputChange();
+		const $button = this.apiButtonSetup();
+		this.apiInputChange( $button );
+		this.verificationRequiredCheck( $button );
 		this.singleLowestSetup();
 
 	}
@@ -37,11 +40,13 @@ export class shipStationSettings {
 	 * Add API Buttons to the API Row for verification purposes.
 	 *
 	 * @note this method may be doing a bit too much.
+	 *
+	 * @return {DOMObject} $button - The created verification button.
 	 */
 	apiButtonSetup() {
 
 		const $apiRow = this.#apiInput.closest( 'tr' );
-		if( ! $apiRow ) return;
+		if( ! $apiRow ) return null;
 
 		/* Class to denote our API Row. */
 		$apiRow.classList.add( 'iqlrss-api-row' );
@@ -110,6 +115,8 @@ export class shipStationSettings {
 
 		$apiRow.querySelector( 'fieldset' ).appendChild( $button );
 
+		return $button;
+
 	}
 
 
@@ -136,6 +143,7 @@ export class shipStationSettings {
 
 			/* Error- slidedown */
 			if( ! json.success ) {
+				iqlrss.api_verified = false;
 				this.rowAddError( $apiRow, ( json.data.length ) ? json.data[0].message : iqlrss.text.error_rest_generic );
 				return false;
 			}
@@ -156,6 +164,7 @@ export class shipStationSettings {
 
 			/* Trigger the return lowest checkbox - this may display it's connected label input. */
 			document.querySelector( '[type=checkbox][name*=return_lowest' ).dispatchEvent( new Event( 'change' ) );
+			iqlrss.api_verified = true;
 			return true;
 
 		} );
@@ -166,24 +175,63 @@ export class shipStationSettings {
 	/**
 	 * Show / Hide the Verify API button depending if the
 	 * input value exists or not.
+	 *
+	 * @param {DOMObject} $button - The API verification button
 	 */
-	apiInputChange() {
-
-		const $button = document.getElementById( 'iqlrssVerifyButton' );
-		if( ! $button ) return
+	apiInputChange( $button ) {
 
 		/* Initial animation */
-		if( this.#apiInput.value ) {
+		if( this.#apiInput.value && $button ) {
 			$button.animate( { opacity: 1 }, 300 );
 		}
 
 		this.#apiInput.addEventListener( 'input', ( e ) => {
+
+			if( ! $button ) return;
 
 			if( e.target.value ) {
 				$button.animate( { opacity: 1 }, { duration: 300, fill: 'forwards' } )
 			} else {
 				$button.animate( { opacity: 0 }, { duration: 300, fill: 'forwards' } );
 				this.rowClearError( document.querySelector( '.iqlrss-api-row' )  );
+			}
+
+		} );
+
+	}
+
+
+	/**
+	 * Ensure that the user verifies their REST API Key.
+	 *
+	 * @param {DOMObject} $button - The API verification button
+	 */
+	verificationRequiredCheck( $button ) {
+
+		if( ! $button ) return;
+
+		const $settingsForm = document.getElementById( 'mainform' );
+		const $apiRow 		= document.querySelector( '.iqlrss-api-row' );
+
+		$settingsForm.addEventListener( 'submit', ( e ) => {
+
+			this.rowClearError( $apiRow );
+			if( iqlrss.api_verified ) return true;
+
+			if( this.#apiInput.value ) {
+				
+				e.preventDefault();
+				e.stopImmediatePropagation();
+
+				$button.animate( { opacity: 1 }, { duration: 300, fill: 'forwards' } )
+				this.rowAddError( $apiRow, iqlrss.text.error_verification_required );
+
+				const $wooSave = document.querySelector( '.woocommerce-save-button' );
+				if( $wooSave && $wooSave.classList.contains( 'is-busy' ) ) {
+					$wooSave.classList.remove( 'is-busy' );
+				}
+
+				return false;
 			}
 
 		} );

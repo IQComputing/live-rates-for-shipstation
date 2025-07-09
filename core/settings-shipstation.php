@@ -97,6 +97,7 @@ Class Settings_Shipstation {
 			'text' => array(
 				'button_api_verify'		=> esc_html__( 'Verify API', 'live-rates-for-shipstation' ),
 				'error_rest_generic'	=> esc_html__( 'Something went wrong with the REST Request. Please resave permalinks and try again.', 'live-rates-for-shipstation' ),
+				'error_verification_required' => esc_html__( 'Please click the Verify API button to ensure a connection exists.', 'live-rates-for-shipstation' ),
 			),
 		);
 
