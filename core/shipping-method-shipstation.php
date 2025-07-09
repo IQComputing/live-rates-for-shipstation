@@ -69,8 +69,11 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		$this->method_description 	= esc_html__( 'Get live shipping rates from all ShipStation supported carriers.', 'live-rates-for-shipstation' );
 		$this->supports 			= array( 'instance-settings' );
 
+		$saved_key = \IQLRSS\Driver::get_ss_opt( 'api_key_valid', false, true );
+		$saved_carriers = \IQLRSS\Driver::get_ss_opt( 'carriers', array(), true );
+
 		// Only show in Shipping Zones if API Key is invalid.
-		if( \IQLRSS\Driver::get_ss_opt( 'api_key_valid', false, true ) ) {
+		if( ! empty( $saved_key ) && ! empty( $saved_carriers ) ) {
 			$this->supports[] = 'shipping-zones';
 		}
 
