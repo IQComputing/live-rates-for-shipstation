@@ -65,7 +65,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		$this->shipStationApi 		= new Shipstation_Api( $this->plugin_prefix );
 		$this->id 					= \IQLRSS\Driver::plugin_prefix( 'shipstation' );
 		$this->instance_id 			= absint( $instance_id );
-		$this->method_title 		= esc_html__( 'ShipStation Live Rates', 'live-rates-for-shipstation' );
+		$this->method_title 		= esc_html__( 'Live Rates for ShipStation', 'live-rates-for-shipstation' );
 		$this->method_description 	= esc_html__( 'Get live shipping rates from all ShipStation supported carriers.', 'live-rates-for-shipstation' );
 		$this->supports 			= array( 'instance-settings' );
 
@@ -107,7 +107,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				'title'			=> esc_html__( 'Title', 'live-rates-for-shipstation' ),
 				'type'			=> 'text',
 				'description'	=> esc_html__( 'This controls the title which the user sees during checkout.', 'live-rates-for-shipstation' ),
-				'default'		=> esc_html__( 'ShipStation', 'live-rates-for-shipstation' ),
+				'default'		=> esc_html__( 'ShipStation Rates', 'live-rates-for-shipstation' ),
 				'desc_tip'		=> true,
 			),
 			'packing' => array(
