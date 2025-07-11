@@ -46,6 +46,15 @@ class Shipstation_Api  {
 
 
 	/**
+	 * Seconds to hold cache.
+	 * Defaults to 1 week.
+	 *
+	 * @var Integer
+	 */
+	protected $cache_time;
+
+
+	/**
 	 * The API Key
 	 *
 	 * @var String
@@ -61,6 +70,7 @@ class Shipstation_Api  {
 		$this->prefix 	= (string)$key_prefix;
 		$this->key 		= \IQLRSS\Driver::get_ss_opt( 'api_key', '', true );
 		$this->skip_cache = (boolean)$skip_cache;
+		$this->cache_time = defined( 'WEEK_IN_SECONDS' ) ? WEEK_IN_SECONDS : 604800;
 
 	}
 
@@ -111,6 +121,8 @@ class Shipstation_Api  {
 	/**
 	 * Return an array of carriers.
 	 * While getting carriers, set services and packages.
+	 *
+	 * @link https://docs.shipstation.com/openapi/carriers
 	 *
 	 * @param String $carrier_code
 	 *
@@ -178,14 +190,14 @@ class Shipstation_Api  {
 
 			// Cache Carriers
 			if( ! empty( $data['carriers'] ) ) {
-				set_transient( $trans_key, $data['carriers'], MONTH_IN_SECONDS );
+				set_transient( $trans_key, $data['carriers'], $this->cache_time );
 			}
 
 			// Cache Services individually
 			if( ! empty( $data['services'] ) ) {
 				foreach( $data['services'] as $carrier_id => $service_arr ) {
 					$service_key = sprintf( '%s_%s_services', $trans_key, $carrier_id );
-					set_transient( $service_key, $service_arr, MONTH_IN_SECONDS );
+					set_transient( $service_key, $service_arr, $this->cache_time );
 				}
 			}
 
@@ -193,7 +205,7 @@ class Shipstation_Api  {
 			if( ! empty( $data['packages'] ) ) {
 				foreach( $data['packages'] as $carrier_id => $package_arr ) {
 					$package_key = sprintf( '%s_%s_packages', $trans_key, $carrier_id );
-					set_transient( $package_key, $package_arr, MONTH_IN_SECONDS );
+					set_transient( $package_key, $package_arr, $this->cache_time );
 				}
 			}
 		}
@@ -206,9 +218,7 @@ class Shipstation_Api  {
 	/**
 	 * Return an array of avaialble rates by a carrier.
 	 *
-	 * @todo Cache requests for rates. The cart for example
-	 * could be abused to make multiple requests relatively quickly.
-	 * This would almost certainly need to be saved in the database.
+	 * @link https://docs.shipstation.com/openapi/rates/estimate_rates
 	 *
 	 * @param Array $est_opts
 	 *
