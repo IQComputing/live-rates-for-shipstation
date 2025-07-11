@@ -69,10 +69,10 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		$this->method_description 	= esc_html__( 'Get live shipping rates from all ShipStation supported carriers.', 'live-rates-for-shipstation' );
 		$this->supports 			= array( 'instance-settings' );
 
-		// Only show in Shipping Zones if API Key is invalid.
-		$saved_key 		= \IQLRSS\Driver::get_ss_opt( 'api_key_valid', false, true );
+		// Only show in Shipping Zones if API Key is invalid and we have carriers.
+		$valid_key 		= \IQLRSS\Driver::get_ss_opt( 'api_key_valid', false, true );
 		$saved_carriers = \IQLRSS\Driver::get_ss_opt( 'carriers', array(), true );
-		if( ! empty( $saved_key ) && ! empty( $saved_carriers ) ) {
+		if( $valid_key && ! empty( $saved_carriers ) ) {
 			$this->supports[] = 'shipping-zones';
 		}
 
@@ -189,7 +189,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	/**
 	 * Validate service field.
 	 *
-	 * @param mixed $key - Field key.
+	 * @return Array $services
 	 */
 	public function validate_services_field() {
 
@@ -243,7 +243,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	/**
 	 * Validate customboxes field.
 	 *
-	 * @param mixed $key - Field key.
+	 * @return Array $boxes
 	 */
 	public function validate_customboxes_field() {
 
