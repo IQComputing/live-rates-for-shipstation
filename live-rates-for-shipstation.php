@@ -138,4 +138,4 @@ spl_autoload_register( function( $class ) {
 	}
 
 } );
-add_action( 'plugins_loaded', array( '\IQLRSS\Driver', 'drive' ), 15 );
+add_action( 'plugins_loaded', array( '\IQLRSS\Driver', 'drive' ), 8 );
