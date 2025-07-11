@@ -24,24 +24,24 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 
 	/**
-	 * Array of expected dimension keys (width, height, length, weight)
-	 *
-	 * @var Array
-	 */
-	protected $dimension_keys = array(
-		'width'		=> 'width',
-		'height'	=> 'height',
-		'length'	=> 'length',
-		'weight'	=> 'weight',
-	);
-
-
-	/**
 	 * ShipStation API Helper Class
 	 *
 	 * @var Object
 	 */
 	protected $shipStationApi;
+
+
+	/**
+	 * Array store specfiic data
+	 * WooCommerce => ShipStation
+	 * `lbs` to `pounds`
+	 *
+	 * @var Array
+	 */
+	protected $store = array(
+		'weight_unit' => 'lbs',
+		'dim_unit'	  => 'in',
+	);
 
 
 	/**
@@ -69,13 +69,18 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		$this->method_description 	= esc_html__( 'Get live shipping rates from all ShipStation supported carriers.', 'live-rates-for-shipstation' );
 		$this->supports 			= array( 'instance-settings' );
 
-		$saved_key = \IQLRSS\Driver::get_ss_opt( 'api_key_valid', false, true );
-		$saved_carriers = \IQLRSS\Driver::get_ss_opt( 'carriers', array(), true );
-
 		// Only show in Shipping Zones if API Key is invalid.
+		$saved_key 		= \IQLRSS\Driver::get_ss_opt( 'api_key_valid', false, true );
+		$saved_carriers = \IQLRSS\Driver::get_ss_opt( 'carriers', array(), true );
 		if( ! empty( $saved_key ) && ! empty( $saved_carriers ) ) {
 			$this->supports[] = 'shipping-zones';
 		}
+
+		// Set the store unit term and associate it with ShipStations term.
+		$this->store = array(
+			'weight_unit' 	=> get_option( 'woocommerce_weight_unit', $this->store['weight_unit'] ),
+			'dim_unit'		=> get_option( 'woocommerce_dimension_unit', $this->store['dim_unit'] ),
+		);
 
 		$this->init_instance_form_fields();
 		$this->init_instance_options();
@@ -446,14 +451,19 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					/* translators: %1$d is the Product ID. %2$s is the Product Dimensions separated by a comma. */
 					esc_html__( 'Product ID #%1$d missing (%2$s) dimensions. Shipping calculations terminated.', 'live-rates-for-shipstation' ),
 					$item['product_id'],
-					implode( ', ', array_diff_key( $this->dimension_keys, $physicals ) )
+					implode( ', ', array_diff_key( array(
+						'width'		=> 'width',
+						'height'	=> 'height',
+						'length'	=> 'length',
+						'weight'	=> 'weight',
+					), $physicals ) )
 				) );
 				return array();
 			}
 
 			$request['weight'] = array(
-				'value' => (float)max( 0.5, round( wc_get_weight( $physicals['weight'], 'lbs' ), 2 ) ),
-				'unit'	=> 'pound',
+				'value' => (float)round( wc_get_weight( $physicals['weight'], $this->store['weight_unit'] ), 2 ),
+				'unit'	=> $this->shipStationApi->convert_unit_term( $this->store['weight_unit'] ),
 			);
 
 			// Unset weight and sort dimensions
@@ -461,10 +471,10 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			sort( $physicals );
 
 			$request['dimensions'] = array(
-				'unit'		=> 'inch',
-				'length'	=> max( 1, round( wc_get_dimension( $physicals[2], 'in' ), 2 ) ),
-				'width'		=> max( 1, round( wc_get_dimension( $physicals[1], 'in' ), 2 ) ),
-				'height'	=> max( 1, round( wc_get_dimension( $physicals[0], 'in' ), 2 ) ),
+				'length'	=> round( wc_get_dimension( $physicals[2], $this->store['dim_unit'] ), 2 ),
+				'width'		=> round( wc_get_dimension( $physicals[1], $this->store['dim_unit'] ), 2 ),
+				'height'	=> round( wc_get_dimension( $physicals[0], $this->store['dim_unit'] ), 2 ),
+				'unit'		=> $this->shipStationApi->convert_unit_term( $this->store['dim_unit'] ),
 			);
 
 			$item_requests[ $item_id ] = $request;
@@ -528,21 +538,26 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					/* translators: %1$d is the Product ID. %2$s is the Product Dimensions separated by a comma. */
 					esc_html__( 'Product ID #%1$d missing (%2$s) dimensions. Shipping calculations terminated.', 'live-rates-for-shipstation' ),
 					$item['product_id'],
-					implode( ', ', array_diff_key( $this->dimension_keys, $physicals ) )
+					implode( ', ', array_diff_key( array(
+						'width'		=> 'width',
+						'height'	=> 'height',
+						'length'	=> 'length',
+						'weight'	=> 'weight',
+					), $physicals ) )
 				) );
 				return array();
 			}
 
-			$data['weight'] = (float)max( 0.5, round( wc_get_weight( $physicals['weight'], 'lbs' ), 2 ) );
+			$data['weight'] = (float)round( wc_get_weight( $physicals['weight'], $this->store['weight_unit'] ), 2 );
 
-			// Unset weight and sort dimensions
+			// Unset weight to exclude it from sort
 			unset( $physicals['weight'] );
 			sort( $physicals );
 
 			$data = array(
-				'length'	=> max( 1, round( wc_get_dimension( $physicals[2], 'in' ), 2 ) ),
-				'width'		=> max( 1, round( wc_get_dimension( $physicals[1], 'in' ), 2 ) ),
-				'height'	=> max( 1, round( wc_get_dimension( $physicals[0], 'in' ), 2 ) ),
+				'length'	=> round( wc_get_dimension( $physicals[2], $this->store['dim_unit'] ), 2 ),
+				'width'		=> round( wc_get_dimension( $physicals[1], $this->store['dim_unit'] ), 2 ),
+				'height'	=> round( wc_get_dimension( $physicals[0], $this->store['dim_unit'] ), 2 ),
 			) + $data;
 
 			for( $i = 0; $i < $item['quantity']; $i++ ) {
@@ -567,13 +582,13 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			$item_requests[] = array(
 				'weight' => array(
 					'value' => $package->weight,
-					'unit'	=> 'pound',
+					'unit'	=> $this->shipStationApi->convert_unit_term( $this->store['weight_unit'] ),
 				),
 				'dimensions' => array(
-					'unit'		=> 'inch',
 					'length'	=> $package->length,
 					'width'		=> $package->width,
 					'height'	=> $package->height,
+					'unit'		=> $this->shipStationApi->convert_unit_term( $this->store['dim_unit'] ),
 				),
 			);
 
