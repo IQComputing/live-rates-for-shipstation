@@ -14,35 +14,11 @@ if( ! defined( 'ABSPATH' ) ) {
 class Shipstation_Api  {
 
 	/**
-	 * API Endpoint
-	 *
-	 * @var String
-	 */
-	protected $apiurl = 'https://api.shipstation.com'; // No trailing slash.
-
-
-	/**
-	 * WooCommerce Logger
-	 *
-	 * @var WC_Logger
-	 */
-	protected $logger = null;
-
-
-	/**
 	 * Key prefix
 	 *
 	 * @var String
 	 */
 	protected $prefix;
-
-
-	/**
-	 * Skip cache check
-	 *
-	 * @var Boolean
-	 */
-	protected $skip_cache = false;
 
 
 	/**
@@ -55,11 +31,27 @@ class Shipstation_Api  {
 
 
 	/**
+	 * Skip cache check
+	 *
+	 * @var Boolean
+	 */
+	protected $skip_cache = false;
+
+
+	/**
+	 * WooCommerce Logger
+	 *
+	 * @var WC_Logger
+	 */
+	protected $logger = null;
+
+
+	/**
 	 * The API Key
 	 *
 	 * @var String
 	 */
-	private $key = '';
+	private $key;
 
 
 	/**
@@ -269,6 +261,30 @@ class Shipstation_Api  {
 	/** :: Helper Methods :: **/
 	/**------------------------------------------------------------------------------------------------ **/
 	/**
+	 * Convert a WooCommerce unit term to a
+	 * ShipStation unit term.
+	 *
+	 * @param String $unit
+	 *
+	 * @return String $term
+	 */
+	public function convert_unit_term( $unit ) {
+
+		$known = array(
+			'kg'	=> 'kilogram',
+			'g'		=> 'gram',
+			'lbs'	=> 'pound',
+			'oz'	=> 'ounce',
+			'cm'	=> 'centimeter',
+			'in'	=> 'inch',
+		);
+
+		return ( isset( $known[ $unit ] ) ) ? $known[ $unit ] : $unit;
+
+	}
+
+
+	/**
 	 * Make an API Request
 	 *
 	 * @param String $method
@@ -343,7 +359,12 @@ class Shipstation_Api  {
 	 * @return String $url
 	 */
 	protected function get_endpoint_url( $endpoint ) {
-		return sprintf( '%s/v2/%s/', $this->apiurl, $endpoint );
+
+		return sprintf( '%s/v2/%s/',
+			'https://api.shipstation.com',
+			$endpoint
+		);
+
 	}
 
 
