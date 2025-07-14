@@ -245,7 +245,7 @@ export class shipStationSettings {
 	 */
 	priceAdjustmentNumbersOnly() {
 
-		const $adjustmentInput = document.querySelector( '[type=text][name*=percent_upcharge' );
+		const $adjustmentInput = document.querySelector( '[type=text][name*=global_adjustment' );
 		$adjustmentInput.addEventListener( 'input', ( e ) => {
 			e.target.value = e.target.value.replace( /[^0-9.]/g, '' );
 		} );

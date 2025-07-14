@@ -31,8 +31,8 @@ $global_adjustment = \IQLRSS\Driver::get_ss_opt( 'global_adjustment', '0', true 
 				<tr>
 					<th style="width: 50px;"><?php esc_html_e( 'Enabled', 'live-rates-for-shipstation' ); ?></th>
 					<th><?php esc_html_e( 'Name', 'live-rates-for-shipstation' ); ?></th>
+					<th><?php esc_html_e( 'Price Adjustment (%)', 'live-rates-for-shipstation' ); ?></th>
 					<th><?php esc_html_e( 'Carrier', 'live-rates-for-shipstation' ); ?></th>
-					<th><?php esc_html_e( 'Service Code', 'live-rates-for-shipstation' ); ?></th>
 				</tr>
 			</thead>
 			<tbody><?php
@@ -97,7 +97,7 @@ $global_adjustment = \IQLRSS\Driver::get_ss_opt( 'global_adjustment', '0', true 
 							);
 
 							// Service Price Adjustment
-							printf( '<td><input type="text" name="%s" value="%s" placeholder="%s"></td>',
+							printf( '<td><input type="text" name="%s" value="%s" placeholder="%s" style="max-width:60px;"></td>',
 								esc_attr( $attr_name . '[adjustment]' ),
 								esc_attr( $saved_atts['adjustment'] ),
 								esc_attr( $global_adjustment . '%' ),
@@ -157,8 +157,8 @@ $global_adjustment = \IQLRSS\Driver::get_ss_opt( 'global_adjustment', '0', true 
 								esc_attr( $service_arr['name'] ),
 							);
 
-							// Service Name
-							printf( '<td><input type="text" name="%s" value="" placeholder="%s" class="iqlrss-numbers-only"></td>',
+							// Service Price Adjustment
+							printf( '<td><input type="text" name="%s" value="" placeholder="%s" class="iqlrss-numbers-only" style="max-width:60px;"></td>',
 								esc_attr( $attr_name . '[adjustment]' ),
 								esc_attr( $global_adjustment . '%' ),
 							);
