@@ -157,7 +157,7 @@ $global_adjustment = \IQLRSS\Driver::get_ss_opt( 'global_adjustment', '0', true 
 								esc_attr( $service_arr['name'] ),
 							);
 
-							// Service Price Adjustment
+							// Service Name
 							printf( '<td><input type="text" name="%s" value="" placeholder="%s" class="iqlrss-numbers-only" style="max-width:60px;"></td>',
 								esc_attr( $attr_name . '[adjustment]' ),
 								esc_attr( $global_adjustment . '%' ),
