@@ -121,7 +121,7 @@ export class shippingZoneSettings {
 
 		document.addEventListener( 'input', ( e ) => {
 			if( 'INPUT' !== e.target.tagName ) return;
-			if( false !== e.target.getAttribute( 'name' ).indexOf( 'custombox' ) || e.target.classList.contains( 'iqlrss-numbers-only' ) ) {
+			if( -1 != e.target.getAttribute( 'name' ).indexOf( 'custombox' ) || e.target.classList.contains( 'iqlrss-numbers-only' ) ) {
 				e.target.value = e.target.value.replace( /[^0-9.]/g, '' );
 			}
 		} );
