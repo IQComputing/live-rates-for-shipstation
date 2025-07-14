@@ -172,6 +172,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	public function generate_customboxes_html() {
 
 		$prefix 		= $this->plugin_prefix;
+		$show_custom 	= ( 'wc-box-packer' == $this->get_option( 'packing', 'individual' ) );
 		$saved_boxes 	= $this->get_option( 'customboxes', array() );
 
 		ob_start();
