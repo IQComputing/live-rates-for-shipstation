@@ -230,6 +230,9 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					'carrier_code'	=> sanitize_text_field( $carrier_code ),
 				) );
 
+				// Whether the carrier/service is ShipStation
+				$services[ $carrier_code ][ $service_code ]['is_shipstation'] = boolval( $service_arr['is_shipstation'] );
+
 				// Allow 0 value user input.
 				if( $service_arr['adjustment'] >= 0 ) {
 					$services[ $carrier_code ][ $service_code ]['adjustment'] = floatval( $service_arr['adjustment'] );
