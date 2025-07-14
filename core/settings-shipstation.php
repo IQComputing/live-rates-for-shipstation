@@ -334,7 +334,7 @@ Class Settings_Shipstation {
 					'default'		=> '',
 				);
 
-				$appended_fields[ \IQLRSS\Driver::plugin_prefix( 'percent_upcharge' ) ] = array(
+				$appended_fields[ \IQLRSS\Driver::plugin_prefix( 'global_adjustment' ) ] = array(
 					'title'			=> esc_html__( 'Shipping Price Adjustment (%)', 'live-rates-for-shipstation' ),
 					'type'			=> 'text',
 					'placeholder'	=> '0%',

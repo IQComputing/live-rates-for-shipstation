@@ -1,5 +1,5 @@
 /**
- * WooCommerce ShipStation Settings Page
+ * WooCommerce Shipping Zone Settings
  *
  * Not really meant to be used as an object but more for
  * encapsulation and organization.
@@ -17,8 +17,8 @@ export class shippingZoneSettings {
 		this.customBoxesSelectAll();
 		this.customBoxesAdd();
 		this.customBoxesRemove();
-		this.customBoxesNumbersOnly();
 
+		this.inputsNumbersOnly();
 		this.wooAccommodations();
 
 	}
@@ -30,7 +30,7 @@ export class shippingZoneSettings {
 	 */
 	customBoxesVisibility() {
 
-		document.querySelector( '.customBoxesControl' ).addEventListener( 'change', function() {
+		document.querySelector( '.custom-boxes-control' ).addEventListener( 'change', function() {
 			if( 'wc-box-packer' == this.value ) {
 
 				document.getElementById( 'customBoxes' ).style.display = 'table-row';
@@ -115,14 +115,15 @@ export class shippingZoneSettings {
 
 
 	/**
-	 * Custom Boxes
 	 * Only allow numbers in inputs.
 	 */
-	customBoxesNumbersOnly() {
+	inputsNumbersOnly() {
 
 		document.addEventListener( 'input', ( e ) => {
-			if( 'INPUT' != e.target.tagName || 0 != e.target.getAttribute( 'name' ).indexOf( 'custombox' ) ) { return; }
-			e.target.value = e.target.value.replace( /[^0-9.]/g, '' );
+			if( 'INPUT' !== e.target.tagName ) return;
+			if( false !== e.target.getAttribute( 'name' ).indexOf( 'custombox' ) || e.target.classList.contains( 'iqlrss-numbers-only' ) ) {
+				e.target.value = e.target.value.replace( /[^0-9.]/g, '' );
+			}
 		} );
 
 	}

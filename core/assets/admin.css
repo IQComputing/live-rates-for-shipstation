@@ -1,4 +1,7 @@
-.iqcss-err	{font-style: italic; color: darkred !important;}
+.iqcss-err		{font-style: italic; color: darkred !important;}
+.iqlrss-hide	{display: none;}
+.iqlrss-show	{display: block;}
+tr.iqlrss-show	{display: table-row;}
 
 table.nottoofat th,
 table.nottoofat td	{padding: 9px 7px;}
