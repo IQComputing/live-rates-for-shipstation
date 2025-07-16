@@ -426,6 +426,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				$rates[ $lowest['key'] ]['label'] = $single_lowest_label;
 			}
 
+			$rates[ $lowest['key'] ]['cost'] = array( $lowest['cost'] );
 			$this->add_rate( $rates[ $lowest['key'] ] );
 
 		// Otherwise, return all the enabled rates.
