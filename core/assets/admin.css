@@ -1,4 +1,7 @@
-.iqcss-err	{font-style: italic; color: darkred !important;}
+.iqcss-err		{font-style: italic; color: darkred !important;}
+.iqlrss-hide	{display: none;}
+.iqlrss-show	{display: block;}
+tr.iqlrss-show	{display: table-row;}
 
 table.nottoofat th,
 table.nottoofat td	{padding: 9px 7px;}
@@ -6,7 +9,6 @@ th.no-padleft		{padding-left: 0;}
 
 #carrierServices input[type=text]	{width: 100%;}
 
-#customBoxes							{display: none;}
 #customBoxes tbody label				{display: flex; align-items: center;}
 #customBoxes tbody input[type=text]		{width: 75px; margin-right: 4px;}
 #customBoxes tbody input[type=checkbox]	{margin-left: 8px;}

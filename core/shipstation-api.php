@@ -318,7 +318,9 @@ class Shipstation_Api  {
 		$body = json_decode( wp_remote_retrieve_body( $request ), true );
 
 		// Return Early - API encountered an error.
-		if( 200 != $code || ! is_array( $body ) ) {
+		if( is_wp_error( $request ) ) {
+			return $this->log( $request );
+		} else if( 200 != $code || ! is_array( $body ) ) {
 
 			$err_code = 400;
 			$err_msg = esc_html__( 'Error encountered during request.', 'live-rates-for-shipstation' );

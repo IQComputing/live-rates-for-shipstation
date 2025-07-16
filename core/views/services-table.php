@@ -18,6 +18,7 @@ if( ! defined( 'ABSPATH' ) ) {
 }
 
 $api_key = \IQLRSS\Driver::get_ss_opt( 'api_key', '', true );
+$global_adjustment = \IQLRSS\Driver::get_ss_opt( 'global_adjustment', '0', true );
 
 ?>
 
@@ -30,8 +31,8 @@ $api_key = \IQLRSS\Driver::get_ss_opt( 'api_key', '', true );
 				<tr>
 					<th style="width: 50px;"><?php esc_html_e( 'Enabled', 'live-rates-for-shipstation' ); ?></th>
 					<th><?php esc_html_e( 'Name', 'live-rates-for-shipstation' ); ?></th>
+					<th><?php esc_html_e( 'Price Adjustment (%)', 'live-rates-for-shipstation' ); ?></th>
 					<th><?php esc_html_e( 'Carrier', 'live-rates-for-shipstation' ); ?></th>
-					<th><?php esc_html_e( 'Service Code', 'live-rates-for-shipstation' ); ?></th>
 				</tr>
 			</thead>
 			<tbody><?php
@@ -61,6 +62,7 @@ $api_key = \IQLRSS\Driver::get_ss_opt( 'api_key', '', true );
 						$saved_atts = array(
 							'enabled' => ( isset( $service_arr['enabled'] ) ) ? $service_arr['enabled'] : false,
 							'nickname' => ( isset( $service_arr['nickname'] ) ) ? $service_arr['nickname'] : '',
+							'adjustment' => ( isset( $service_arr['adjustment'] ) ) ? $service_arr['adjustment'] : '',
 						);
 
 						print( '<tr>' );
@@ -85,6 +87,10 @@ $api_key = \IQLRSS\Driver::get_ss_opt( 'api_key', '', true );
 									esc_attr( $attr_name . '[carrier_name]' ),
 									esc_attr( $service_arr['carrier_name'] )
 								);
+								printf( '<input type="hidden" name="%s" value="%s">',
+									esc_attr( $attr_name . '[is_shipstation]' ),
+									esc_attr( $service_arr['is_shipstation'] )
+								);
 							print( '</td>' );
 
 							// Service Nickname
@@ -94,11 +100,20 @@ $api_key = \IQLRSS\Driver::get_ss_opt( 'api_key', '', true );
 								esc_attr( $service_arr['service_name'] ),
 							);
 
-							// Carrier Name
-							printf( '<td><strong>%s</strong></td>', esc_html( $service_arr['carrier_name'] ) );
+							// Service Price Adjustment
+							printf( '<td><input type="text" name="%s" value="%s" placeholder="%s" style="max-width:60px;"></td>',
+								esc_attr( $attr_name . '[adjustment]' ),
+								esc_attr( $saved_atts['adjustment'] ),
+								esc_attr( $global_adjustment . '%' ),
+							);
 
-							// Service Code
-							printf( '<td><strong>%s</strong></td>', esc_html( $service_arr['service_code'] ) );
+							// Carrier Name
+							$service_carrier = $service_arr['carrier_name'];
+							if( isset( $service_arr['is_shipstation'] ) && ! $service_arr['is_shipstation'] ) {
+								$service_carrier .= esc_html__( ' (Personal)' );
+							}
+
+							printf( '<td><strong>%s</strong></td>', esc_html( $service_carrier ) );
 
 						print( '</tr>' );
 
@@ -143,6 +158,10 @@ $api_key = \IQLRSS\Driver::get_ss_opt( 'api_key', '', true );
 									esc_attr( $attr_name . '[carrier_name]' ),
 									esc_attr( $response['carrier']['friendly_name'] )
 								);
+								printf( '<input type="hidden" name="%s" value="%s">',
+									esc_attr( $attr_name . '[is_shipstation]' ),
+									esc_attr( $response['carrier']['is_shipstation'] )
+								);
 							print( '</td>' );
 
 							// Service Name
@@ -151,11 +170,14 @@ $api_key = \IQLRSS\Driver::get_ss_opt( 'api_key', '', true );
 								esc_attr( $service_arr['name'] ),
 							);
 
+							// Service Name
+							printf( '<td><input type="text" name="%s" value="" placeholder="%s" class="iqlrss-numbers-only" style="max-width:60px;"></td>',
+								esc_attr( $attr_name . '[adjustment]' ),
+								esc_attr( $global_adjustment . '%' ),
+							);
+
 							// Carrier Name
 							printf( '<td><strong>%s</strong></td>', esc_html( $response['carrier']['friendly_name'] ) );
-
-							// Service Code
-							printf( '<td><strong>%s</strong></td>', esc_html( $service_arr['service_code'] ) );
 
 						print( '</tr>' );
 

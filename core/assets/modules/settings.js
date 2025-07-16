@@ -31,6 +31,7 @@ export class shipStationSettings {
 		const $button = this.apiButtonSetup();
 		this.apiInputChange( $button );
 		this.verificationRequiredCheck( $button );
+		this.priceAdjustmentNumbersOnly();
 		this.singleLowestSetup();
 
 	}
@@ -219,7 +220,7 @@ export class shipStationSettings {
 			if( iqlrss.api_verified ) return true;
 
 			if( this.#apiInput.value ) {
-				
+
 				e.preventDefault();
 				e.stopImmediatePropagation();
 
@@ -234,6 +235,19 @@ export class shipStationSettings {
 				return false;
 			}
 
+		} );
+
+	}
+
+
+	/**
+	 * Only allow numbers for the Price Adjustment input.
+	 */
+	priceAdjustmentNumbersOnly() {
+
+		const $adjustmentInput = document.querySelector( '[type=text][name*=global_adjustment' );
+		$adjustmentInput.addEventListener( 'input', ( e ) => {
+			e.target.value = e.target.value.replace( /[^0-9.]/g, '' );
 		} );
 
 	}

@@ -96,6 +96,7 @@ Class Settings_Shipstation {
 			),
 			'text' => array(
 				'button_api_verify'		=> esc_html__( 'Verify API', 'live-rates-for-shipstation' ),
+				'confirm_box_removal'	=> esc_html__( 'Please confirm you would like to completely remove (x) custom boxes.', 'live-rates-for-shipstation' ),
 				'error_rest_generic'	=> esc_html__( 'Something went wrong with the REST Request. Please resave permalinks and try again.', 'live-rates-for-shipstation' ),
 				'error_verification_required' => esc_html__( 'Please click the Verify API button to ensure a connection exists.', 'live-rates-for-shipstation' ),
 			),
@@ -330,6 +331,15 @@ Class Settings_Shipstation {
 					} )(),
 					'description'	=> $carrier_desc,
 					'desc_tip'		=> esc_html__( 'Services from selected carriers will be available when setting up Shipping Zones.', 'live-rates-for-shipstation' ),
+					'default'		=> '',
+				);
+
+				$appended_fields[ \IQLRSS\Driver::plugin_prefix( 'global_adjustment' ) ] = array(
+					'title'			=> esc_html__( 'Shipping Price Adjustment (%)', 'live-rates-for-shipstation' ),
+					'type'			=> 'text',
+					'placeholder'	=> '0%',
+					'description'	=> esc_html__( 'This percent is added on top of the returned shipping rates to help you cover shipping costs. Can be overridden per zone, per service.', 'live-rates-for-shipstation' ),
+					'desc_tip'		=> esc_html__( 'Example: IF UPS Ground is $7.25 - 15% would be $1.08 making the final rate: $8.33', 'live-rates-for-shipstation' ),
 					'default'		=> '',
 				);
 

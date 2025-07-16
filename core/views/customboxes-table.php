@@ -7,7 +7,8 @@
  * with dimensions and weights. These boxes will be used for automated product packing.
  *
  * @param \IQLRSS\Core\Shipping_Method_Shipstation $this
- * @param String $prefix - Plugin prefix
+ * @param String $prefix - Plugin prefix.
+ * @param Boolean $show_custom - Whether to show the customBoxes table.
  * @param Array $saved_boxes - Saved user entered custom boxes.
  */
 
@@ -17,7 +18,7 @@ if( ! defined( 'ABSPATH' ) ) {
 
 ?>
 
-<tr valign="top" id="customBoxes">
+<tr valign="top" id="customBoxes" style="display:<?php echo ( $show_custom ) ? 'table-row' : 'none'; ?>;">
 	<th scope="row" class="titledesc no-padleft"><?php esc_html_e( 'Custom Packing Boxes', 'live-rates-for-shipstation' ); ?></th>
 	<td class="forminp">
 		<table class="widefat nottoofat">
@@ -154,68 +155,5 @@ if( ! defined( 'ABSPATH' ) ) {
 				</tr>
 			</tfoot>
 		</table>
-		<script type="text/javascript">
-			let confirmMsg = '<?php esc_html_e( 'Please confirm you would like to completely remove (x) custom boxes.', 'live-rates-for-shipstation' ); ?>'
-
-			/* Add */
-			document.querySelector( '#customBoxes button[name=add]' ).addEventListener( 'click', () => {
-				let count = document.querySelectorAll( '#customBoxes tbody tr' ).length - 1;
-				let $clone = document.querySelector( '#customBoxes tr.mimic' ).cloneNode( true );
-				$clone.classList.remove( 'mimic' );
-				$clone.querySelectorAll( '[name]' ).forEach( ( $elm ) => {
-					$elm.setAttribute( 'name', $elm.getAttribute( 'name' ).replace( 'mimic', count ) );
-					if( 'text' == $elm.getAttribute( 'type' ) && -1 == $elm.getAttribute( 'name' ).indexOf( '[wm]' ) ) $elm.setAttribute( 'required', true );
-				} );
-				document.querySelector( '#customBoxes tbody' ).appendChild( $clone );
-			} );
-
-			/* Remove */
-			document.querySelector( '#customBoxes button[name=remove]' ).addEventListener( 'click', () => {
-				let $checkedBoxes = document.querySelectorAll( '#customBoxes tbody tr:not(.mimic) [type=checkbox]:is(:checked)' );
-				if( ! $checkedBoxes.length ) return;
-				if( window.confirm( confirmMsg.replace( '(x)', `(${$checkedBoxes.length})` ) ) ) {
-					document.querySelectorAll( '#customBoxes tbody tr:not(.mimic) [type=checkbox]:is(:checked)' ).forEach( $elm => {
-						$elm.closest( 'tr' ).remove();
-					} );
-				}
-				document.querySelectorAll( '#customBoxes [type=checkbox]:is(:checked)' ).forEach( $elm => $elm.checked = false );
-			} );
-
-			/* Select All */
-			document.querySelector( '#customBoxes [name=customboxes_removeall]' ).addEventListener( 'input', function() {
-				document.querySelectorAll( '#customBoxes tbody tr:not(.mimic) [type=checkbox]' ).forEach( ( $elm ) => {
-					$elm.checked = this.checked;
-				} );
-			} );
-
-			/* Product Packing show/hide Table */
-			document.querySelector( '.customBoxesControl' ).addEventListener( 'change', function() {
-				if( 'wc-box-packer' == this.value ) {
-					document.getElementById( 'customBoxes' ).style.display = 'table-row';
-					if( document.querySelectorAll( '#customBoxes tbody tr' ).length < 2 ) {
-						document.querySelector( '#customBoxes button[name=add]' ).click();
-					}
-				} else {
-					document.querySelectorAll( '#customBoxes [name]' ).forEach( ( $elm ) => {
-						if( 'text' == $elm.getAttribute( 'type' ) ) $elm.removeAttribute( 'required' );
-					} );
-					document.getElementById( 'customBoxes' ).style.display = 'none';
-				}
-			} );
-			document.querySelector( '.customBoxesControl' ).dispatchEvent( new Event( 'change' ) );
-
-			/* Numbers only input */
-			document.addEventListener( 'input', ( e ) => {
-				if( 'INPUT' != e.target.tagName || 0 != e.target.getAttribute( 'name' ).indexOf( 'custombox' ) ) { return; }
-				e.target.value = e.target.value.replace( /[^0-9.]/g, '' );
-			} );
-
-			/* Woo Accomodations */
-			window.addEventListener( 'load', () => {
-				document.querySelector( 'button[name="save"]' ).addEventListener( 'click', function() {
-					if( ! document.getElementById( 'mainform' ).checkValidity() ) this.classList.remove( 'is-busy' );
-				} );
-			} );
-		</script>
 	</td>
 </tr>

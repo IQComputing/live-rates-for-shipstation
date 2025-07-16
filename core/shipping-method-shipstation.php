@@ -107,6 +107,8 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 */
 	protected function init_instance_form_fields() {
 
+		$global_adjustment = \IQLRSS\Driver::get_ss_opt( 'global_adjustment', '0', true );
+
 		$this->instance_form_fields = array(
 			'title' => array(
 				'title'			=> esc_html__( 'Title', 'live-rates-for-shipstation' ),
@@ -118,7 +120,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			'packing' => array(
 				'title'			=> esc_html__( 'Product Packing', 'live-rates-for-shipstation' ),
 				'type'			=> 'select',
-				'class'			=> 'customBoxesControl',
+				'class'			=> 'custom-boxes-control',
 				'options'		=> array(
 					'individual'	=> esc_html__( 'Pack items individually', 'live-rates-for-shipstation' ),
 					'wc-box-packer'	=> esc_html__( 'Pack items using Custom Packing Boxes', 'live-rates-for-shipstation' ),
@@ -177,6 +179,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	public function generate_customboxes_html() {
 
 		$prefix 		= $this->plugin_prefix;
+		$show_custom 	= ( 'wc-box-packer' == $this->get_option( 'packing', 'individual' ) );
 		$saved_boxes 	= $this->get_option( 'customboxes', array() );
 
 		ob_start();
@@ -231,6 +234,14 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					'carrier_name'	=> sanitize_text_field( $service_arr['carrier_name'] ),
 					'carrier_code'	=> sanitize_text_field( $carrier_code ),
 				) );
+
+				// Whether the carrier/service is ShipStation
+				$services[ $carrier_code ][ $service_code ]['is_shipstation'] = boolval( $service_arr['is_shipstation'] );
+
+				// Allow 0 value user input.
+				if( $service_arr['adjustment'] >= 0 ) {
+					$services[ $carrier_code ][ $service_code ]['adjustment'] = floatval( $service_arr['adjustment'] );
+				}
 
 			}
 		}
@@ -311,6 +322,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			return;
 		}
 
+		$global_upcharge = floatval( \IQLRSS\Driver::get_ss_opt( 'global_adjustment', 0, true ) );
 		$saved_carriers = array_keys( $saved_services );
 		$packing_type 	= $this->get_option( 'packing', 'individual' );
 		$request = array(
@@ -365,7 +377,21 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 				$service_arr = $saved_services[ $shiprate['carrier_code'] ][ $shiprate['code'] ];
 				$cost = $shiprate['cost'];
+
+				// Apply service upcharge
+				if( isset( $service_arr['adjustment'] ) && $service_arr['adjustment'] >= 0 ) {
+
+					$adjustment = floatval( $saved_services[ $shiprate['carrier_code'] ]['adjustment'] );
+					$cost += ( $adjustment > 0 ) ? ( $cost * ( $adjustment / 100 ) ) : 0;
+
+				} else if( ! empty( $global_upcharge ) ) {
+					$cost += ( $cost * ( $global_upcharge / 100 ) );
+				}
+
+				// Maybe apply per item.
 				$cost = ( 'individual' == $packing_type ) ? ( $cost * $packages['contents'][ $item_id ]['quantity'] ) : $cost;
+
+				// Create the WooCommerce rate Array.
 				$rate = array(
 					'id'		=> $shiprate['code'],
 					'label'		=> ( ! empty( $service_arr['nickname'] ) ) ? $service_arr['nickname'] : $shiprate['name'],
@@ -405,6 +431,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				$rates[ $lowest['key'] ]['label'] = $single_lowest_label;
 			}
 
+			$rates[ $lowest['key'] ]['cost'] = array( $lowest['cost'] );
 			$this->add_rate( $rates[ $lowest['key'] ] );
 
 		// Otherwise, return all the enabled rates.
