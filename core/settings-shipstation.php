@@ -104,7 +104,7 @@ Class Settings_Shipstation {
 
 		?><script type="text/javascript">
 
-			const iqlrss = JSON.parse( '<?php echo json_encode( $data ); ?>' );
+			const iqlrss = JSON.parse( '<?php echo wp_json_encode( $data ); ?>' );
 
 			<?php
 				/**

@@ -284,7 +284,7 @@ class Shipstation_Api  {
 		);
 
 		if( ! empty( $args ) && is_array( $args ) ) {
-			$req_args['body'] = json_encode( $args );
+			$req_args['body'] = wp_json_encode( $args );
 		}
 
 		$request = call_user_func( $callback, $endpoint_url, $req_args );
