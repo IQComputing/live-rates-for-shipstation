@@ -37,11 +37,10 @@ Class Settings_Shipstation {
 	private function action_hooks() {
 
 		add_action( 'admin_enqueue_scripts',					array( $this, 'register_admin_assets' ), 3 );
-
 		add_action( 'admin_footer',								array( $this, 'localize_script_vars' ), 3 );
 		add_action( 'admin_enqueue_scripts',					array( $this, 'enqueue_admin_assets' ) );
 		add_action( 'woocommerce_cart_totals_after_order_total',array( $this, 'display_cart_weight' ) ) ;
-		add_action( 'rest_api_init',							array( $this, 'api_verification_endpoint' ) );
+		add_action( 'rest_api_init',							array( $this, 'api_actions_endpoint' ) );
 
 	}
 
@@ -90,12 +89,13 @@ Class Settings_Shipstation {
 			'api_verified' => \IQLRSS\Driver::get_ss_opt( 'api_key_valid', false, true ),
 			'rest' => array(
 				'nonce'		=> wp_create_nonce( 'wp_rest' ),
-				'apiverify'	=> get_rest_url( null, sprintf( '/%s/v1/apiverify',
+				'apiactions'=> get_rest_url( null, sprintf( '/%s/v1/apiactions',
 					\IQLRSS\Driver::get( 'slug' )
 				) ),
 			),
 			'text' => array(
 				'button_api_verify'		=> esc_html__( 'Verify API', 'live-rates-for-shipstation' ),
+				'button_api_clearcache'	=> esc_html__( 'Clear API Cache', 'live-rates-for-shipstation' ),
 				'confirm_box_removal'	=> esc_html__( 'Please confirm you would like to completely remove (x) custom boxes.', 'live-rates-for-shipstation' ),
 				'error_rest_generic'	=> esc_html__( 'Something went wrong with the REST Request. Please resave permalinks and try again.', 'live-rates-for-shipstation' ),
 				'error_verification_required' => esc_html__( 'Please click the Verify API button to ensure a connection exists.', 'live-rates-for-shipstation' ),
@@ -165,81 +165,117 @@ Class Settings_Shipstation {
 
 
 	/**
-	 * REST Endpoint to validate the users API Key.
-	 *
-	 * IF the Endpoint needs expanded, move to separate controller file.
+	 * REST Endpoint to validate the users API Key and clear API caches.
 	 *
 	 * @return void
 	 */
-	public function api_verification_endpoint() {
+	public function api_actions_endpoint() {
 
 		$prefix = \IQLRSS\Driver::get( 'slug' );
 
 		// Handle ajax requests
-		register_rest_route( "{$prefix}/v1", 'apiverify', array(
+		register_rest_route( "{$prefix}/v1", 'apiactions', array(
 			'methods' => array( 'POST' ),
 			'permission_callback' => fn() => is_user_logged_in(),
 			'callback' => function( $request ) {
 
+				global $wpdb;
+
 				$params = $request->get_params();
-
-				// Error - Missing API Key.
-				if( empty( $params['key'] ) ) {
-					wp_send_json_error( esc_html__( 'API Key not found.', 'live-rates-for-shipstation' ), 400 );
+				if( ! isset( $params['action'] ) || empty( $params['action'] ) ) {
+					wp_send_json_error();
 				}
 
-				$apikeys = array(
-					'old' => '',
-					'new' => sanitize_text_field( $params['key'] ),
-				);
-				$prefixed = array( // Array of Prefixed Setting Slugs
-					'key' => \IQLRSS\Driver::plugin_prefix( 'api_key' ),
-					'valid' => \IQLRSS\Driver::plugin_prefix( 'api_key_valid' ),
-					'valid_time' => \IQLRSS\Driver::plugin_prefix( 'api_key_vt' ),
-				);
+				switch( $params['action'] ) {
 
-				$shipstation_opt_slug = 'woocommerce_shipstation_settings';
-				$settings = get_option( $shipstation_opt_slug, array() );
+					// Clear the API Caches
+					case 'clearcache':
 
-				// Save the old key in case we need to revert.
-				if( ! empty( $settings[ $prefixed['key'] ] ) ) {
-					$apikeys['old'] = $settings[ $prefixed['key'] ];
-				}
+						/**
+						 * The API Class creates various transients to cache carrier services.
+						 * These transients are not tracked but generated based on the responses carrier codes.
+						 * All these transients are prefixed with our plugins unique string slug.
+						 * The first WHERE ensures only `_transient_` and the 2nd ensures only our plugins transients.
+						 */
+						$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s AND option_name LIKE %s",
+							$wpdb->esc_like( '_transient_' ) . '%',
+							'%' . $wpdb->esc_like( '_' . \IQLRSS\Driver::get( 'slug' ) . '_' ) . '%'
+						) );
 
-				// Return Early - Maybe we don't need to make a call at all?
-				if( $apikeys['old'] == $apikeys['new'] && isset( $settings[ $prefixed['valid_time'] ] ) ) {
-					if( absint( $settings[ $prefixed['valid_time'] ] ) >= gmdate( 'Ymd', strtotime( 'today' ) ) ) {
+						// Set transient to clear any WC_Session caches if they are found.
+						$time = absint( apply_filters( 'wc_session_expiration', DAY_IN_SECONDS * 2 ) );
+						set_transient( \IQLRSS\Driver::plugin_prefix( 'wcs_timeout' ), time(), $time );
+
+						// Success!
 						wp_send_json_success();
-					}
-				}
 
-				// The API pulls the API Key directly from the ShipStation Settings on init.
-				$settings[ $prefixed['key'] ] = $apikeys['new'];
-				update_option( $shipstation_opt_slug, $settings );
+					break;
 
-				$shipStationAPI = new Shipstation_Api( \IQLRSS\Driver::get( 'slug' ), true );
-				$carriers = $shipStationAPI->get_carriers();
 
-				// Error - Something went wrong, the API should let us know.
-				if( is_wp_error( $carriers ) ) {
+					// Verify API Key
+					case 'verify':
 
-					// Revert to old key
-					if( ! empty( $apikeys['old'] ) ) {
+						// Error - Missing API Key.
+						if( empty( $params['key'] ) ) {
+							wp_send_json_error( esc_html__( 'API Key not found.', 'live-rates-for-shipstation' ), 400 );
+						}
+
+						$apikeys = array(
+							'old' => '',
+							'new' => sanitize_text_field( $params['key'] ),
+						);
+						$prefixed = array( // Array of Prefixed Setting Slugs
+							'key' => \IQLRSS\Driver::plugin_prefix( 'api_key' ),
+							'valid' => \IQLRSS\Driver::plugin_prefix( 'api_key_valid' ),
+							'valid_time' => \IQLRSS\Driver::plugin_prefix( 'api_key_vt' ),
+						);
+
+						$shipstation_opt_slug = 'woocommerce_shipstation_settings';
 						$settings = get_option( $shipstation_opt_slug, array() );
-						$settings[ $prefixed['key'] ] = $apikeys['old'];
-						update_option( $shipstation_opt_slug, $settings );
-					}
 
-					wp_send_json_error( $carriers );
+						// Save the old key in case we need to revert.
+						if( ! empty( $settings[ $prefixed['key'] ] ) ) {
+							$apikeys['old'] = $settings[ $prefixed['key'] ];
+						}
+
+						// Return Early - Maybe we don't need to make a call at all?
+						if( $apikeys['old'] == $apikeys['new'] && isset( $settings[ $prefixed['valid_time'] ] ) ) {
+							if( absint( $settings[ $prefixed['valid_time'] ] ) >= gmdate( 'Ymd', strtotime( 'today' ) ) ) {
+								wp_send_json_success();
+							}
+						}
+
+						// The API pulls the API Key directly from the ShipStation Settings on init.
+						$settings[ $prefixed['key'] ] = $apikeys['new'];
+						update_option( $shipstation_opt_slug, $settings );
+
+						$shipStationAPI = new Shipstation_Api( \IQLRSS\Driver::get( 'slug' ), true );
+						$carriers = $shipStationAPI->get_carriers();
+
+						// Error - Something went wrong, the API should let us know.
+						if( is_wp_error( $carriers ) ) {
+
+							// Revert to old key
+							if( ! empty( $apikeys['old'] ) ) {
+								$settings = get_option( $shipstation_opt_slug, array() );
+								$settings[ $prefixed['key'] ] = $apikeys['old'];
+								update_option( $shipstation_opt_slug, $settings );
+							}
+
+							wp_send_json_error( $carriers );
+						}
+
+						// Denote a valid key.
+						$settings[ $prefixed['valid'] ] = true;
+						$settings[ $prefixed['valid_time'] ] = gmdate( 'Ymd', strtotime( 'today' ) );
+						update_option( $shipstation_opt_slug, $settings );
+
+						wp_send_json_success();
+					break;
 				}
 
-				// Denote a valid key.
-				$settings[ $prefixed['valid'] ] = true;
-				$settings[ $prefixed['valid_time'] ] = gmdate( 'Ymd', strtotime( 'today' ) );
-				update_option( $shipstation_opt_slug, $settings );
-
-				wp_send_json_success();
-
+				// Cases should return their own error/success.
+				wp_send_json_error();
 			}
 		) );
 
@@ -318,10 +354,6 @@ Class Settings_Shipstation {
 							foreach( $response as $carrier ) {
 
 								$name = $carrier['friendly_name'];
-								if( ! $carrier['is_shipstation'] ) {
-									$name .= esc_html__( ' (Personal)', 'live-rates-for-shipstation' );
-								}
-
 								$carriers[ $carrier['carrier_id'] ] = $name;
 							}
 						}

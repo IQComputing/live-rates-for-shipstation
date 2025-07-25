@@ -155,8 +155,6 @@ class Shipstation_Api  {
 					'friendly_name',
 				) ) );
 
-				$data['carriers'][ $carrier['carrier_id'] ]['is_shipstation'] = (boolean)$carrier['requires_funded_amount'];
-
 				if( isset( $carrier['services'] ) ) {
 					foreach( $carrier['services'] as $service ) {
 						$data['services'][ $carrier['carrier_id'] ][] = array_intersect_key( $service, array_flip( array(
@@ -206,9 +204,8 @@ class Shipstation_Api  {
 	/**
 	 * Return an array of avaialble rates by a carrier.
 	 *
-	 * @todo Cache requests for rates. The cart for example
-	 * could be abused to make multiple requests relatively quickly.
-	 * This would almost certainly need to be saved in the database.
+	 * @note ShipStation does have a /rates/ endpoint, but it requires the customers address_line1
+	 * In addition, it really is not much faster than the rates/estimate endpoint.
 	 *
 	 * @param Array $est_opts
 	 *
@@ -223,21 +220,14 @@ class Shipstation_Api  {
 			return $body;
 		}
 
-		/**
-		 * Response keys to consider:
-		 * $rate['validation_status'] ('unknown'|)
-		 * $rate['warning_messages'] (Array(String))
-		 * $rate['error_messages'] (Array(String))
-		 *
-		 * Both based on $est_opts['ship_date']:
-		 * $rate['estimated_delivery_date'] (Y-m-d)
-		 * $rate['carrier_delivery_days'] (Y-m-d)
-		 * $rate['delivery_days'] (Integer)
-		 */
 		$data = array();
 		foreach( $body as $rate ) {
 
+			// Sometimes rates come with error messages - skip them.
 			if( ! empty( $rate['error_messages'] ) ) continue;
+
+			// Sometimes rates can be cost $0, which isn't right - skip them.
+			if( $rate['shipping_amount']['amount'] <= 0 ) continue;
 
 			$data[] = array(
 				'name'			=> $rate['service_type'],
@@ -350,7 +340,7 @@ class Shipstation_Api  {
 	protected function prefix_key( $key, $sep = '_' ) {
 
 		return sprintf( '%s%s%s',
-			$this->prefix,
+			$this->prefix, // Plugin slug
 			preg_replace( '/[^-_]/', '', $sep ),
 			$key
 		);

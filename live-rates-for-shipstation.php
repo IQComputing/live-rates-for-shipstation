@@ -4,9 +4,11 @@
  * Plugin URI: https://iqcomputing.com/contact/
  * Description: ShipStation shipping method with live rates.
  * Version: 1.0.0
+ * Requries at least: 5.9
  * Author: IQComputing
  * Author URI: https://iqcomputing.com/
- * License: GPL2
+ * License: GPLv3 or later
+ * License URI: https://www.gnu.org/licenses/gpl-3.0.html
  * Text Domain: live-rates-for-shipstation
  * Requires Plugins: woocommerce, woocommerce-shipstation-integration
  */

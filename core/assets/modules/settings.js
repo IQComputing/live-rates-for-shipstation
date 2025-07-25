@@ -31,6 +31,8 @@ export class shipStationSettings {
 		const $button = this.apiButtonSetup();
 		this.apiInputChange( $button );
 		this.verificationRequiredCheck( $button );
+
+		this.apiClearCache();
 		this.priceAdjustmentNumbersOnly();
 		this.singleLowestSetup();
 
@@ -74,7 +76,7 @@ export class shipStationSettings {
 				this.rowClearError( $apiRow );
 
 				/* Make API Request */
-				this.apiButtonFetch( $apiRow ).then( ( success ) => {
+				this.apiButtonVerifyFetch( $apiRow ).then( ( success ) => {
 
 					$button.classList.remove( 'active' );
 
@@ -128,15 +130,16 @@ export class shipStationSettings {
 	 *
 	 * @return {Promise} - Boolean of success
 	 */
-	async apiButtonFetch( $apiRow ) {
+	async apiButtonVerifyFetch( $apiRow ) {
 
-		return await fetch( iqlrss.rest.apiverify, {
+		return await fetch( iqlrss.rest.apiactions, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
 				'X-WP-Nonce': iqlrss.rest.nonce,
 			},
 			body: JSON.stringify( {
+				'action': 'verify',
 				'key': this.#apiInput.value,
 			} ),
 		} ).then( response => response.json() )
@@ -236,6 +239,52 @@ export class shipStationSettings {
 			}
 
 		} );
+
+	}
+
+
+	/**
+	 * Clear the API cache.
+	 */
+	apiClearCache() {
+
+		const $apiRow = this.#apiInput.closest( 'tr' );
+		if( ! $apiRow ) return null;
+
+		let $button = document.createElement( 'button' );
+			$button.innerText = iqlrss.text.button_api_clearcache;
+			$button.type = 'button';
+			$button.id = 'iqlrssClearCacheButton';
+			$button.classList.add( 'button-secondary' );
+
+		$button.addEventListener( 'click', () => {
+
+			if( $button.classList.contains( 'working' ) ) return false;
+
+			$button.classList.remove( 'complete' );
+			$button.classList.add( 'working' );
+
+			fetch( iqlrss.rest.apiactions, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-WP-Nonce': iqlrss.rest.nonce,
+				},
+				body: JSON.stringify( {
+					'action': 'clearcache'
+				} ),
+			} ).then( response => response.json() )
+			.then( ( json ) => {
+				$button.classList.remove( 'working' );
+				$button.classList.add( 'complete' );
+				setTimeout( () => {
+					$button.classList.remove( 'complete' );
+				}, 3000 );
+			} );
+
+		} );
+
+		$apiRow.querySelector( 'fieldset' ).appendChild( $button );
 
 	}
 
