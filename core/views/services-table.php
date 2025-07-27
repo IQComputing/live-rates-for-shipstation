@@ -87,10 +87,6 @@ $global_adjustment = \IQLRSS\Driver::get_ss_opt( 'global_adjustment', '0', true 
 									esc_attr( $attr_name . '[carrier_name]' ),
 									esc_attr( $service_arr['carrier_name'] )
 								);
-								printf( '<input type="hidden" name="%s" value="%s">',
-									esc_attr( $attr_name . '[is_shipstation]' ),
-									esc_attr( $service_arr['is_shipstation'] )
-								);
 							print( '</td>' );
 
 							// Service Nickname
@@ -109,10 +105,6 @@ $global_adjustment = \IQLRSS\Driver::get_ss_opt( 'global_adjustment', '0', true 
 
 							// Carrier Name
 							$service_carrier = $service_arr['carrier_name'];
-							if( isset( $service_arr['is_shipstation'] ) && ! $service_arr['is_shipstation'] ) {
-								$service_carrier .= esc_html__( ' (Personal)' );
-							}
-
 							printf( '<td><strong>%s</strong></td>', esc_html( $service_carrier ) );
 
 						print( '</tr>' );
@@ -158,10 +150,6 @@ $global_adjustment = \IQLRSS\Driver::get_ss_opt( 'global_adjustment', '0', true 
 									esc_attr( $attr_name . '[carrier_name]' ),
 									esc_attr( $response['carrier']['friendly_name'] )
 								);
-								printf( '<input type="hidden" name="%s" value="%s">',
-									esc_attr( $attr_name . '[is_shipstation]' ),
-									esc_attr( $response['carrier']['is_shipstation'] )
-								);
 							print( '</td>' );
 
 							// Service Name
@@ -177,7 +165,8 @@ $global_adjustment = \IQLRSS\Driver::get_ss_opt( 'global_adjustment', '0', true 
 							);
 
 							// Carrier Name
-							printf( '<td><strong>%s</strong></td>', esc_html( $response['carrier']['friendly_name'] ) );
+							$service_carrier = $response['carrier']['friendly_name'];
+							printf( '<td><strong>%s</strong></td>', esc_html( $service_carrier ) );
 
 						print( '</tr>' );
 

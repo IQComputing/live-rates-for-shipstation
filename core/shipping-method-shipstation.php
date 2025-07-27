@@ -86,7 +86,22 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		$this->init_instance_options();
 
 		add_action( 'woocommerce_update_options_shipping_' . $this->id, array( $this, 'process_admin_options' ) );
+		add_filter( 'http_request_timeout', array( $this, 'increase_request_timeout' ) );
 
+	}
+
+
+	/**
+	 * Increase the HTTP Request Timeout
+	 * Sometimes ShipStation takes awhile to responde with rates.
+	 * Presumably, the more services enabled, the longer it takes.
+	 *
+	 * @param Integer $timeout
+	 *
+	 * @return Integer $timeout
+	 */
+	public function increase_request_timeout( $timeout ) {
+		return ( $timeout < 20 ) ? 20 : $timeout;
 	}
 
 
@@ -156,7 +171,17 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 			$sorted_services = array();
 			foreach( $saved_services as $k => $s ) {
-				if( ! isset( $s['enabled'] ) ) continue;
+
+				// Skip any old carrier services.
+				if( ! in_array( $k, $saved_carriers ) ) {
+					unset( $saved_services[ $k ] );
+					continue;
+
+				// Skip any services not enabled.
+				} else if( ! isset( $s['enabled'] ) ) {
+					continue;
+				}
+
 				$sorted_services[ $k ] = $s;
 				unset( $saved_services[ $k ] );
 			}
@@ -235,9 +260,6 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					'carrier_code'	=> sanitize_text_field( $carrier_code ),
 				) );
 
-				// Whether the carrier/service is ShipStation
-				$services[ $carrier_code ][ $service_code ]['is_shipstation'] = boolval( $service_arr['is_shipstation'] );
-
 				// Allow 0 value user input.
 				if( $service_arr['adjustment'] >= 0 ) {
 					$services[ $carrier_code ][ $service_code ]['adjustment'] = floatval( $service_arr['adjustment'] );
@@ -313,7 +335,12 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 */
 	public function calculate_shipping( $packages = array() ) {
 
+		// Return Early - Empty Packages
 		if( empty( $packages ) || ! isset( $packages['contents'] ) ) {
+			return;
+
+		// Return Early - No Destination to work with. Postcode is kinda required.
+		} else if( ! isset( $packages['destination'] ) || empty( $packages['destination']['postcode'] ) ) {
 			return;
 		}
 
@@ -336,8 +363,6 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			'to_city_locality'	=> $packages['destination']['city'],
 			'to_state_province'	=> $packages['destination']['state'],
 
-			'confirmation'	=> 'none',
-			'ship_date'		=> gmdate( 'c' ),
 			'address_residential_indicator' => 'unknown',
 		);
 
@@ -357,16 +382,39 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			'key' => '',
 		);
 
+		/**
+		 * This has to be done per package as the other rates endpoint
+		 * requires the customers address1 for verification and really
+		 * it's not much faster.
+		 *
+		 * WC()->session->set( '', '' );
+		 */
 		foreach( $item_requests as $item_id => $req ) {
 
-			// Ping the ShipStation API to get rates per Carrier.
-			$available_rates = $this->shipStationApi->get_shipping_estimates( array_merge( $req, $request, array(
-				'carrier_ids' => $saved_carriers,
-			) ) );
+			// Create the API request combining the package (weight, dimensions), general request data, and the carrier info.
+			$api_request = array_merge(
+				$req,		// Package (weight, dimensions)
+				$request,	// General info like to/from address
+				array(		// Saved carrier ids
+					'carrier_ids' => $saved_carriers,
+				)
+			);
 
-			// Continue - Something went wrong, should be logged on the API side.
-			if( is_wp_error( $available_rates ) || empty( $available_rates ) ) {
-				continue;
+			$available_rates = $this->cache_get_package_rates( $api_request );
+
+			if( empty( $available_rates ) ) {
+
+				// Ping the ShipStation API to get rates per Carrier.
+				$available_rates = $this->shipStationApi->get_shipping_estimates( $api_request );
+
+				// Continue - Something went wrong, should be logged on the API side.
+				if( is_wp_error( $available_rates ) || empty( $available_rates ) ) {
+					continue;
+				}
+
+				// Cache request
+				$this->cache_package_rates( $api_request, $available_rates );
+
 			}
 
 			foreach( $available_rates as $shiprate ) {
@@ -632,6 +680,100 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		}
 
 		return $item_requests;
+
+	}
+
+
+	/**
+	 * Generate a cache key.
+	 *
+	 * @param Array $arr
+	 * @param Array $kintersect
+	 *
+	 * @return String
+	 */
+	protected function cache_key_gen( $arr, $kintersect ) {
+		return md5( maybe_serialize( array_intersect_key( $arr, $kintersect ) ) );
+	}
+
+
+	/**
+	 * Cache the estimate based on weight, dimensions, and zip.
+	 * This will prevent future API calls for the same data.
+	 *
+	 * @param Array $request - The ShipStation API request array.
+	 * @param Array $rates - The returned rates from ShipStation.
+	 *
+	 * @return void
+	 */
+	protected function cache_package_rates( $request, $rates ) {
+
+		if( empty( WC()->session ) ) {
+			return array();
+		}
+
+		$session = WC()->session->get( $this->plugin_prefix, array() );
+		$cache = ( isset( $session['api'] ) ) ? $session['api'] : array();
+		$cleartime = get_transient( \IQLRSS\Driver::plugin_prefix( 'wcs_timeout' ), 0 );
+
+		// IF the cache has been cleared, invalidate any old caches.
+		if( isset( $session['apicached'] ) && $cleartime > $session['apicached'] ) {
+			$cache = array();
+
+		// Limit cache to 10.
+		} else if( count( $cache ) > 9 ) {
+			$cache = array_slice( $cache, 0, 9, true );
+		}
+
+		$key = $this->cache_key_gen( $request, array(
+			'from_postal_code'	=> '',
+			'to_postal_code'	=> '',
+			'dimensions'		=> array(),
+			'weight'			=> array(),
+		) );
+
+		$cache[ $key ] = $rates;
+		$session['api'] = $cache;
+		$session['apicached'] = time();
+
+		WC()->session->set( $this->plugin_prefix, $session );
+
+	}
+
+
+	/**
+	 * Return cached package rates based on request data.
+	 *
+	 * @param Array $request - The ShipStation API request array.
+	 *
+	 * @return Array
+	 */
+	protected function cache_get_package_rates( $request ) {
+
+		if( empty( WC()->session ) ) {
+			return array();
+		}
+
+		$session = WC()->session->get( $this->plugin_prefix, array() );
+		if( ! isset( $session['api'] ) || empty( $session['api'] ) ) {
+			return array();
+		}
+
+		// IF the cache has been cleared, invalidate any old caches.
+		$cleartime = get_transient( \IQLRSS\Driver::plugin_prefix( 'wcs_timeout' ) );
+		if( isset( $session['apicached'] ) && $cleartime > $session['apicached'] ) {
+			return array();
+		}
+
+		$cache = $session['api'];
+		$key = $this->cache_key_gen( $request, array(
+			'from_postal_code'	=> '',
+			'to_postal_code'	=> '',
+			'dimensions'		=> array(),
+			'weight'			=> array(),
+		) );
+
+		return ( isset( $cache[ $key ] ) && ! empty( $cache[ $key ] ) ) ? $cache[ $key ] : array();
 
 	}
 

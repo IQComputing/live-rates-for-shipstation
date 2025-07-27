@@ -1,32 +1,41 @@
 === Live Rates for ShipStation ===
 Contributors: iqcomputing
 Tags: woocommerce, shipstation, usps, ups, fedex
-Requires at least: 4.9
+Requires at least: 5.9
 Tested up to: 6.8
 Stable tag: 1.0.0
-License: GPLv2 or later
-License URI: https://www.gnu.org/licenses/gpl-2.0.html
+License: GPLv3 or later
+License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
-Pulls live shipping rates from your carriers connected to ShipStation.
+Pulls live shipping rates from your favorite carriers connected to 3rd party provider ShipStation.
 
 == Description ==
 
-This plugin requires both the Premium ShipStation Plugin and the Free WooCommerce Plugin to work properly.
+**ShipStation** is a 3rd party provider helping WooCommerce store owners compare shipping carrier rates, automate shipping processes, print labels, sync order data, and group tracking information, among other features.
 
-ShipStation is a 3rd party carrier system which allows you to connect multiple shipping methods to your store.
+This plugin connects to the ShipStation API using an authentication key to display shipping rates from various common carriers supported by ShipStation. This allows store owners to group all their shipping carriers under one umbrella which makes management easier and allows customers to choose the best shipping method for them which leads to happier customers.
 
-This plugin uses the ShipStation API to pull in your carriers shipping rates directly to your WooCommerce storefront.
+In order to use the Live Rates for ShipStation plugin, you must have a [premium ShipStation account](https://www.shipstation.com/pricing/), and purchased the [ShipStation for WooCommerce](https://woocommerce.com/products/shipstation-integration/) plugin. This plugin **will not work** without access to the ShipStation API which is tied to your premium ShipStation account.
+
+Please review [ShipStations Terms of Service](https://www.shipstation.com/terms-of-service/) and [ShipStations Privacy Policy](https://auctane.com/legal/privacy-policy/) for more information about how your data is managed.
+
+== Plugin Requirements ==
+
+1. [A Premium ShipStation Account](https://www.shipstation.com/pricing/)
+1. [The WooCommerce Plugin](https://wordpress.org/plugins/woocommerce/)
+1. [The ShipStation for WooCommerce Plugin](https://woocommerce.com/products/shipstation-integration/)
+1. The Live Rates for ShipStation Plugin
 
 == IQComputing ==
 
 * Like us on [Facebook](https://www.facebook.com/iqcomputing/ "IQComputing on Facebook")
 * Follow us on [Twitter](https://twitter.com/iqcomputing/ "IQComputing on Twitter")
-* Fork on [Github](https://github.com/IQComputing/wpcf7-recaptcha "IQComputing on Github")
+* Fork on [Github](https://github.com/IQComputing/live-rates-for-shipstation "IQComputing on Github")
 
 == Installation ==
 
-[ShipStation for WooCommerce](https://woocommerce.com/products/shipstation-integration/) "ShipStation for WooCommerce plugin page") is a required premium plugin.
-[WooCommerce](https://wordpress.org/plugins/woocommerce/ "WooCommerce plugin page") is a required free plugin.
+[ShipStation for WooCommerce](https://woocommerce.com/products/shipstation-integration/) "ShipStation for WooCommerce plugin page") is a required plugin.
+[WooCommerce](https://wordpress.org/plugins/woocommerce/ "WooCommerce plugin page") is a required plugin.
 
 1. Ensure that the WooCommerce plugin is installed and active.
 1. Ensure that the ShipStation for WooCommerce plugin is installed and active.
