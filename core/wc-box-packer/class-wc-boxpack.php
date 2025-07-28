@@ -169,7 +169,9 @@ class WC_Boxpack {
 					$package->width    = $item->get_width();
 					$package->height   = $item->get_height();
 					$package->value    = $item->get_value();
+					$package->volume   = $item->get_volume();
 					$package->unpacked = true;
+					$package->packed   = array();
 					$this->packages[]  = $package;
 				}
 			}
