@@ -372,10 +372,6 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 		// Rates groups shipping estimates by service ID.
 		$rates = array();
-		$lowest = array(
-			'cost' => -1,
-			'key' => '',
-		);
 
 		/**
 		 * This has to be done per package as the other rates endpoint
@@ -395,8 +391,8 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				)
 			);
 
+			// Check Cache
 			$available_rates = $this->cache_get_package_rates( $api_request );
-
 			if( empty( $available_rates ) ) {
 
 				// Ping the ShipStation API to get rates per Carrier.
@@ -412,6 +408,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 			}
 
+			// Loop the found rates and setup the WooCommerce rates array for each.
 			foreach( $available_rates as $shiprate ) {
 
 				if( ! isset( $saved_services[ $shiprate['carrier_code'] ][ $shiprate['code'] ] ) ) {
@@ -453,13 +450,6 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					) );
 				}
 
-				if( -1 == $lowest['cost'] || $lowest['cost'] > $cost ) {
-					$lowest = array(
-						'cost'	=> $cost,
-						'key'	=> $shiprate['code'],
-					);
-				}
-
 			}
 
 		}
@@ -467,22 +457,32 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		$single_lowest 			= \IQLRSS\Driver::get_ss_opt( 'return_lowest', 'no', true );
 		$single_lowest_label 	= \IQLRSS\Driver::get_ss_opt( 'return_lowest_label', '', true );
 
-		// Maybe only return the single lowest shipping rate.
-		if( 'no' != $single_lowest && $lowest['cost'] > -1 && isset( $rates[ $lowest['key'] ] ) ) {
-
-			if( ! empty( $single_lowest_label ) ) {
-				$rates[ $lowest['key'] ]['label'] = $single_lowest_label;
-			}
-
-			$rates[ $lowest['key'] ]['cost'] = array( $lowest['cost'] );
-			$this->add_rate( $rates[ $lowest['key'] ] );
-
-		// Otherwise, return all the enabled rates.
-		} else {
+		// Add all shipping rates, let the user decide.
+		if( 'no' == $single_lowest || empty( $single_lowest ) ) {
 
 			foreach( $rates as $rate_arr ) {
 				$this->add_rate( $rate_arr );
 			}
+
+		// Find the single lowest shipping rate
+		} else if( 'yes' == $single_lowest ) {
+
+			$lowest = 0;
+			$lowest_carrier = array_key_first( $rates );
+			foreach( $rates as $carrier_code => $rate_arr ) {
+
+				$total = array_sum( $rate_arr['cost'] );
+				if( 0 == $lowest || $total < $lowest ) {
+					$lowest = $total;
+					$lowest_carrier = $carrier_code;
+				}
+			}
+
+			if( ! empty( $single_lowest_label ) ) {
+				$rates[ $lowest_carrier ]['label'] = $single_lowest_label;
+			}
+
+			$this->add_rate( $rates[ $lowest_carrier ] );
 
 		}
 
