@@ -55,10 +55,12 @@ class Shipstation_Api  {
 
 	/**
 	 * Setup API
+	 *
+	 * @param Boolean $skip_cache
 	 */
-	public function __construct( $key_prefix, $skip_cache = false ) {
+	public function __construct( $skip_cache = false ) {
 
-		$this->prefix 	= (string)$key_prefix;
+		$this->prefix 	= \IQLRSS\Driver::get( 'slug' );
 		$this->key 		= \IQLRSS\Driver::get_ss_opt( 'api_key', '', true );
 		$this->skip_cache = (boolean)$skip_cache;
 
@@ -88,8 +90,12 @@ class Shipstation_Api  {
 			$carriers = $this->get_carriers();
 		}
 
+		// Return Early - Carrierror!
+		if( is_wp_error( $carriers ) ) {
+			return $this->log( $carriers );
+
 		// Return Early - Something went wrong getting carriers.
-		if( ! isset( $carriers[ $carrier_code ] ) ) {
+		} else if( ! isset( $carriers[ $carrier_code ] ) ) {
 			return $this->log( new \WP_Error( 400, esc_html__( 'Could not find carrier information.', 'live-rates-for-shipstation' ) ) );
 		}
 
@@ -277,7 +283,7 @@ class Shipstation_Api  {
 			$req_args['body'] = wp_json_encode( $args );
 		}
 
-		$request = call_user_func( $callback, $endpoint_url, $req_args );
+		$request = call_user_func( $callback, esc_url( $endpoint_url ), $req_args );
 		$code = wp_remote_retrieve_response_code( $request );
 		$body = json_decode( wp_remote_retrieve_body( $request ), true );
 

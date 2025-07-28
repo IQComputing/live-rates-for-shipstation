@@ -62,7 +62,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	public function __construct( $instance_id = 0 ) {
 
 		$this->plugin_prefix 		= \IQLRSS\Driver::get( 'slug' );
-		$this->shipStationApi 		= new Shipstation_Api( $this->plugin_prefix );
+		$this->shipStationApi 		= new Shipstation_Api( true );
 		$this->id 					= \IQLRSS\Driver::plugin_prefix( 'shipstation' );
 		$this->instance_id 			= absint( $instance_id );
 		$this->method_title 		= esc_html__( 'Live Rates for ShipStation', 'live-rates-for-shipstation' );
