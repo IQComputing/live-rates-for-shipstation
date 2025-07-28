@@ -160,7 +160,14 @@ class Shipstation_Api  {
 					'nickname',
 					'friendly_name',
 				) ) );
-				$data['carriers'][ $carrier['carrier_id'] ]['is_shipstation'] = ( ! empty( $carrier['nickname'] ) && is_numeric( $carrier['nickname'] ) );
+
+				$data['carriers'][ $carrier['carrier_id'] ]['is_shipstation'] 	= ( ! empty( $carrier['nickname'] ) && is_numeric( $carrier['nickname'] ) );
+				$data['carriers'][ $carrier['carrier_id'] ]['name'] 			= $data['carriers'][ $carrier['carrier_id'] ]['friendly_name'];
+
+				// Denote Manual Connected Carrier.
+				if( ! $data['carriers'][ $carrier['carrier_id'] ]['is_shipstation'] ) {
+					$data['carriers'][ $carrier['carrier_id'] ]['name'] .= ' ' . esc_html__( '(Manual)', 'live-rates-for-shipstation' );
+				}
 
 				if( isset( $carrier['services'] ) ) {
 					foreach( $carrier['services'] as $service ) {
@@ -236,14 +243,24 @@ class Shipstation_Api  {
 			// Sometimes rates can be cost $0, which isn't right - skip them.
 			if( $rate['shipping_amount']['amount'] <= 0 ) continue;
 
-			$data[] = array(
-				'name'			=> $rate['service_type'],
-				'code'			=> $rate['service_code'],
-				'cost'			=> $rate['shipping_amount']['amount'],
-				'currency'		=> $rate['shipping_amount']['currency'],
-				'carrier_code'	=> $rate['carrier_id'],
-				'carrier_name'	=> $rate['carrier_nickname'],
+			$est = array(
+				'name'					=> $rate['service_type'],
+				'code'					=> $rate['service_code'],
+				'cost'					=> $rate['shipping_amount']['amount'],
+				'currency'				=> $rate['shipping_amount']['currency'],
+				'carrier_code'			=> $rate['carrier_id'],
+				'carrier_nickname'		=> $rate['carrier_nickname'],
+				'carrier_friendly_name'	=> $rate['carrier_friendly_name'],
+				'carrier_name'			=> $rate['carrier_friendly_name'],
 			);
+
+			// Denote Manual Connected Carrier.
+			if( ! empty( $est['carrier_nickname'] ) && ! is_numeric( $est['carrier_nickname'] ) ) {
+				$est['carrier_name'] .= ' ' . esc_html__( '(Manual)', 'live-rates-for-shipstation' );
+			}
+
+			$data[] = $est;
+
 		}
 
 		return $data;

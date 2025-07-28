@@ -352,15 +352,7 @@ Class Settings_Shipstation {
 
 						if( ! is_a( $response, 'WP_Error' ) ) {
 							foreach( $response as $carrier ) {
-
-								$name = $carrier['friendly_name'];
-
-								// Manually connected carriers have nicknames, ShipStation carriers have numeric nicknames.
-								if( isset( $carrier['is_shipstation'] ) && ! $carrier['is_shipstation'] ) {
-									$name .= esc_html__( ' (Manual)', 'live-rates-for-shipstation' );
-								}
-
-								$carriers[ $carrier['carrier_id'] ] = $name;
+								$carriers[ $carrier['carrier_id'] ] = $carrier['name'];
 							}
 						}
 
