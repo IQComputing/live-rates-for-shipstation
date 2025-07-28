@@ -160,6 +160,7 @@ class Shipstation_Api  {
 					'nickname',
 					'friendly_name',
 				) ) );
+				$data['carriers'][ $carrier['carrier_id'] ]['is_shipstation'] = ( ! empty( $carrier['nickname'] ) && is_numeric( $carrier['nickname'] ) );
 
 				if( isset( $carrier['services'] ) ) {
 					foreach( $carrier['services'] as $service ) {
