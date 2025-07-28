@@ -1,0 +1,22 @@
+{
+    "name": "iqcomputing/live-rates-for-shipstation",
+    "description": "ShipStation shipping method with live rates.",
+    "type": "wordpress-plugin",
+    "license": "GPLv3-or-later",
+    "authors": [
+        {
+            "name": "IQComputing",
+            "homepage": "https://iqcomputing.com/"
+        }
+    ],
+    "homepage": "https://iqcomputing.com/",
+    "require": {},
+    "require-dev": {
+        "phpunit/phpunit": "12.0.0"
+    },
+	"autoload-dev": {
+		"psr-4": {
+			"IQLRSS\\Tests\\": "tests"
+		}
+	}
+}

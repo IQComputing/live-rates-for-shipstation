@@ -56,10 +56,12 @@ class Shipstation_Api  {
 
 	/**
 	 * Setup API
+	 *
+	 * @param String $skip_cache - Whether to skip a cache check.
 	 */
-	public function __construct( $key_prefix, $skip_cache = false ) {
+	public function __construct( $skip_cache = false ) {
 
-		$this->prefix 	= (string)$key_prefix;
+		$this->prefix 	= \IQLRSS\Driver::get( 'slug' );
 		$this->key 		= \IQLRSS\Driver::get_ss_opt( 'api_key', '', true );
 		$this->skip_cache = (boolean)$skip_cache;
 		$this->cache_time = defined( 'WEEK_IN_SECONDS' ) ? WEEK_IN_SECONDS : 604800;
@@ -82,7 +84,7 @@ class Shipstation_Api  {
 	public function get_carrier( $carrier_code ) {
 
 		$trans_key = $this->prefix_key( 'carriers' );
-		$carriers = get_transient( $trans_key );
+		$carriers = ( ! $this->skip_cache ) ? get_transient( $trans_key ) : array();
 		$carrier = array();
 
 		// No carriers cached - prime cache
@@ -90,16 +92,20 @@ class Shipstation_Api  {
 			$carriers = $this->get_carriers();
 		}
 
-		// Return Early - Something went wrong getting carriers.
-		if( ! isset( $carriers[ $carrier_code ] ) ) {
+		// Return Early - Carrierror!
+		if( is_wp_error( $carriers ) ) {
+			return $this->log( $carriers );
+
+		// Return Early - Carrier not found.
+		} else if( ! isset( $carriers[ $carrier_code ] ) ) {
 			return $this->log( new \WP_Error( 400, esc_html__( 'Could not find carrier information.', 'live-rates-for-shipstation' ) ) );
 		}
 
 		$service_key = sprintf( '%s_%s_services', $trans_key, $carrier_code );
-		$services = get_transient( $service_key );
+		$services = ( ! $this->skip_cache ) ? get_transient( $service_key ) : array();
 
 		$package_key = sprintf( '%s_%s_packages', $trans_key, $carrier_code );
-		$packages = get_transient( $package_key );
+		$packages = ( ! $this->skip_cache ) ? get_transient( $package_key ) : array();
 
 		return array_merge( $carrier, array(
 			'carrier'	=> $carriers[ $carrier_code ],
@@ -127,11 +133,11 @@ class Shipstation_Api  {
 		}
 
 		$trans_key = $this->prefix_key( 'carriers' );
-		$carriers = get_transient( $trans_key );
+		$carriers = ( ! $this->skip_cache ) ? get_transient( $trans_key ) : array();
 		$data = array(
-			'carriers' => ( ! empty( $carriers ) && ! $this->skip_cache ) ? $carriers : array(),
-			'services' => array(),
-			'packages' => array(),
+			'carriers' => ( ! empty( $carriers ) ) ? $carriers : array(),
+			'services' => ( isset( $carriers['services'] ) ) ? $carriers['services'] : array(),
+			'packages' => ( isset( $carriers['packages'] ) ) ? $carriers['packages'] : array(),
 		);
 
 		if( empty( $data['carriers'] ) ) {
@@ -151,17 +157,17 @@ class Shipstation_Api  {
 			// We don't need all carrier data
 			foreach( $body['carriers'] as $carrier ) {
 
-				$data['carriers'][ $carrier['carrier_id'] ] = array_intersect_key( $carrier, array_flip( array(
+				$data['carriers'][ $carrier['carrier_id'] ] = $this->get_intersection( $carrier, array(
 					'carrier_id',
 					'carrier_code',
 					'account_number',
 					'nickname',
 					'friendly_name',
-				) ) );
+				) );
 
 				if( isset( $carrier['services'] ) ) {
 					foreach( $carrier['services'] as $service ) {
-						$data['services'][ $carrier['carrier_id'] ][] = array_intersect_key( $service, array_flip( array(
+						$data['services'][ $carrier['carrier_id'] ][] = $this->get_intersection( $service, array(
 							'carrier_id',
 							'carrier_code',
 							'service_code',
@@ -169,33 +175,44 @@ class Shipstation_Api  {
 							'domestic',
 							'international',
 							'is_multi_package_supported',
-						) ) );
+						) );
 					}
 				}
 
 				if( isset( $carrier['packages'] ) ) {
-					$data['packages'][ $carrier['carrier_id'] ] = $carrier['packages'];
+					foreach( $carrier['packages'] as $package ) {
+						$data['packages'][ $carrier['carrier_id'] ][] = $this->get_intersection( $package, array(
+							'package_id',
+							'package_code',
+							'name',
+							'dimensions',
+							'description',
+						) );
+					}
 				}
 			}
 
-			// Cache Carriers
-			if( ! empty( $data['carriers'] ) ) {
-				set_transient( $trans_key, $data['carriers'], $this->cache_time );
-			}
+			if( ! $this->skip_cache ) {
 
-			// Cache Services individually
-			if( ! empty( $data['services'] ) ) {
-				foreach( $data['services'] as $carrier_id => $service_arr ) {
-					$service_key = sprintf( '%s_%s_services', $trans_key, $carrier_id );
-					set_transient( $service_key, $service_arr, $this->cache_time );
+				// Cache Carriers
+				if( ! empty( $data['carriers'] ) ) {
+					set_transient( $trans_key, $data['carriers'], $this->cache_time );
 				}
-			}
 
-			// Cache Packages individually
-			if( ! empty( $data['packages'] ) ) {
-				foreach( $data['packages'] as $carrier_id => $package_arr ) {
-					$package_key = sprintf( '%s_%s_packages', $trans_key, $carrier_id );
-					set_transient( $package_key, $package_arr, $this->cache_time );
+				// Cache Services individually
+				if( ! empty( $data['services'] ) ) {
+					foreach( $data['services'] as $carrier_id => $service_arr ) {
+						$service_key = sprintf( '%s_%s_services', $trans_key, $carrier_id );
+						set_transient( $service_key, $service_arr, $this->cache_time );
+					}
+				}
+
+				// Cache Packages individually
+				if( ! empty( $data['packages'] ) ) {
+					foreach( $data['packages'] as $carrier_id => $package_arr ) {
+						$package_key = sprintf( '%s_%s_packages', $trans_key, $carrier_id );
+						set_transient( $package_key, $package_arr, $this->cache_time );
+					}
 				}
 			}
 		}
@@ -262,7 +279,7 @@ class Shipstation_Api  {
 	 */
 	public function convert_unit_term( $unit ) {
 
-		$known = array(
+		$terms = array(
 			'kg'	=> 'kilogram',
 			'g'		=> 'gram',
 			'lbs'	=> 'pound',
@@ -271,8 +288,21 @@ class Shipstation_Api  {
 			'in'	=> 'inch',
 		);
 
-		return ( isset( $known[ $unit ] ) ) ? $known[ $unit ] : $unit;
+		return ( isset( $terms[ $unit ] ) ) ? $terms[ $unit ] : $unit;
 
+	}
+
+
+	/**
+	 * Intersect array keys and return result.
+	 *
+	 * @param Array $arr
+	 * @param Array $keys
+	 *
+	 * @return Array $arr
+	 */
+	public function get_intersection( $arr, $keys ) {
+		return array_intersect_key( $arr, array_flip( $keys ) );
 	}
 
 
@@ -305,7 +335,7 @@ class Shipstation_Api  {
 			$req_args['body'] = wp_json_encode( $args );
 		}
 
-		$request = call_user_func( $callback, $endpoint_url, $req_args );
+		$request = call_user_func( $callback, esc_url( $endpoint_url ), $req_args );
 		$code = wp_remote_retrieve_response_code( $request );
 		$body = json_decode( wp_remote_retrieve_body( $request ), true );
 
@@ -374,7 +404,7 @@ class Shipstation_Api  {
 
 		return sprintf( '%s%s%s',
 			$this->prefix, // Plugin slug
-			preg_replace( '/[^-_]/', '', $sep ),
+			preg_replace( '/[^-_]/', '', (string)$sep ),
 			$key
 		);
 
