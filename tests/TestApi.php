@@ -2,11 +2,11 @@
 /**
  * Test the ShipStation API.
  *
- * @todo Update api cache / trans tests. 
+ * @todo Update api cache / trans tests.
  *
+ * :: Mock API Tests
  * :: No API Key
  * :: Utility Tests
- * :: Mock API Tests
  */
 namespace IQLRSS\Tests;
 use PHPUnit\Framework as PHPUnit;
@@ -37,6 +37,33 @@ class TestApi extends PHPUnit\TestCase {
 	protected function setUp(): void {
 
 		$this->api = new MockShipStationApi();
+
+	}
+
+
+
+	/* -------------------------------------------------------------------------------- **
+	 * :: Mock API Tests ::
+	** -------------------------------------------------------------------------------- */
+	/**
+	 * Ensure get_carriers() sets the proper transients.
+	 */
+	public function test_getCarrier() {
+
+		$data = $this->api->get_carrier( 'se-shipstation' );
+		$this->assertTrue( ! empty( $data['carrier'] ), 'Carrier empty.' );
+
+	}
+
+
+	/**
+	 * Ensure get_carriers() sets the proper transients.
+	 */
+	public function test_getCarriers() {
+
+		$data = $this->api->get_carriers();
+		$this->assertTrue( ! empty( $data ), 'Carriers empty.' );
+		$this->assertTrue( ! empty( $data['se-shipstation'] ), 'Carriers Carrier empty.' );
 
 	}
 
@@ -163,33 +190,6 @@ class TestApi extends PHPUnit\TestCase {
 		$mirrorMock->setAccessible( true );
 		$this->assertSame( 'iqlrss_foo', $mirrorMock->invoke( $coreApi, 'foo' ) );
 		$this->assertSame( 'iqlrss-foo', $mirrorMock->invoke( $coreApi, 'foo', '-' ) );
-
-	}
-
-
-
-	/* -------------------------------------------------------------------------------- **
-	 * :: Mock API Tests ::
-	** -------------------------------------------------------------------------------- */
-	/**
-	 * Ensure get_carriers() sets the proper transients.
-	 */
-	public function test_getCarrier() {
-
-		$data = $this->api->get_carrier( 'se-shipstation' );
-		$this->assertTrue( ! empty( $data['carrier'] ), 'Carrier empty.' );
-
-	}
-
-
-	/**
-	 * Ensure get_carriers() sets the proper transients.
-	 */
-	public function test_getCarriers() {
-
-		$data = $this->api->get_carriers();
-		$this->assertTrue( ! empty( $data ), 'Carriers empty.' );
-		$this->assertTrue( ! empty( $data['se-shipstation'] ), 'Carriers Carrier empty.' );
 
 	}
 
