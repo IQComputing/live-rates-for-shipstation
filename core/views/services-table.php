@@ -25,6 +25,7 @@ $global_adjustment = \IQLRSS\Driver::get_ss_opt( 'global_adjustment', '0', true 
 <tr valign="top" id="carrierServices">
 	<th scope="row" class="titledesc no-padleft"><?php esc_html_e( 'Services', 'live-rates-for-shipstation' ); ?></th>
 	<td class="forminp">
+		<p style="font-style:italic;"><?php esc_html_e( 'The more selected services, the longer the ShipStation API may take to respond.', 'live-rates-for-shipstation' ); ?></p>
 		<p style="margin:0 0 1.1em;font-style:italic;"><?php esc_html_e( 'If using ShipStation Carriers, be sure to activate any service(s) in ShipStation as well as enabling them below:', 'live-rates-for-shipstation' ); ?></p>
 		<table class="widefat nottoofat">
 			<thead>
@@ -104,8 +105,7 @@ $global_adjustment = \IQLRSS\Driver::get_ss_opt( 'global_adjustment', '0', true 
 							);
 
 							// Carrier Name
-							$service_carrier = $service_arr['carrier_name'];
-							printf( '<td><strong>%s</strong></td>', esc_html( $service_carrier ) );
+							printf( '<td><strong>%s</strong></td>', esc_html( $service_arr['carrier_name'] ) );
 
 						print( '</tr>' );
 
@@ -148,7 +148,7 @@ $global_adjustment = \IQLRSS\Driver::get_ss_opt( 'global_adjustment', '0', true 
 								);
 								printf( '<input type="hidden" name="%s" value="%s">',
 									esc_attr( $attr_name . '[carrier_name]' ),
-									esc_attr( $response['carrier']['friendly_name'] )
+									esc_attr( $response['carrier']['name'] )
 								);
 							print( '</td>' );
 
@@ -165,8 +165,7 @@ $global_adjustment = \IQLRSS\Driver::get_ss_opt( 'global_adjustment', '0', true 
 							);
 
 							// Carrier Name
-							$service_carrier = $response['carrier']['friendly_name'];
-							printf( '<td><strong>%s</strong></td>', esc_html( $service_carrier ) );
+							printf( '<td><strong>%s</strong></td>', esc_html( $response['carrier']['name'] ) );
 
 						print( '</tr>' );
 

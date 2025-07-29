@@ -249,7 +249,7 @@ Class Settings_Shipstation {
 						$settings[ $prefixed['key'] ] = $apikeys['new'];
 						update_option( $shipstation_opt_slug, $settings );
 
-						$shipStationAPI = new Shipstation_Api( true );
+						$shipStationAPI = new Shipstation_Api();
 						$carriers = $shipStationAPI->get_carriers();
 
 						// Error - Something went wrong, the API should let us know.
@@ -347,14 +347,12 @@ Class Settings_Shipstation {
 					'options'		=> ( function() { // Closure since it's only used once.
 
 						$carriers = array();
-						$shipStationAPI = new Shipstation_Api( true );
+						$shipStationAPI = new Shipstation_Api();
 						$response = $shipStationAPI->get_carriers();
 
 						if( ! is_a( $response, 'WP_Error' ) ) {
 							foreach( $response as $carrier ) {
-
-								$name = $carrier['friendly_name'];
-								$carriers[ $carrier['carrier_id'] ] = $name;
+								$carriers[ $carrier['carrier_id'] ] = $carrier['name'];
 							}
 						}
 

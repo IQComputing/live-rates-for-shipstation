@@ -60,7 +60,9 @@ class Shipstation_Api  {
 	 * @param String $skip_cache - Whether to skip a cache check.
 	 */
 	public function __construct( $skip_cache = false ) {
+	public function __construct( $skip_cache = false ) {
 
+		$this->prefix 	= \IQLRSS\Driver::get( 'slug' );
 		$this->prefix 	= \IQLRSS\Driver::get( 'slug' );
 		$this->key 		= \IQLRSS\Driver::get_ss_opt( 'api_key', '', true );
 		$this->skip_cache = (boolean)$skip_cache;
@@ -250,14 +252,24 @@ class Shipstation_Api  {
 			// Sometimes rates can be cost $0, which isn't right - skip them.
 			if( $rate['shipping_amount']['amount'] <= 0 ) continue;
 
-			$data[] = array(
-				'name'			=> $rate['service_type'],
-				'code'			=> $rate['service_code'],
-				'cost'			=> $rate['shipping_amount']['amount'],
-				'currency'		=> $rate['shipping_amount']['currency'],
-				'carrier_code'	=> $rate['carrier_id'],
-				'carrier_name'	=> $rate['carrier_nickname'],
+			$est = array(
+				'name'					=> $rate['service_type'],
+				'code'					=> $rate['service_code'],
+				'cost'					=> $rate['shipping_amount']['amount'],
+				'currency'				=> $rate['shipping_amount']['currency'],
+				'carrier_code'			=> $rate['carrier_id'],
+				'carrier_nickname'		=> $rate['carrier_nickname'],
+				'carrier_friendly_name'	=> $rate['carrier_friendly_name'],
+				'carrier_name'			=> $rate['carrier_friendly_name'],
 			);
+
+			// Denote Manual Connected Carrier.
+			if( ! empty( $est['carrier_nickname'] ) && ! is_numeric( $est['carrier_nickname'] ) ) {
+				$est['carrier_name'] .= ' ' . esc_html__( '(Manual)', 'live-rates-for-shipstation' );
+			}
+
+			$data[] = $est;
+
 		}
 
 		return $data;
@@ -335,6 +347,7 @@ class Shipstation_Api  {
 			$req_args['body'] = wp_json_encode( $args );
 		}
 
+		$request = call_user_func( $callback, esc_url( $endpoint_url ), $req_args );
 		$request = call_user_func( $callback, esc_url( $endpoint_url ), $req_args );
 		$code = wp_remote_retrieve_response_code( $request );
 		$body = json_decode( wp_remote_retrieve_body( $request ), true );
