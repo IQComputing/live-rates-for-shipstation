@@ -419,7 +419,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				$cost = $shiprate['cost'];
 
 				// Apply service upcharge
-				if( isset( $service_arr['adjustment'] ) && $service_arr['adjustment'] >= 0 ) {
+				if( isset( $service_arr['adjustment'] ) && $service_arr['adjustment'] > 0 ) {
 
 					$adjustment = floatval( $saved_services[ $shiprate['carrier_code'] ]['adjustment'] );
 					$cost += ( $adjustment > 0 ) ? ( $cost * ( $adjustment / 100 ) ) : 0;
