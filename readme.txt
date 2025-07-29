@@ -48,5 +48,5 @@ Please review [ShipStations Terms of Service](https://www.shipstation.com/terms-
 
 == Changelog ==
 
-= 1.0.0 (0000-00-00) =
+= 1.0.0 (2025-07-28) =
 * Initial release

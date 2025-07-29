@@ -4,7 +4,7 @@ This is a brief text document keeping track of changes to the plugin. For a full
 
 = 1.0.0 =
 
-Release Date: X 00, 0000
+Release Date: July 28, 2025
 
 * Overview
 	* Initial release.
