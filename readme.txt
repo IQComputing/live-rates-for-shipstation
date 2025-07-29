@@ -28,14 +28,14 @@ Please review [ShipStations Terms of Service](https://www.shipstation.com/terms-
 
 == IQComputing ==
 
-* Like us on [Facebook](https://www.facebook.com/iqcomputing/ "IQComputing on Facebook")
-* Follow us on [Twitter](https://twitter.com/iqcomputing/ "IQComputing on Twitter")
-* Fork on [Github](https://github.com/IQComputing/live-rates-for-shipstation "IQComputing on Github")
+* Like us on [Facebook](https://www.facebook.com/iqcomputing)
+* Follow us on [Twitter](https://twitter.com/iqcomputing/)
+* Fork on [Github](https://github.com/IQComputing/live-rates-for-shipstation)
 
 == Installation ==
 
-[ShipStation for WooCommerce](https://woocommerce.com/products/shipstation-integration/) "ShipStation for WooCommerce plugin page") is a required plugin.
-[WooCommerce](https://wordpress.org/plugins/woocommerce/ "WooCommerce plugin page") is a required plugin.
+[ShipStation for WooCommerce](https://woocommerce.com/products/shipstation-integration/) is a required plugin.
+[WooCommerce](https://wordpress.org/plugins/woocommerce/) is a required plugin.
 
 1. Ensure that the WooCommerce plugin is installed and active.
 1. Ensure that the ShipStation for WooCommerce plugin is installed and active.
