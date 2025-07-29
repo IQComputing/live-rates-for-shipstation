@@ -56,10 +56,12 @@ class Shipstation_Api  {
 
 	/**
 	 * Setup API
+	 *
+	 * @param Boolean $skip_cache
 	 */
-	public function __construct( $key_prefix, $skip_cache = false ) {
+	public function __construct( $skip_cache = false ) {
 
-		$this->prefix 	= (string)$key_prefix;
+		$this->prefix 	= \IQLRSS\Driver::get( 'slug' );
 		$this->key 		= \IQLRSS\Driver::get_ss_opt( 'api_key', '', true );
 		$this->skip_cache = (boolean)$skip_cache;
 		$this->cache_time = defined( 'WEEK_IN_SECONDS' ) ? WEEK_IN_SECONDS : 604800;
@@ -90,8 +92,12 @@ class Shipstation_Api  {
 			$carriers = $this->get_carriers();
 		}
 
+		// Return Early - Carrierror!
+		if( is_wp_error( $carriers ) ) {
+			return $this->log( $carriers );
+
 		// Return Early - Something went wrong getting carriers.
-		if( ! isset( $carriers[ $carrier_code ] ) ) {
+		} else if( ! isset( $carriers[ $carrier_code ] ) ) {
 			return $this->log( new \WP_Error( 400, esc_html__( 'Could not find carrier information.', 'live-rates-for-shipstation' ) ) );
 		}
 
@@ -159,7 +165,13 @@ class Shipstation_Api  {
 					'friendly_name',
 				) ) );
 
-				$data['carriers'][ $carrier['carrier_id'] ]['is_shipstation'] = (boolean)$carrier['requires_funded_amount'];
+				$data['carriers'][ $carrier['carrier_id'] ]['is_shipstation'] 	= ( ! empty( $carrier['nickname'] ) && is_numeric( $carrier['nickname'] ) );
+				$data['carriers'][ $carrier['carrier_id'] ]['name'] 			= $data['carriers'][ $carrier['carrier_id'] ]['friendly_name'];
+
+				// Denote Manual Connected Carrier.
+				if( ! $data['carriers'][ $carrier['carrier_id'] ]['is_shipstation'] ) {
+					$data['carriers'][ $carrier['carrier_id'] ]['name'] .= ' ' . esc_html__( '(Manual)', 'live-rates-for-shipstation' );
+				}
 
 				if( isset( $carrier['services'] ) ) {
 					foreach( $carrier['services'] as $service ) {
@@ -210,7 +222,8 @@ class Shipstation_Api  {
 	/**
 	 * Return an array of avaialble rates by a carrier.
 	 *
-	 * @link https://docs.shipstation.com/openapi/rates/estimate_rates
+	 * @note ShipStation does have a /rates/ endpoint, but it requires the customers address_line1
+	 * In addition, it really is not much faster than the rates/estimate endpoint.
 	 *
 	 * @param Array $est_opts
 	 *
@@ -225,30 +238,33 @@ class Shipstation_Api  {
 			return $body;
 		}
 
-		/**
-		 * Response keys to consider:
-		 * $rate['validation_status'] ('unknown'|)
-		 * $rate['warning_messages'] (Array(String))
-		 * $rate['error_messages'] (Array(String))
-		 *
-		 * Both based on $est_opts['ship_date']:
-		 * $rate['estimated_delivery_date'] (Y-m-d)
-		 * $rate['carrier_delivery_days'] (Y-m-d)
-		 * $rate['delivery_days'] (Integer)
-		 */
 		$data = array();
 		foreach( $body as $rate ) {
 
+			// Sometimes rates come with error messages - skip them.
 			if( ! empty( $rate['error_messages'] ) ) continue;
 
-			$data[] = array(
-				'name'			=> $rate['service_type'],
-				'code'			=> $rate['service_code'],
-				'cost'			=> $rate['shipping_amount']['amount'],
-				'currency'		=> $rate['shipping_amount']['currency'],
-				'carrier_code'	=> $rate['carrier_id'],
-				'carrier_name'	=> $rate['carrier_nickname'],
+			// Sometimes rates can be cost $0, which isn't right - skip them.
+			if( $rate['shipping_amount']['amount'] <= 0 ) continue;
+
+			$est = array(
+				'name'					=> $rate['service_type'],
+				'code'					=> $rate['service_code'],
+				'cost'					=> $rate['shipping_amount']['amount'],
+				'currency'				=> $rate['shipping_amount']['currency'],
+				'carrier_code'			=> $rate['carrier_id'],
+				'carrier_nickname'		=> $rate['carrier_nickname'],
+				'carrier_friendly_name'	=> $rate['carrier_friendly_name'],
+				'carrier_name'			=> $rate['carrier_friendly_name'],
 			);
+
+			// Denote Manual Connected Carrier.
+			if( ! empty( $est['carrier_nickname'] ) && ! is_numeric( $est['carrier_nickname'] ) ) {
+				$est['carrier_name'] .= ' ' . esc_html__( '(Manual)', 'live-rates-for-shipstation' );
+			}
+
+			$data[] = $est;
+
 		}
 
 		return $data;
@@ -310,10 +326,10 @@ class Shipstation_Api  {
 		);
 
 		if( ! empty( $args ) && is_array( $args ) ) {
-			$req_args['body'] = json_encode( $args );
+			$req_args['body'] = wp_json_encode( $args );
 		}
 
-		$request = call_user_func( $callback, $endpoint_url, $req_args );
+		$request = call_user_func( $callback, esc_url( $endpoint_url ), $req_args );
 		$code = wp_remote_retrieve_response_code( $request );
 		$body = json_decode( wp_remote_retrieve_body( $request ), true );
 
@@ -381,7 +397,7 @@ class Shipstation_Api  {
 	protected function prefix_key( $key, $sep = '_' ) {
 
 		return sprintf( '%s%s%s',
-			$this->prefix,
+			$this->prefix, // Plugin slug
 			preg_replace( '/[^-_]/', '', $sep ),
 			$key
 		);
