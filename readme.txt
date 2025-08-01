@@ -48,5 +48,9 @@ Please review [ShipStations Terms of Service](https://www.shipstation.com/terms-
 
 == Changelog ==
 
+= 1.0.1 (2025-08-01) =
+* Patches an issue with Individual Shipping Requests (thanks @dpkonofa !).
+* Attempt to discern ShipStation Carriers from Manually Connected Carriers.
+
 = 1.0.0 (2025-07-28) =
 * Initial release
