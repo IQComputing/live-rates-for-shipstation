@@ -161,7 +161,7 @@ class Shipstation_Api  {
 					'friendly_name',
 				) ) );
 
-				$data['carriers'][ $carrier['carrier_id'] ]['is_shipstation'] 	= ( ! empty( $carrier['nickname'] ) && is_numeric( $carrier['nickname'] ) );
+				$data['carriers'][ $carrier['carrier_id'] ]['is_shipstation'] 	= ( ! empty( $carrier['primary'] ) );
 				$data['carriers'][ $carrier['carrier_id'] ]['name'] 			= $data['carriers'][ $carrier['carrier_id'] ]['friendly_name'];
 
 				// Denote Manual Connected Carrier.
