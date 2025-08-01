@@ -254,11 +254,6 @@ class Shipstation_Api  {
 				'carrier_name'			=> $rate['carrier_friendly_name'],
 			);
 
-			// Denote Manual Connected Carrier.
-			if( ! empty( $est['carrier_nickname'] ) && ! is_numeric( $est['carrier_nickname'] ) ) {
-				$est['carrier_name'] .= ' ' . esc_html__( '(Manual)', 'live-rates-for-shipstation' );
-			}
-
 			$data[] = $est;
 
 		}
