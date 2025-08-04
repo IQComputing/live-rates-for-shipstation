@@ -3,6 +3,7 @@
 <img src=".wordpress-org/icon-256x256.png" align="right" width="100" height="100">
 
 [![IQComputing](https://img.shields.io/badge/Computing-0067ae?label=IQ)](https://iqcomputing.com)
+[![Plugin Version](https://img.shields.io/wordpress/plugin/v/live-rates-for-shipstation.svg?style=flat-square)](https://wordpress.org/plugins/live-rates-for-shipstation/)
 
 Live Rates for ShipStation is a free Open Source plugin that works with [ShipStation](https://www.shipstation.com/) and [WooCommerce](https://woocommerce.com/) to pull in shipping estimates from the most common shipping providers.
 

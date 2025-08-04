@@ -3,7 +3,7 @@ Contributors: iqcomputing
 Tags: woocommerce, shipstation, usps, ups, fedex
 Requires at least: 5.9
 Tested up to: 6.8
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -28,14 +28,14 @@ Please review [ShipStations Terms of Service](https://www.shipstation.com/terms-
 
 == IQComputing ==
 
-* Like us on [Facebook](https://www.facebook.com/iqcomputing/ "IQComputing on Facebook")
-* Follow us on [Twitter](https://twitter.com/iqcomputing/ "IQComputing on Twitter")
-* Fork on [Github](https://github.com/IQComputing/live-rates-for-shipstation "IQComputing on Github")
+* Like us on [Facebook](https://www.facebook.com/iqcomputing)
+* Follow us on [Twitter](https://twitter.com/iqcomputing/)
+* Fork on [Github](https://github.com/IQComputing/live-rates-for-shipstation)
 
 == Installation ==
 
-[ShipStation for WooCommerce](https://woocommerce.com/products/shipstation-integration/) "ShipStation for WooCommerce plugin page") is a required plugin.
-[WooCommerce](https://wordpress.org/plugins/woocommerce/ "WooCommerce plugin page") is a required plugin.
+[ShipStation for WooCommerce](https://woocommerce.com/products/shipstation-integration/) is a required plugin.
+[WooCommerce](https://wordpress.org/plugins/woocommerce/) is a required plugin.
 
 1. Ensure that the WooCommerce plugin is installed and active.
 1. Ensure that the ShipStation for WooCommerce plugin is installed and active.
@@ -48,5 +48,9 @@ Please review [ShipStations Terms of Service](https://www.shipstation.com/terms-
 
 == Changelog ==
 
-= 1.0.0 (0000-00-00) =
+= 1.0.1 (2025-08-01) =
+* Patches an issue with Individual Shipping Requests (thanks @dpkonofa !).
+* Attempt to discern ShipStation Carriers from Manually Connected Carriers.
+
+= 1.0.0 (2025-07-28) =
 * Initial release

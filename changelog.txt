@@ -2,9 +2,23 @@
 
 This is a brief text document keeping track of changes to the plugin. For a full history, see the Github Repository.
 
+= 1.0.1 =
+
+Relase Date: August 01, 2025
+
+* Overview
+	* Patches an issue where the individual requests method would not return their requests back to the shipping method.
+		* Shoutout to .org user @dpkonofa for their assistance in debugging this issue!
+	* Tries another method to discern ShipStation Core Carriers from Manually Connected Carriers using the `primary` carrier property.
+		* ShipStation suggests the `balance` flag should be empty for Manually Connected Carriers, but we find that this is not always the case.
+
+* Code Updates
+	* \IQLRSS\Core\Shipping_Method_Shipstation::get_individual_requests() now returns it's request array.
+	* \IQLRSS\Core\Shipstation_Api::get_carriers() `is_shipstation` value discerned using `primary` Carrier API property.
+
 = 1.0.0 =
 
-Release Date: X 00, 0000
+Release Date: July 28, 2025
 
 * Overview
 	* Initial release.

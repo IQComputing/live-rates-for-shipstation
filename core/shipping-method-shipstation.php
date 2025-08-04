@@ -557,6 +557,8 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 		}
 
+		return $item_requests;
+
 	}
 
 

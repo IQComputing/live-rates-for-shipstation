@@ -165,7 +165,7 @@ class Shipstation_Api  {
 					'friendly_name',
 				) ) );
 
-				$data['carriers'][ $carrier['carrier_id'] ]['is_shipstation'] 	= ( ! empty( $carrier['nickname'] ) && is_numeric( $carrier['nickname'] ) );
+				$data['carriers'][ $carrier['carrier_id'] ]['is_shipstation'] 	= ( ! empty( $carrier['primary'] ) );
 				$data['carriers'][ $carrier['carrier_id'] ]['name'] 			= $data['carriers'][ $carrier['carrier_id'] ]['friendly_name'];
 
 				// Denote Manual Connected Carrier.
@@ -257,11 +257,6 @@ class Shipstation_Api  {
 				'carrier_friendly_name'	=> $rate['carrier_friendly_name'],
 				'carrier_name'			=> $rate['carrier_friendly_name'],
 			);
-
-			// Denote Manual Connected Carrier.
-			if( ! empty( $est['carrier_nickname'] ) && ! is_numeric( $est['carrier_nickname'] ) ) {
-				$est['carrier_name'] .= ' ' . esc_html__( '(Manual)', 'live-rates-for-shipstation' );
-			}
 
 			$data[] = $est;
 
