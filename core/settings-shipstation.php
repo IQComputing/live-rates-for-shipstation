@@ -41,6 +41,7 @@ Class Settings_Shipstation {
 		add_action( 'admin_enqueue_scripts',					array( $this, 'enqueue_admin_assets' ) );
 		add_action( 'woocommerce_cart_totals_after_order_total',array( $this, 'display_cart_weight' ) ) ;
 		add_action( 'rest_api_init',							array( $this, 'api_actions_endpoint' ) );
+		add_action( 'woocommerce_update_option',				array( $this, 'clear_cache_on_update' ) );
 
 	}
 
@@ -179,8 +180,6 @@ Class Settings_Shipstation {
 			'permission_callback' => fn() => is_user_logged_in(),
 			'callback' => function( $request ) {
 
-				global $wpdb;
-
 				$params = $request->get_params();
 				if( ! isset( $params['action'] ) || empty( $params['action'] ) ) {
 					wp_send_json_error();
@@ -191,22 +190,8 @@ Class Settings_Shipstation {
 					// Clear the API Caches
 					case 'clearcache':
 
-						/**
-						 * The API Class creates various transients to cache carrier services.
-						 * These transients are not tracked but generated based on the responses carrier codes.
-						 * All these transients are prefixed with our plugins unique string slug.
-						 * The first WHERE ensures only `_transient_` and the 2nd ensures only our plugins transients.
-						 */
-						$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s AND option_name LIKE %s",
-							$wpdb->esc_like( '_transient_' ) . '%',
-							'%' . $wpdb->esc_like( '_' . \IQLRSS\Driver::get( 'slug' ) . '_' ) . '%'
-						) );
-
-						// Set transient to clear any WC_Session caches if they are found.
-						$time = absint( apply_filters( 'wc_session_expiration', DAY_IN_SECONDS * 2 ) );
-						set_transient( \IQLRSS\Driver::plugin_prefix( 'wcs_timeout' ), time(), $time );
-
 						// Success!
+						$this->clear_cache();
 						wp_send_json_success();
 
 					break;
@@ -282,6 +267,51 @@ Class Settings_Shipstation {
 	}
 
 
+	/**
+	 * Clear the API cache.
+	 *
+	 * @return void
+	 */
+	public function clear_cache() {
+
+		global $wpdb;
+
+		/**
+		 * The API Class creates various transients to cache carrier services.
+		 * These transients are not tracked but generated based on the responses carrier codes.
+		 * All these transients are prefixed with our plugins unique string slug.
+		 * The first WHERE ensures only `_transient_` and the 2nd ensures only our plugins transients.
+		 */
+		$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s AND option_name LIKE %s",
+			$wpdb->esc_like( '_transient_' ) . '%',
+			'%' . $wpdb->esc_like( '_' . \IQLRSS\Driver::get( 'slug' ) . '_' ) . '%'
+		) );
+
+		// Set transient to clear any WC_Session caches if they are found.
+		$time = absint( apply_filters( 'wc_session_expiration', DAY_IN_SECONDS * 2 ) );
+		set_transient( \IQLRSS\Driver::plugin_prefix( 'wcs_timeout' ), time(), $time );
+
+	}
+
+
+	/**
+	 * Clear the cache whenever the Integration settings have been updated.
+	 *
+	 * @param Array $args
+	 *
+	 * @return void
+	 */
+	public function clear_cache_on_update( $args ) {
+
+		if( ! isset( $args['id'] ) || false === strpos( $args['id'], 'shipstation' ) ) {
+			return;
+		}
+
+		$this->clear_cache();
+
+	}
+
+
 
 	/**------------------------------------------------------------------------------------------------ **/
 	/** :: Filter Hooks :: **/
@@ -326,6 +356,16 @@ Class Settings_Shipstation {
 		$appended_fields = array();
 		$carrier_desc = esc_html__( 'Select which ShipStation carriers you would like to see live shipping rates from.', 'live-rates-for-shipstation' );
 
+		$carriers = array();
+		$shipStationAPI = new Shipstation_Api();
+		$response = $shipStationAPI->get_carriers();
+
+		if( ! is_a( $response, 'WP_Error' ) ) {
+			foreach( $response as $carrier ) {
+				$carriers[ $carrier['carrier_id'] ] = $carrier['name'];
+			}
+		}
+
 		foreach( $fields as $key => $field ) {
 
 			$appended_fields[ $key ] = $field;
@@ -344,21 +384,7 @@ Class Settings_Shipstation {
 					'title'			=> esc_html__( 'Shipping Carriers', 'live-rates-for-shipstation' ),
 					'type'			=> 'multiselect',
 					'class'			=> 'chosen_select',
-					'options'		=> ( function() { // Closure since it's only used once.
-
-						$carriers = array();
-						$shipStationAPI = new Shipstation_Api();
-						$response = $shipStationAPI->get_carriers();
-
-						if( ! is_a( $response, 'WP_Error' ) ) {
-							foreach( $response as $carrier ) {
-								$carriers[ $carrier['carrier_id'] ] = $carrier['name'];
-							}
-						}
-
-						return $carriers;
-
-					} )(),
+					'options'		=> $carriers,
 					'description'	=> $carrier_desc,
 					'desc_tip'		=> esc_html__( 'Services from selected carriers will be available when setting up Shipping Zones.', 'live-rates-for-shipstation' ),
 					'default'		=> '',
