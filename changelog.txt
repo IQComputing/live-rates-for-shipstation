@@ -2,6 +2,18 @@
 
 This is a brief text document keeping track of changes to the plugin. For a full history, see the Github Repository.
 
+= 1.0.3 =
+
+Relase Date: August 05, 2025
+
+* Overview
+	* Patches an issue where the Shipping Method would not display due to not being supported.
+		* Shoutout to .org user @sportswreathshop for reporting this issue!
+
+* Code Updates
+	* \IQLRSS\Core\Shipping_Method_Shipstation::__construct()
+		* Shipping Method support conditional has been updated to check against the objects carriers.
+
 = 1.0.2 =
 
 Relase Date: August 04, 2025
