@@ -82,7 +82,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		$saved_key = \IQLRSS\Driver::get_ss_opt( 'api_key_valid', false, true );
 
 		// Only show in Shipping Zones if API Key is invalid.
-		if( ! empty( $saved_key ) && ! empty( $saved_carriers ) ) {
+		if( ! empty( $saved_key ) && ! empty( $this->carriers ) ) {
 			$this->supports[] = 'shipping-zones';
 		}
 
