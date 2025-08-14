@@ -24,24 +24,33 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 
 	/**
+	 * Array of expected dimension keys (width, height, length, weight)
+	 *
+	 * @var Array
+	 */
+	protected $dimension_keys = array(
+		'width'		=> 'width',
+		'height'	=> 'height',
+		'length'	=> 'length',
+		'weight'	=> 'weight',
+	);
+
+
+	/**
+	 * Array of global carriers
+	 * There are the carriers saved in Integration settings.
+	 *
+	 * @var Array
+	 */
+	protected $carriers = array();
+
+
+	/**
 	 * ShipStation API Helper Class
 	 *
 	 * @var Object
 	 */
-	protected $shipStationApi;
-
-
-	/**
-	 * Array store specfiic data
-	 * WooCommerce => ShipStation
-	 * `lbs` to `pounds`
-	 *
-	 * @var Array
-	 */
-	protected $store = array(
-		'weight_unit' => 'lbs',
-		'dim_unit'	  => 'in',
-	);
+	protected $shipStationApi = null;
 
 
 	/**
@@ -69,10 +78,11 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		$this->method_description 	= esc_html__( 'Get live shipping rates from all ShipStation supported carriers.', 'live-rates-for-shipstation' );
 		$this->supports 			= array( 'instance-settings' );
 
-		// Only show in Shipping Zones if API Key is invalid and we have carriers.
-		$valid_key 		= \IQLRSS\Driver::get_ss_opt( 'api_key_valid', false, true );
-		$saved_carriers = \IQLRSS\Driver::get_ss_opt( 'carriers', array(), true );
-		if( $valid_key && ! empty( $saved_carriers ) ) {
+		$this->carriers = \IQLRSS\Driver::get_ss_opt( 'carriers', array(), true );
+		$saved_key = \IQLRSS\Driver::get_ss_opt( 'api_key_valid', false, true );
+
+		// Only show in Shipping Zones if API Key is invalid.
+		if( ! empty( $saved_key ) && ! empty( $this->carriers ) ) {
 			$this->supports[] = 'shipping-zones';
 		}
 
@@ -87,6 +97,19 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 		add_action( 'woocommerce_update_options_shipping_' . $this->id, array( $this, 'process_admin_options' ) );
 		add_filter( 'http_request_timeout', array( $this, 'increase_request_timeout' ) );
+
+	}
+
+
+	/**
+	 * Clear cache whenever settings are updated.
+	 *
+	 * @return Boolean
+	 */
+	public function process_admin_options() {
+
+		( new \IQLRSS\Core\Settings_Shipstation() )->clear_cache();
+		return parent::process_admin_options();
 
 	}
 
@@ -121,8 +144,6 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 * @return void
 	 */
 	protected function init_instance_form_fields() {
-
-		$global_adjustment = \IQLRSS\Driver::get_ss_opt( 'global_adjustment', '0', true );
 
 		$this->instance_form_fields = array(
 			'title' => array(
@@ -349,8 +370,12 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			return;
 		}
 
-		$global_upcharge = floatval( \IQLRSS\Driver::get_ss_opt( 'global_adjustment', 0, true ) );
 		$saved_carriers = array_keys( $saved_services );
+		if( ! empty( $saved_carriers ) && ! empty( $this->carriers ) ) {
+			$saved_carriers = array_values( array_intersect( $saved_carriers, $this->carriers ) );
+		}
+
+		$global_upcharge = floatval( \IQLRSS\Driver::get_ss_opt( 'global_adjustment', 0, true ) );
 		$packing_type 	= $this->get_option( 'packing', 'individual' );
 		$request = array(
 			'from_country_code'	 => WC()->countries->get_base_country(),
@@ -439,7 +464,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				// Create the WooCommerce rate Array.
 				$rate = array(
 					'id'		=> $shiprate['code'],
-					'label'		=> $shiprate['carrier_name'] . ' - ' . $shiprate['name'],
+					'label'		=> sprintf( '%s (%s)', $shiprate['name'], $shiprate['carrier_name'] ),
 					'package'	=> $packages,
 					'meta_data' => array(
 						'dimensions'	=> $req['dimensions'],

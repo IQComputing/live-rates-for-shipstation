@@ -3,7 +3,7 @@ Contributors: iqcomputing
 Tags: woocommerce, shipstation, usps, ups, fedex
 Requires at least: 5.9
 Tested up to: 6.8
-Stable tag: 1.0.1
+Stable tag: 1.0.3
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -47,6 +47,12 @@ Please review [ShipStations Terms of Service](https://www.shipstation.com/terms-
 1. From here you can setup custom boxes and select which services from the previously selected carriers you would like to make available for the selected shipping zone.
 
 == Changelog ==
+
+= 1.0.3 (2025-08-05) =
+* Patches an issue with Shipping Method availability (Thanks to @sportswreathshop for reporting!)
+
+= 1.0.2 (2025-08-04) =
+* Refines API caching that clears on settings save (thanks again to @dpkonofa for test/reporting!).
 
 = 1.0.1 (2025-08-01) =
 * Patches an issue with Individual Shipping Requests (thanks @dpkonofa !).
