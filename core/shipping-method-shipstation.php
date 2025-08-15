@@ -37,6 +37,17 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 
 	/**
+	 * Array of store specific settings.
+	 * 
+	 * @var Array
+	 */
+	protected $store_data = array(
+		'weight_unit'	=> '',
+		'dim_unit'		=> '', // Dimension
+	);
+
+
+	/**
 	 * Array of global carriers
 	 * There are the carriers saved in Integration settings.
 	 *
@@ -87,9 +98,9 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		}
 
 		// Set the store unit term and associate it with ShipStations term.
-		$this->store = array(
-			'weight_unit' 	=> get_option( 'woocommerce_weight_unit', $this->store['weight_unit'] ),
-			'dim_unit'		=> get_option( 'woocommerce_dimension_unit', $this->store['dim_unit'] ),
+		$this->store_data = array(
+			'weight_unit' 	=> get_option( 'woocommerce_weight_unit', $this->store_data['weight_unit'] ),
+			'dim_unit'		=> get_option( 'woocommerce_dimension_unit', $this->store_data['dim_unit'] ),
 		);
 
 		$this->init_instance_form_fields();
@@ -563,8 +574,8 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			}
 
 			$request['weight'] = array(
-				'value' => (float)round( wc_get_weight( $physicals['weight'], $this->store['weight_unit'] ), 2 ),
-				'unit'	=> $this->shipStationApi->convert_unit_term( $this->store['weight_unit'] ),
+				'value' => (float)round( wc_get_weight( $physicals['weight'], $this->store_data['weight_unit'] ), 2 ),
+				'unit'	=> $this->shipStationApi->convert_unit_term( $this->store_data['weight_unit'] ),
 			);
 
 			// Unset weight and sort dimensions
@@ -572,10 +583,10 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			sort( $physicals );
 
 			$request['dimensions'] = array(
-				'length'	=> round( wc_get_dimension( $physicals[2], $this->store['dim_unit'] ), 2 ),
-				'width'		=> round( wc_get_dimension( $physicals[1], $this->store['dim_unit'] ), 2 ),
-				'height'	=> round( wc_get_dimension( $physicals[0], $this->store['dim_unit'] ), 2 ),
-				'unit'		=> $this->shipStationApi->convert_unit_term( $this->store['dim_unit'] ),
+				'length'	=> round( wc_get_dimension( $physicals[2], $this->store_data['dim_unit'] ), 2 ),
+				'width'		=> round( wc_get_dimension( $physicals[1], $this->store_data['dim_unit'] ), 2 ),
+				'height'	=> round( wc_get_dimension( $physicals[0], $this->store_data['dim_unit'] ), 2 ),
+				'unit'		=> $this->shipStationApi->convert_unit_term( $this->store_data['dim_unit'] ),
 			);
 
 			$item_requests[ $item_id ] = $request;
@@ -651,16 +662,16 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				return array();
 			}
 
-			$data['weight'] = (float)round( wc_get_weight( $physicals['weight'], $this->store['weight_unit'] ), 2 );
+			$data['weight'] = (float)round( wc_get_weight( $physicals['weight'], $this->store_data['weight_unit'] ), 2 );
 
 			// Unset weight to exclude it from sort
 			unset( $physicals['weight'] );
 			sort( $physicals );
 
 			$data = array(
-				'length'	=> round( wc_get_dimension( $physicals[2], $this->store['dim_unit'] ), 2 ),
-				'width'		=> round( wc_get_dimension( $physicals[1], $this->store['dim_unit'] ), 2 ),
-				'height'	=> round( wc_get_dimension( $physicals[0], $this->store['dim_unit'] ), 2 ),
+				'length'	=> round( wc_get_dimension( $physicals[2], $this->store_data['dim_unit'] ), 2 ),
+				'width'		=> round( wc_get_dimension( $physicals[1], $this->store_data['dim_unit'] ), 2 ),
+				'height'	=> round( wc_get_dimension( $physicals[0], $this->store_data['dim_unit'] ), 2 ),
 			) + $data;
 
 			for( $i = 0; $i < $item['quantity']; $i++ ) {
@@ -685,13 +696,13 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			$item_requests[] = array(
 				'weight' => array(
 					'value' => $package->weight,
-					'unit'	=> $this->shipStationApi->convert_unit_term( $this->store['weight_unit'] ),
+					'unit'	=> $this->shipStationApi->convert_unit_term( $this->store_data['weight_unit'] ),
 				),
 				'dimensions' => array(
 					'length'	=> $package->length,
 					'width'		=> $package->width,
 					'height'	=> $package->height,
-					'unit'		=> $this->shipStationApi->convert_unit_term( $this->store['dim_unit'] ),
+					'unit'		=> $this->shipStationApi->convert_unit_term( $this->store_data['dim_unit'] ),
 				),
 			);
 
