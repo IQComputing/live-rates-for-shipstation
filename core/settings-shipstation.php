@@ -288,8 +288,8 @@ Class Settings_Shipstation {
 		) );
 
 		// Set transient to clear any WC_Session caches if they are found.
-		$time = absint( apply_filters( 'wc_session_expiration', DAY_IN_SECONDS * 2 ) );
-		set_transient( \IQLRSS\Driver::plugin_prefix( 'wcs_timeout' ), time(), $time );
+		$expires = absint( apply_filters( 'wc_session_expiration', DAY_IN_SECONDS * 2 ) );
+		set_transient( \IQLRSS\Driver::plugin_prefix( 'wcs_timeout' ), time(), $expires );
 
 	}
 
@@ -325,6 +325,7 @@ Class Settings_Shipstation {
 
 		add_filter( 'woocommerce_shipping_methods',							array ($this, 'append_shipstation_method' ) );
 		add_filter( 'woocommerce_settings_api_form_fields_shipstation',		array( $this, 'append_shipstation_integration_settings' ) );
+		add_filter( 'woocommerce_shipstation_export_get_order',				array( $this, 'export_shipstation_shipping_method' ) );
 
 	}
 
@@ -426,6 +427,27 @@ Class Settings_Shipstation {
 		}
 
 		return $appended_fields;
+
+	}
+
+
+	/**
+	 * Update the WC_Order Shipping Method to match the ShipStation Carrier.
+	 * Ex. USPSPriorityMail
+	 * 
+	 * @link https://help.shipstation.com/hc/en-us/articles/360025856192-Custom-Store-Development-Guide
+	 * 
+	 * @param WC_Order $order
+	 * 
+	 * @return WC_Order $order
+	 */
+	public function export_shipstation_shipping_method( $order ) {
+
+		if( ! is_a( 'WC_Order', $order ) ) {
+			return $order;
+		}
+
+		return $order;
 
 	}
 
