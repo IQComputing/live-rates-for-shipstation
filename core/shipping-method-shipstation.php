@@ -38,7 +38,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 	/**
 	 * Array of store specific settings.
-	 * 
+	 *
 	 * @var Array
 	 */
 	protected $store_data = array(
@@ -480,7 +480,9 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					'meta_data' => array(
 						'dimensions'	=> $req['dimensions'],
 						'weight'	 	=> $req['weight'],
+						'service_name'	=> $shiprate['name'],
 						'carrier_code'	=> $shiprate['carrier_code'],
+						'carrier_name'	=> $shiprate['carrier_name'],
 					),
 				);
 
