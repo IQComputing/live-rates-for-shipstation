@@ -3,6 +3,8 @@
  *
  * Not really meant to be used as an object but more for
  * encapsulation and organization.
+ * 
+ * @todo Populate (or recreate) Carriers Select2 whenever API is verified.
  *
  * @global {Object} iqlrss - Localized object of saved values.
  */
@@ -33,7 +35,7 @@ export class shipStationSettings {
 		this.verificationRequiredCheck( $button );
 
 		this.apiClearCache();
-		this.priceAdjustmentNumbersOnly();
+		this.priceAdjustmentSetup();
 		this.singleLowestSetup();
 
 	}
@@ -157,6 +159,11 @@ export class shipStationSettings {
 
 				const $row = $elm.closest( 'tr' );
 				if( ! $row || 'none' != $row.style.display ) return;
+
+				/* Skip the Return Lowest Label if related isn't checked */
+				if( -1 != $elm.name.indexOf( 'global_adjustment' ) && '' == document.querySelectorAll( '[name*=global_adjustment_type]' ).value ) {
+					return;
+				}
 
 				/* Skip the Return Lowest Label if related isn't checked */
 				if( -1 != $elm.name.indexOf( 'return_lowest_label' ) && ! document.querySelectorAll( '[type=checkbox][name*=return_lowest_label]' ).checked ) {
@@ -292,11 +299,20 @@ export class shipStationSettings {
 	/**
 	 * Only allow numbers for the Price Adjustment input.
 	 */
-	priceAdjustmentNumbersOnly() {
+	priceAdjustmentSetup() {
 
-		const $adjustmentInput = document.querySelector( '[type=text][name*=global_adjustment' );
+		const $adjustmentSelect = document.querySelector( 'select[name*=global_adjustment_type]' );
+		const $adjustmentInput  = document.querySelector( '[type=text][name*=global_adjustment' );
+
+		/* Select Change - Show Input Row */
+		$adjustmentSelect.addEventListener( 'change', ( e ) => {
+			$adjustmentInput.value = '';
+			this.rowMakeVisible( $adjustmentInput.closest( 'tr' ), ( e.target.value ) )
+		} );
+
+		/* Input Update - Only FloatString */
 		$adjustmentInput.addEventListener( 'input', ( e ) => {
-			e.target.value = e.target.value.replace( /[^0-9.]/g, '' );
+			e.target.value = e.target.value.replace( /(\..*?)\./g, '$1' ).replace( /[^0-9.]/g, '' );
 		} );
 
 	}
@@ -319,7 +335,7 @@ export class shipStationSettings {
 		} );
 
 		/* Eh, just trigger it */
-		if( 'none' != $lowestcb.closest( 'tr' ).style.display ) {
+		if( $lowestcb.checked && 'none' == $lowestLabel.closest( 'tr' ).style.display ) {
 			$lowestcb.dispatchEvent( new Event( 'change' ) );
 		}
 
@@ -336,7 +352,9 @@ export class shipStationSettings {
 
 		if( visible ) {
 
-			$row.setAttribute( 'style', 'opacity:0' );
+			if( null !== $row.offsetParent ) return;
+
+			$row.style = 'opacity:0';
 			$row.animate( {
 				opacity: [ 1 ]
 			}, {
@@ -349,7 +367,7 @@ export class shipStationSettings {
 				opacity: [ 0 ]
 			}, {
 				duration: 300
-			} ).onfinish = () => $row.setAttribute( 'style', 'display:none;' );
+			} ).onfinish = () => $row.style = 'display:none;';
 
 		}
 
@@ -373,7 +391,7 @@ export class shipStationSettings {
 		const errHeight = $err.getBoundingClientRect().height;
 		$err.remove();
 
-		$err.setAttribute( 'style', 'height:0px;opacity:0;overflow:hidden;' );
+		$err.style = 'height:0px;opacity:0;overflow:hidden;';
 		$row.querySelector( 'fieldset' ).appendChild( $err );
 
 		$err.animate( {

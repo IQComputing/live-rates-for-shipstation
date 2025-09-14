@@ -99,32 +99,55 @@ Class Settings_Shipstation {
 				'button_api_clearcache'	=> esc_html__( 'Clear API Cache', 'live-rates-for-shipstation' ),
 				'confirm_box_removal'	=> esc_html__( 'Please confirm you would like to completely remove (x) custom boxes.', 'live-rates-for-shipstation' ),
 				'error_rest_generic'	=> esc_html__( 'Something went wrong with the REST Request. Please resave permalinks and try again.', 'live-rates-for-shipstation' ),
-				'error_verification_required' => esc_html__( 'Please click the Verify API button to ensure a connection exists.', 'live-rates-for-shipstation' ),
+				'error_verification_required'		=> esc_html__( 'Please click the Verify API button to ensure a connection exists.', 'live-rates-for-shipstation' ),
+				'desc_global_adjustment_percentage' => esc_html__( 'Example: IF UPS Ground is $7.25 and you input 15% ($1.08), the final shipping rate the customer sees is: $8.33', 'live-rates-for-shipstation' ),
+				'desc_global_adjustment_flatrate'	=> esc_html__( 'Example: IF UPS Ground is $5.50 and you input $2.37, the final shipping rate the customer sees is: $7.87', 'live-rates-for-shipstation' ),
 			),
 		);
 
 		?><script type="text/javascript">
 
+			/* JS Localization */
 			const iqlrss = JSON.parse( '<?php echo wp_json_encode( $data ); ?>' );
 
-			<?php
-				/**
-				 * Modules load too late to effectively immediately hide elements.
-				 * This runs on the ShipStation settings page to hide additional
-				 * settings whenever the API is unauthenticated.
-				 */
-				if( ! $data['api_verified'] ) :
-			?>
+			/* Early setting field JS */
+			if( document.getElementById( 'woocommerce_shipstation_iqlrss_api_key' ) ) { ( function() {
 
-				if( document.getElementById( 'woocommerce_shipstation_iqlrss_api_key' ) ) { ( () => {
+				/* Hide an element, ezpz */
+				const fnHide = ( $el ) => $el.closest( 'tr' ).style.display = 'none';
+
+				<?php
+					/**
+					 * Modules load too late to effectively immediately hide elements.
+					 * This runs on the ShipStation settings page to hide additional
+					 * settings whenever the API is unauthenticated.
+					 */
+					if( ! $data['api_verified'] ) :
+				?>
+
 					document.querySelectorAll( '[name*=iqlrss]' ).forEach( ( $elm ) => {
-						if( $elm.getAttribute( 'name' ).includes( 'api_key' ) ) return;
-						if( $elm.getAttribute( 'name' ).includes( 'cart_weight' ) ) return;
-						$elm.closest( 'tr' ).style.display = 'none';
+						if( $elm.name.includes( 'api_key' ) ) return;
+						if( $elm.name.includes( 'cart_weight' ) ) return;
+						fnHide( $elm );
 					} );
-				} )(); }
 
-			<?php endif; ?>
+				<?php else : ?>
+
+					document.querySelectorAll( '[name*=iqlrss]' ).forEach( ( $elm ) => {
+
+						if( 'checkbox' == $elm.type && $elm.name.includes( 'return_lowest' ) && ! $elm.checked ) {
+							fnHide( document.querySelector( '[name*=return_lowest_label]' ) );
+						}
+
+						if( $elm.name.includes( 'global_adjustment_type' ) && '' == $elm.value ) {
+							fnHide( document.querySelector( '[type=text][name*=global_adjustment]' ) );
+						}
+					} );
+
+				<?php endif; ?>
+
+			} )(); }
+
 		</script><?php
 
 	}
@@ -325,6 +348,7 @@ Class Settings_Shipstation {
 
 		add_filter( 'woocommerce_shipping_methods',							array ($this, 'append_shipstation_method' ) );
 		add_filter( 'woocommerce_settings_api_form_fields_shipstation',		array( $this, 'append_shipstation_integration_settings' ) );
+		add_filter( 'woocommerce_settings_api_sanitized_fields_shipstation',array( $this, 'save_shipstation_integration_settings' ) );
 		add_filter( 'woocommerce_shipstation_export_get_order',				array( $this, 'export_shipstation_shipping_method' ) );
 
 	}
@@ -391,12 +415,23 @@ Class Settings_Shipstation {
 					'default'		=> '',
 				);
 
+				$appended_fields[ \IQLRSS\Driver::plugin_prefix( 'global_adjustment_type' ) ] = array(
+					'title'			=> esc_html__( 'Shipping Price Adjustment', 'live-rates-for-shipstation' ),
+					'type'			=> 'select',
+					'options'		=> array(
+						'' => esc_html__( 'No Rate Adjustments', 'live-rates-for-shipstation' ),
+						'flatrate'		=> esc_html__( 'Flat Rate', 'live-rates-for-shipstation' ),
+						'percentage'	=> esc_html__( 'Percentage', 'live-rates-for-shipstation' ),
+					),
+					'description'	=> esc_html__( 'This adjustment is added on top of the returned shipping rates to help you cover shipping costs. Can be overridden per zone, per service.', 'live-rates-for-shipstation' ),
+					'default'		=> '',
+				);
+
 				$appended_fields[ \IQLRSS\Driver::plugin_prefix( 'global_adjustment' ) ] = array(
-					'title'			=> esc_html__( 'Shipping Price Adjustment (%)', 'live-rates-for-shipstation' ),
+					'title'			=> esc_html__( 'Global Price Adjustment', 'live-rates-for-shipstation' ),
 					'type'			=> 'text',
-					'placeholder'	=> '0%',
-					'description'	=> esc_html__( 'This percent is added on top of the returned shipping rates to help you cover shipping costs. Can be overridden per zone, per service.', 'live-rates-for-shipstation' ),
-					'desc_tip'		=> esc_html__( 'Example: IF UPS Ground is $7.25 - 15% would be $1.08 making the final rate: $8.33', 'live-rates-for-shipstation' ),
+					'placeholder'	=> '0',
+					'description'	=> esc_html__( 'Optional global ShipStation rate adjustment.', 'live-rates-for-shipstation' ),
 					'default'		=> '',
 				);
 
@@ -427,6 +462,31 @@ Class Settings_Shipstation {
 		}
 
 		return $appended_fields;
+
+	}
+
+
+	/**
+	 * Modify the saved settings after WooCommerce has sanitized them.
+	 * Not much we need to do here, WooCommerce does most the heavy lifting.
+	 * 
+	 * @param Array $settings
+	 * 
+	 * @return Array $settings
+	 */
+	public function save_shipstation_integration_settings( $settings ) {
+
+		// No API Key? Invalid!
+		$api_key_key = \IQLRSS\Driver::plugin_prefix( 'api_key' );
+		if( ! isset( $settings[ $api_key_key ] ) || empty( $settings[ $api_key_key ] ) ) {
+			
+			$settings[ \IQLRSS\Driver::plugin_prefix( 'api_key_valid' ) ] = false;
+			if( isset( $settings[ \IQLRSS\Driver::plugin_prefix( 'api_key_vt' ) ] ) ) {
+				unset( $settings[ \IQLRSS\Driver::plugin_prefix( 'api_key_vt' ) ] );
+			}
+		}
+
+		return $settings;
 
 	}
 
