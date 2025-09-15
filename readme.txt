@@ -3,7 +3,7 @@ Contributors: iqcomputing
 Tags: woocommerce, shipstation, usps, ups, fedex
 Requires at least: 5.9
 Tested up to: 6.8
-Stable tag: 1.0.3
+Stable tag: 1.0.4
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -48,15 +48,14 @@ Please review [ShipStations Terms of Service](https://www.shipstation.com/terms-
 
 == Changelog ==
 
+= 1.0.4 (2025-09-15) =
+* Patches issues with shipping units not match store set units.
+* Adds new Flat Rate Adjustments to global and shipping services.
+* Adds additional metadata to WC Order Items in regards to shipping.
+* Shoutouts to both @centuryperf and @jkmail120 for reporting these issues!
+
 = 1.0.3 (2025-08-05) =
 * Patches an issue with Shipping Method availability (Thanks to @sportswreathshop for reporting!)
 
 = 1.0.2 (2025-08-04) =
 * Refines API caching that clears on settings save (thanks again to @dpkonofa for test/reporting!).
-
-= 1.0.1 (2025-08-01) =
-* Patches an issue with Individual Shipping Requests (thanks @dpkonofa !).
-* Attempt to discern ShipStation Carriers from Manually Connected Carriers.
-
-= 1.0.0 (2025-07-28) =
-* Initial release
