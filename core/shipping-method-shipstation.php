@@ -89,8 +89,8 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		$this->method_description 	= esc_html__( 'Get live shipping rates from all ShipStation supported carriers.', 'live-rates-for-shipstation' );
 		$this->supports 			= array( 'instance-settings' );
 
-		$this->carriers = \IQLRSS\Driver::get_ss_opt( 'carriers', array(), true );
-		$saved_key = \IQLRSS\Driver::get_ss_opt( 'api_key_valid', false, true );
+		$this->carriers = \IQLRSS\Driver::get_ss_opt( 'carriers', array() );
+		$saved_key = \IQLRSS\Driver::get_ss_opt( 'api_key_valid', false );
 
 		// Only show in Shipping Zones if API Key is invalid.
 		if( ! empty( $saved_key ) && ! empty( $this->carriers ) ) {
@@ -196,12 +196,14 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		$prefix 		= $this->plugin_prefix;
 		$settings 		= get_option( 'woocommerce_shipstation_settings' );
 		$saved_services = $this->get_option( 'services', array() );
-		$saved_carriers = \IQLRSS\Driver::get_ss_opt( 'carriers', array(), true );
+		$saved_carriers = \IQLRSS\Driver::get_ss_opt( 'carriers', array() );
 		$shipStationAPI	= $this->shipStationApi;
 
 		if( ! empty( $saved_services ) ) {
 
 			$sorted_services = array();
+
+			// See $this->validate_services_field()
 			foreach( $saved_services as $k => $s ) {
 
 				// Skip any old carrier services.
@@ -269,17 +271,18 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		// Input sanitized during processing.
 		$posted_services = wp_unslash( $_POST[ $prefix ] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 
+		// Global adjustment
+		$global_adjustment 		= \IQLRSS\Driver::get_ss_opt( 'global_adjustment', '' );
+		$global_adjustment_type = \IQLRSS\Driver::get_ss_opt( 'global_adjustment_type', '' );
+
 		// Group by Carriers then Services
 		$services = array();
 		foreach( $posted_services as $carrier_code => $carrier_services ) {
 			foreach( $carrier_services as $service_code => $service_arr ) {
 
-				// Skip non-enabled and non-renamed services.
-				if( ! isset( $service_arr['enabled'] ) && empty( $service_arr['nickname'] ) ) continue;
-
 				$carrier_code = sanitize_text_field( $carrier_code );
 				$service_code = sanitize_text_field( $service_code );
-				$services[ $carrier_code ][ $service_code ] = array_filter( array(
+				$data = array_filter( array(
 
 					// User Input
 					'enabled'		=> boolval( ( isset( $service_arr['enabled'] ) ) ),
@@ -292,10 +295,27 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					'carrier_code'	=> sanitize_text_field( $carrier_code ),
 				) );
 
-				// Allow 0 value user input.
-				if( $service_arr['adjustment'] >= 0 ) {
-					$services[ $carrier_code ][ $service_code ]['adjustment'] = floatval( $service_arr['adjustment'] );
+				// The above removes empty values.
+				// Price Adjustments
+				$data['adjustment']		= ( $service_arr['adjustment'] ) ? floatval( $service_arr['adjustment'] ) : '';
+				$data['adjustment_type']= $service_arr['adjustment_type'];
+
+				// Maybe unset if we don't need the data.
+				if( $data['adjustment_type'] == $global_adjustment_type ) {
+
+					// equal or equal empty -> 0 == ''
+					if( $data['adjustment'] == $global_adjustment || '' == $data['adjustment'] ) {
+						unset( $data['adjustment'] );
+						unset( $data['adjustment_type'] );
+					}
 				}
+
+				/**
+				 * We don't want to array_filter() since
+				 * Global Adjust could be populated, and 
+				 * Service is set to '' (No Adjustment).
+				 */
+				$services[ $carrier_code ][ $service_code ] = $data;
 
 			}
 		}
@@ -386,8 +406,11 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			$saved_carriers = array_values( array_intersect( $saved_carriers, $this->carriers ) );
 		}
 
-		$global_upcharge = floatval( \IQLRSS\Driver::get_ss_opt( 'global_adjustment', 0, true ) );
-		$packing_type 	= $this->get_option( 'packing', 'individual' );
+		$global_adjustment 		= floatval( \IQLRSS\Driver::get_ss_opt( 'global_adjustment', 0 ) );
+		$global_adjustment_type = \IQLRSS\Driver::get_ss_opt( 'global_adjustment_type','' );
+		$global_adjustment_type = ( empty( $global_adjustment_type ) && ! empty( $global_adjustment ) ) ? 'percentage' : $global_adjustment_type;
+
+		$packing_type = $this->get_option( 'packing', 'individual' );
 		$request = array(
 			'from_country_code'	 => WC()->countries->get_base_country(),
 			'from_postal_code'	 => WC()->countries->get_base_postcode(),
@@ -460,13 +483,21 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				$cost = $shiprate['cost'];
 
 				// Apply service upcharge
-				if( isset( $service_arr['adjustment'] ) && $service_arr['adjustment'] > 0 ) {
+				if( isset( $service_arr['adjustment'] ) ) {
 
-					$adjustment = floatval( $saved_services[ $shiprate['carrier_code'] ]['adjustment'] );
-					$cost += ( $adjustment > 0 ) ? ( $cost * ( $adjustment / 100 ) ) : 0;
+					/**
+					 * Adjustment type could be '' to skip global adjustment.
+					 * Defaults to percentage for v1.03 backwards compatibility.
+					 */
+					$adjustment 	 = floatval( $service_arr['adjustment'] );
+					$adjustment_type = ( isset( $service_arr['adjustment_type'] ) ) ? $service_arr['adjustment_type'] : 'percentage';
 
-				} else if( ! empty( $global_upcharge ) ) {
-					$cost += ( $cost * ( $global_upcharge / 100 ) );
+					if( ! empty( $adjustment_type ) && $adjustment > 0 ) {
+						$cost += ( 'flatrate' == $adjustment_type ) ? $adjustment : ( $cost * ( $adjustment / 100 ) );
+					}
+
+				} else if( ! empty( $global_adjustment_type ) && $global_adjustment > 0 ) {
+					$cost += ( 'flatrate' == $global_adjustment_type ) ? floatval( $global_adjustment ) : ( $cost * ( floatval( $global_adjustment ) / 100 ) );
 				}
 
 				// Maybe apply per item.
@@ -498,8 +529,8 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 		}
 
-		$single_lowest 			= \IQLRSS\Driver::get_ss_opt( 'return_lowest', 'no', true );
-		$single_lowest_label 	= \IQLRSS\Driver::get_ss_opt( 'return_lowest_label', '', true );
+		$single_lowest 			= \IQLRSS\Driver::get_ss_opt( 'return_lowest', 'no' );
+		$single_lowest_label 	= \IQLRSS\Driver::get_ss_opt( 'return_lowest_label', '' );
 
 		// Add all shipping rates, let the user decide.
 		if( 'no' == $single_lowest || empty( $single_lowest ) ) {
@@ -824,6 +855,25 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	/** :: Helper Methods :: **/
 	/**------------------------------------------------------------------------------------------------ **/
 	/**
+	 * Return an array of Price Adjustment Type options.
+	 * 
+	 * @return Array
+	 */
+	public static function get_adjustment_types( $include_empty = false ) {
+
+		$types = array(
+			'flatrate'	 => esc_html__( 'Flat Rate', 'live-rates-for-shipstation' ),
+			'percentage' => esc_html__( 'Percentage', 'live-rates-for-shipstation' ),
+		);
+
+		return ( false == $include_empty ) ? $types : array_merge( array(
+			'' => esc_html__( 'No Adjustments', 'live-rates-for-shipstation' ),
+		), $types );
+
+	}
+
+
+	/**
 	 * Log error in WooCommerce
 	 * Passthru method - log what's given and give it back.
 	 * Could make a good Trait
@@ -836,7 +886,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 */
 	protected function log( $error, $level = 'debug', $context = array() ) {
 
-		if( ! \IQLRSS\Driver::get_ss_opt( 'logging_enabled', false ) ) {
+		if( ! \IQLRSS\Driver::get_ss_opt( 'logging_enabled', 0, true ) ) {
 			return $error;
 		}
 

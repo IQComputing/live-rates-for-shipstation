@@ -23,6 +23,11 @@ th.no-padleft		{padding-left: 0;}
 #customBoxes input::-webkit-inner-spin-button	{-webkit-appearance: none; margin: 0;}
 #customBoxes input[type=text]					{-moz-appearance: textfield;}
 
+.iqrlssimple-flex-2       {display: flex;}
+.iqrlssimple-flex-2 > *   {flex: 1 1 calc( 50% - 8px );}
+.iqrlssimple-flex-2 > :first-child    {flex-basis: fit-content; padding-right: 4px;}
+.iqrlssimple-flex-2 > :last-child     {padding-left: 4px;}
+
 .iqlrss-api-row fieldset							{position: relative; display: block; width: fit-content;}
 .iqlrss-api-row #iqlrssVerifyButton					{position: absolute; top: 0px; right: 0; margin-top: -1px; margin-right: -85px;}
 .iqlrss-api-row #iqlrssVerifyButton:after			{content: ''; position: absolute; top: 3px; right: -24px; display: block; width: 20px; aspect-ratio: 1; background: url( 'images/spinner.gif' ) no-repeat center/contain; opacity: 0; transition: opacity 0.3s;}

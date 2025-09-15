@@ -62,7 +62,7 @@ class Shipstation_Api  {
 	public function __construct( $skip_cache = false ) {
 
 		$this->prefix 	= \IQLRSS\Driver::get( 'slug' );
-		$this->key 		= \IQLRSS\Driver::get_ss_opt( 'api_key', '', true );
+		$this->key 		= \IQLRSS\Driver::get_ss_opt( 'api_key', '' );
 		$this->skip_cache = (boolean)$skip_cache;
 		$this->cache_time = defined( 'WEEK_IN_SECONDS' ) ? WEEK_IN_SECONDS : 604800;
 
@@ -412,7 +412,7 @@ class Shipstation_Api  {
 	 */
 	protected function log( $error, $level = 'debug', $context = array() ) {
 
-		if( ! \IQLRSS\Driver::get_ss_opt( 'logging_enabled', false ) ) {
+		if( ! \IQLRSS\Driver::get_ss_opt( 'logging_enabled', 0, true ) ) {
 			return $error;
 		}
 

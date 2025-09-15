@@ -17,8 +17,10 @@ if( ! defined( 'ABSPATH' ) ) {
 	return;
 }
 
-$api_key = \IQLRSS\Driver::get_ss_opt( 'api_key', '', true );
-$global_adjustment = \IQLRSS\Driver::get_ss_opt( 'global_adjustment', '0', true );
+$api_key = \IQLRSS\Driver::get_ss_opt( 'api_key', '' );
+$global_adjustment = \IQLRSS\Driver::get_ss_opt( 'global_adjustment', '0' );
+$global_adjustment_type = \IQLRSS\Driver::get_ss_opt( 'global_adjustment_type', '' );
+$global_adjustment_type = ( empty( $global_adjustment_type ) && ! empty( $global_adjustment ) ) ? 'percentage' : $global_adjustment_type;
 
 ?>
 
@@ -32,13 +34,13 @@ $global_adjustment = \IQLRSS\Driver::get_ss_opt( 'global_adjustment', '0', true 
 				<tr>
 					<th style="width: 50px;"><?php esc_html_e( 'Enabled', 'live-rates-for-shipstation' ); ?></th>
 					<th><?php esc_html_e( 'Name', 'live-rates-for-shipstation' ); ?></th>
-					<th><?php esc_html_e( 'Price Adjustment (%)', 'live-rates-for-shipstation' ); ?></th>
+					<th><?php esc_html_e( 'Price Adjustment', 'live-rates-for-shipstation' ); ?></th>
 					<th><?php esc_html_e( 'Carrier', 'live-rates-for-shipstation' ); ?></th>
 				</tr>
 			</thead>
 			<tbody><?php
 
-				if( empty( $api_key ) || ! \IQLRSS\Driver::get_ss_opt( 'api_key_valid', false, true ) ) {
+				if( empty( $api_key ) || ! \IQLRSS\Driver::get_ss_opt( 'api_key_valid', false ) ) {
 					print( '<tr><th colspan="4">' );
 						echo wp_kses( sprintf(
 
@@ -61,9 +63,10 @@ $global_adjustment = \IQLRSS\Driver::get_ss_opt( 'global_adjustment', '0', true 
 						$attr_name = sprintf( '%s[%s][%s]', $prefix, $service_arr['carrier_code'], $service_arr['service_code'] );
 
 						$saved_atts = array(
-							'enabled' => ( isset( $service_arr['enabled'] ) ) ? $service_arr['enabled'] : false,
-							'nickname' => ( isset( $service_arr['nickname'] ) ) ? $service_arr['nickname'] : '',
-							'adjustment' => ( isset( $service_arr['adjustment'] ) ) ? $service_arr['adjustment'] : '',
+							'enabled'			=> ( isset( $service_arr['enabled'] ) ) ? $service_arr['enabled'] : false,
+							'nickname'			=> ( isset( $service_arr['nickname'] ) ) ? $service_arr['nickname'] : '',
+							'adjustment_type'	=> ( isset( $service_arr['adjustment_type'] ) ) ? $service_arr['adjustment_type'] : $global_adjustment_type,
+							'adjustment'		=> ( isset( $service_arr['adjustment'] ) ) ? $service_arr['adjustment'] : '',
 						);
 
 						print( '<tr>' );
@@ -98,16 +101,33 @@ $global_adjustment = \IQLRSS\Driver::get_ss_opt( 'global_adjustment', '0', true 
 							);
 
 							// Service Price Adjustment
-							printf( '<td><input type="text" name="%s" value="%s" placeholder="%s" style="max-width:60px;"></td>',
-								esc_attr( $attr_name . '[adjustment]' ),
-								esc_attr( $saved_atts['adjustment'] ),
-								esc_attr( $global_adjustment . '%' ),
-							);
+							print( '<td><div class="iqrlssimple-flex-2">' );
+
+								printf( '<div><select name="%s" style="width:100%%;">', esc_attr( $attr_name . '[adjustment_type]' ) );
+									foreach( static::get_adjustment_types( true ) as $slug => $label ) {
+										printf( '<option value="%s"%s>%s</option>',
+											esc_attr( $slug ),
+											selected( $saved_atts['adjustment_type'], $slug, false ),
+											$label
+										);
+									}
+								print( '</select></div>' );
+
+								printf( '<div><input type="text" name="%s" value="%s" placeholder="%s" style="max-width:60px;" class="%s"></div>',
+									esc_attr( $attr_name . '[adjustment]' ),
+									esc_attr( $saved_atts['adjustment'] ),
+									esc_attr( $global_adjustment ),
+									esc_attr( 'iqlrss-numbers-only' . ( ( '' == $saved_atts['adjustment_type'] ) ? ' iqlrss-hide' : '' ) ),
+								);
+							print( '</div></td>' );
 
 							// Carrier Name
 							printf( '<td><strong>%s</strong></td>', esc_html( $service_arr['carrier_name'] ) );
 
 						print( '</tr>' );
+
+						// Set a processed flag for the next array which is not reorganized.
+						$saved_services[ $carrier_code ][ $service_code ]['processed'] = true;
 
 					}
 				}
@@ -127,7 +147,7 @@ $global_adjustment = \IQLRSS\Driver::get_ss_opt( 'global_adjustment', '0', true 
 					foreach( $response['services'] as $service_arr ) {
 
 						$service_arr = ( ! is_array( $service_arr ) ) ? (array)$service_arr : $service_arr;
-						if( isset( $saved_services[ $carrier_code ][ $service_arr['service_code'] ] ) ) continue;
+						if( isset( $saved_services[ $carrier_code ][ $service_arr['service_code'] ]['processed'] ) ) continue;
 
 						print( '<tr>' );
 
@@ -158,11 +178,25 @@ $global_adjustment = \IQLRSS\Driver::get_ss_opt( 'global_adjustment', '0', true 
 								esc_attr( $service_arr['name'] ),
 							);
 
-							// Service Name
-							printf( '<td><input type="text" name="%s" value="" placeholder="%s" class="iqlrss-numbers-only" style="max-width:60px;"></td>',
-								esc_attr( $attr_name . '[adjustment]' ),
-								esc_attr( $global_adjustment . '%' ),
-							);
+							// Service Price Adjustment
+							print( '<td><div class="iqrlssimple-flex-2">' );
+
+								printf( '<div><select name="%s" style="width:100%%;">', esc_attr( $attr_name . '[adjustment_type]' ) );
+									foreach( static::get_adjustment_types( true ) as $slug => $label ) {
+										printf( '<option value="%s"%s>%s</option>',
+											esc_attr( $slug ),
+											selected( $global_adjustment_type, $slug, false ),
+											$label
+										);
+									}
+								print( '</select></div>' );
+
+								printf( '<div><input type="text" name="%s" value="" placeholder="%s" style="max-width:60px;" class="%s"></div>',
+									esc_attr( $attr_name . '[adjustment]' ),
+									esc_attr( $global_adjustment ),
+									esc_attr( 'iqlrss-numbers-only' . ( ( '' == $global_adjustment_type ) ? ' iqlrss-hide' : '' ) )
+								);
+							print( '</div></td>' );
 
 							// Carrier Name
 							printf( '<td><strong>%s</strong></td>', esc_html( $response['carrier']['name'] ) );

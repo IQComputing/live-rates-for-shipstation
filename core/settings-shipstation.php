@@ -87,7 +87,8 @@ Class Settings_Shipstation {
 		}
 
 		$data = array(
-			'api_verified' => \IQLRSS\Driver::get_ss_opt( 'api_key_valid', false, true ),
+			'api_verified' => \IQLRSS\Driver::get_ss_opt( 'api_key_valid', false ),
+			'global_adjustment_type' => \IQLRSS\Driver::get_ss_opt( 'global_adjustment_type', '' ),
 			'rest' => array(
 				'nonce'		=> wp_create_nonce( 'wp_rest' ),
 				'apiactions'=> get_rest_url( null, sprintf( '/%s/v1/apiactions',
@@ -177,7 +178,7 @@ Class Settings_Shipstation {
 	 */
 	public function display_cart_weight() {
 
-		$show_weight = \IQLRSS\Driver::get_ss_opt( 'cart_weight', 'no', true );
+		$show_weight = \IQLRSS\Driver::get_ss_opt( 'cart_weight', 'no' );
 		if( 'no' == $show_weight ) return;
 
 		printf( '<tr><th>%s</th><td>%s lbs</td></tr>',
@@ -391,6 +392,10 @@ Class Settings_Shipstation {
 			}
 		}
 
+		// Backwards compatibility for v1.0.3 when only percentage was supported by default.
+		$global_adjustment = \IQLRSS\Driver::get_ss_opt( 'global_adjustment', '0' );
+		$adjustment_type_default = ( empty( $global_adjustment_type ) && ! empty( $global_adjustment ) ) ? 'percentage' : '';
+
 		foreach( $fields as $key => $field ) {
 
 			$appended_fields[ $key ] = $field;
@@ -418,13 +423,9 @@ Class Settings_Shipstation {
 				$appended_fields[ \IQLRSS\Driver::plugin_prefix( 'global_adjustment_type' ) ] = array(
 					'title'			=> esc_html__( 'Shipping Price Adjustment', 'live-rates-for-shipstation' ),
 					'type'			=> 'select',
-					'options'		=> array(
-						'' => esc_html__( 'No Rate Adjustments', 'live-rates-for-shipstation' ),
-						'flatrate'		=> esc_html__( 'Flat Rate', 'live-rates-for-shipstation' ),
-						'percentage'	=> esc_html__( 'Percentage', 'live-rates-for-shipstation' ),
-					),
+					'options'		=> \IQLRSS\Core\Shipping_Method_Shipstation::get_adjustment_types( true ),
 					'description'	=> esc_html__( 'This adjustment is added on top of the returned shipping rates to help you cover shipping costs. Can be overridden per zone, per service.', 'live-rates-for-shipstation' ),
-					'default'		=> '',
+					'default'		=> $adjustment_type_default,
 				);
 
 				$appended_fields[ \IQLRSS\Driver::plugin_prefix( 'global_adjustment' ) ] = array(

@@ -35,8 +35,8 @@ export class shipStationSettings {
 		this.verificationRequiredCheck( $button );
 
 		this.apiClearCache();
-		this.priceAdjustmentSetup();
-		this.singleLowestSetup();
+		this.setupPriceAdjustments();
+		this.setupSingleLowest();
 
 	}
 
@@ -299,7 +299,7 @@ export class shipStationSettings {
 	/**
 	 * Only allow numbers for the Price Adjustment input.
 	 */
-	priceAdjustmentSetup() {
+	setupPriceAdjustments() {
 
 		const $adjustmentSelect = document.querySelector( 'select[name*=global_adjustment_type]' );
 		const $adjustmentInput  = document.querySelector( '[type=text][name*=global_adjustment' );
@@ -321,7 +321,7 @@ export class shipStationSettings {
 	/**
 	 * Show / Hide the Single Lowest label
 	 */
-	singleLowestSetup() {
+	setupSingleLowest() {
 
 		const $lowestcb 	= document.querySelector( '[type=checkbox][name*=return_lowest' );
 		const $lowestLabel 	= document.querySelector( '[type=text][name*=return_lowest_label' );

@@ -54,13 +54,13 @@ class Driver {
 	 *
 	 * @param String $key
 	 * @param Mixed $default
-	 * @param Boolean $prefix - Prefix Key with plugin slug.
+	 * @param Boolean $skip_prefix - Skip Plugin Prefix and return a core ShipStation setting value.
 	 *
 	 * @return Mixed
 	 */
-	public static function get_ss_opt( $key, $default = '', $prefix = false ) {
+	public static function get_ss_opt( $key, $default = '', $skip_prefix = false ) {
 
-		if( $prefix ) $key = static::plugin_prefix( $key );
+		if( ! $skip_prefix ) $key = static::plugin_prefix( $key );
 		$settings = get_option( 'woocommerce_shipstation_settings' );
 		return ( isset( $settings[ $key ] ) && '' !== $settings[ $key ] ) ? $settings[ $key ] : $default;
 
