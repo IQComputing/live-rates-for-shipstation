@@ -550,7 +550,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				// Create the WooCommerce rate Array.
 				$rate = array(
 					'id'		=> $shiprate['code'],
-					'label'		=> sprintf( '%s (%s)', $shiprate['name'], $shiprate['carrier_name'] ),
+					'label'		=> ( ! empty( $service_arr['nickname'] ) ) ? $service_arr['nickname'] : $shiprate['name'],
 					'package'	=> $packages,
 					'meta_data' => array_merge( $metadata, array(
 						'dimensions'=> $req['dimensions'],
