@@ -50,6 +50,8 @@ Please review [ShipStations Terms of Service](https://www.shipstation.com/terms-
 
 = 1.0.5 (2025-09-16) =
 * Patches shipping rate price disrepencies due to rates with multiple package types.
+* Patches disabled shipping services displaying.
+* Patches nicknames not applying properly.
 * Adds/Displays order item metadata to track ship rate, rate adjustment, carrier, service, and codes.
 
 = 1.0.4 (2025-09-15) =

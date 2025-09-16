@@ -10,6 +10,10 @@ Relase Date: September 16, 2025
 	* Patches an issue where shipping rates would come back much higher than expected
 		* This was due to rates with multiple package types, but used the same service code.
 		* Now, only the generic 'package' rate is returned.
+	* Patches issue where disabled services would display during checkout.
+	* Patches issue where service nickname would not apply.
+		* This patch also ensures that during export/import to ShipStation it does not
+			use the nickname, but service name for clarify.
 	* Order item metadata added that breaks down:
 		* Service (sevice_code)
 		* Carrier (carrier_code)
