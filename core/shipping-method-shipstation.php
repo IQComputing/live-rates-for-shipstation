@@ -396,12 +396,12 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			return;
 		}
 
-		$saved_services = $this->get_option( 'services', array() );
-		if( empty( $saved_services ) ) {
+		$enabled_services = $this->get_enabled_services();
+		if( empty( $enabled_services ) ) {
 			return;
 		}
 
-		$saved_carriers = array_keys( $saved_services );
+		$saved_carriers = array_keys( $enabled_services );
 		if( ! empty( $saved_carriers ) && ! empty( $this->carriers ) ) {
 			$saved_carriers = array_values( array_intersect( $saved_carriers, $this->carriers ) );
 		}
@@ -475,11 +475,11 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			// Loop the found rates and setup the WooCommerce rates array for each.
 			foreach( $available_rates as $shiprate ) {
 
-				if( ! isset( $saved_services[ $shiprate['carrier_code'] ][ $shiprate['code'] ] ) ) {
+				if( ! isset( $enabled_services[ $shiprate['carrier_code'] ][ $shiprate['code'] ] ) ) {
 					continue;
 				}
 
-				$service_arr = $saved_services[ $shiprate['carrier_code'] ][ $shiprate['code'] ];
+				$service_arr = $enabled_services[ $shiprate['carrier_code'] ][ $shiprate['code'] ];
 				$cost = $shiprate['cost'];
 
 				// Apply service upcharge
@@ -869,6 +869,29 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		return ( false == $include_empty ) ? $types : array_merge( array(
 			'' => esc_html__( 'No Adjustments', 'live-rates-for-shipstation' ),
 		), $types );
+
+	}
+
+
+	/**
+	 * Return an m-array of enabled services grouped by carrier key.
+	 * 
+	 * @return Array
+	 */
+	public function get_enabled_services() {
+
+		$enabled = array();
+		$saved_services = $this->get_option( 'services', array() );
+		if( empty( $saved_services ) ) return $enabled;
+
+		foreach( $saved_services as $c => $sa ) {
+			foreach( $sa as $sk => $s ) {
+				if( ! isset( $s['enabled'] ) || ! $s['enabled'] ) continue;
+				$enabled[ $c ][ $sk ] = $s;
+			}
+		}
+
+		return $enabled;
 
 	}
 
