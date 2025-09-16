@@ -350,7 +350,6 @@ Class Settings_Shipstation {
 		add_filter( 'woocommerce_shipping_methods',							array ($this, 'append_shipstation_method' ) );
 		add_filter( 'woocommerce_settings_api_form_fields_shipstation',		array( $this, 'append_shipstation_integration_settings' ) );
 		add_filter( 'woocommerce_settings_api_sanitized_fields_shipstation',array( $this, 'save_shipstation_integration_settings' ) );
-		add_filter( 'woocommerce_shipstation_export_get_order',				array( $this, 'export_shipstation_shipping_method' ) );
 
 	}
 
@@ -488,48 +487,6 @@ Class Settings_Shipstation {
 		}
 
 		return $settings;
-
-	}
-
-
-	/**
-	 * Update the WC_Order Shipping Method to match the ShipStation Carrier.
-	 * Ex. USPSPriorityMail
-	 *
-	 * @link https://help.shipstation.com/hc/en-us/articles/360025856192-Custom-Store-Development-Guide
-	 *
-	 * @param WC_Order $order
-	 *
-	 * @return WC_Order $order
-	 */
-	public function export_shipstation_shipping_method( $order ) {
-
-		if( ! is_a( $order, 'WC_Order' ) ) {
-			return $order;
-		}
-
-		$methods = $order->get_shipping_methods();
-		$plugin_method_id = \IQLRSS\Driver::plugin_prefix( 'shipstation' );
-
-		foreach( $methods as $method ) {
-
-			// Not our shipping method.
-			if( $method->get_method_id() != $plugin_method_id ) continue;
-
-			$service_name = $method->get_meta( 'service_name', true );
-			$carrier_name = $method->get_meta( 'carrier_name', true );
-
-			// Missing metadata.
-			if( empty( $service_name ) || empty( $carrier_name ) ) continue;
-
-			$method->set_props( array(
-				'name' => preg_replace( '/([^a-zA-Z0-9])/', '', sprintf( '%s %s', $carrier_name, $service_name ) ),
-			) );
-			$method->apply_changes(); // Temporarily apply changes. This does not update the database.
-
-		}
-
-		return $order;
 
 	}
 

@@ -107,7 +107,8 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		$this->init_instance_options();
 
 		add_action( 'woocommerce_update_options_shipping_' . $this->id, array( $this, 'process_admin_options' ) );
-		add_filter( 'http_request_timeout', array( $this, 'increase_request_timeout' ) );
+		add_filter( 'http_request_timeout',						array( $this, 'increase_request_timeout' ) );
+		add_filter( 'woocommerce_order_item_display_meta_key',	array( $this, 'labelify_meta_keys' ) );
 
 	}
 
@@ -136,6 +137,28 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 */
 	public function increase_request_timeout( $timeout ) {
 		return ( $timeout < 20 ) ? 20 : $timeout;
+	}
+
+
+	/**
+	 * Edit Order Screen
+	 * Display Order Item Metadata, but labelify the $dispaly Key
+	 * 
+	 * @param String $display
+	 * 
+	 * @return String $display
+	 */
+	public function labelify_meta_keys( $display ) {
+
+		$matches = array(
+			'carrier'	=> esc_html__( 'Carrier', 'live-rates-for-shipstation' ),
+			'service'	=> esc_html__( 'Service', 'live-rates-for-shipstation' ),
+			'rate'		=> esc_html__( 'Rate', 'live-rates-for-shipstation' ),
+			'adjustment'=> esc_html__( 'Adjustment', 'live-rates-for-shipstation' ),
+		);
+
+		return ( isset( $matches[ $display ] ) ) ? $matches[ $display ] : $display;
+
 	}
 
 
@@ -481,6 +504,11 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 				$service_arr = $enabled_services[ $shiprate['carrier_code'] ][ $shiprate['code'] ];
 				$cost = $shiprate['cost'];
+				$metadata = array(
+					'carrier'	=> sprintf( '%s (%s)', $shiprate['carrier_name'], $shiprate['carrier_code'] ),
+					'service'	=> sprintf( '%s (%s)', $shiprate['name'], $shiprate['code'] ),
+					'rate'		=> html_entity_decode( strip_tags( wc_price( $cost ) ) ),
+				);
 
 				// Apply service upcharge
 				if( isset( $service_arr['adjustment'] ) ) {
@@ -493,11 +521,27 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					$adjustment_type = ( isset( $service_arr['adjustment_type'] ) ) ? $service_arr['adjustment_type'] : 'percentage';
 
 					if( ! empty( $adjustment_type ) && $adjustment > 0 ) {
-						$cost += ( 'flatrate' == $adjustment_type ) ? $adjustment : ( $cost * ( $adjustment / 100 ) );
+
+						$adjustment_cost = ( 'flatrate' == $adjustment_type ) ? $adjustment : ( $cost * ( $adjustment / 100 ) );
+						$metadata['adjustment'] = sprintf( '%s (%s) - %s',
+							html_entity_decode( strip_tags( wc_price( $adjustment_cost ) ) ),
+							ucwords( $adjustment_type ),
+							esc_html__( 'Service Specific', 'live-rates-for-shipstation' ),
+						);
+						$cost += $adjustment_cost;
+
 					}
 
 				} else if( ! empty( $global_adjustment_type ) && $global_adjustment > 0 ) {
-					$cost += ( 'flatrate' == $global_adjustment_type ) ? floatval( $global_adjustment ) : ( $cost * ( floatval( $global_adjustment ) / 100 ) );
+
+					$adjustment_cost = ( 'flatrate' == $global_adjustment_type ) ? floatval( $global_adjustment ) : ( $cost * ( floatval( $global_adjustment ) / 100 ) );
+					$metadata['adjustment'] = sprintf( '%s (%s) - %s',
+						html_entity_decode( strip_tags( wc_price( $adjustment_cost ) ) ),
+						ucwords( $global_adjustment_type ),
+						esc_html__( 'Global', 'live-rates-for-shipstation' ),
+					);
+					$cost += $adjustment_cost;
+
 				}
 
 				// Maybe apply per item.
@@ -508,13 +552,10 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					'id'		=> $shiprate['code'],
 					'label'		=> sprintf( '%s (%s)', $shiprate['name'], $shiprate['carrier_name'] ),
 					'package'	=> $packages,
-					'meta_data' => array(
-						'dimensions'	=> $req['dimensions'],
-						'weight'	 	=> $req['weight'],
-						'service_name'	=> $shiprate['name'],
-						'carrier_code'	=> $shiprate['carrier_code'],
-						'carrier_name'	=> $shiprate['carrier_name'],
-					),
+					'meta_data' => array_merge( $metadata, array(
+						'dimensions'=> $req['dimensions'],
+						'weight'	=> $req['weight'],
+					) ),
 				);
 
 				if( isset( $rates[ $shiprate['code'] ] ) ) {
