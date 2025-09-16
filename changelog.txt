@@ -2,6 +2,28 @@
 
 This is a brief text document keeping track of changes to the plugin. For a full history, see the Github Repository.
 
+= 1.0.5 =
+
+Relase Date: September 16, 2025
+
+* Overview
+	* Patches an issue where shipping rates would come back much higher than expected
+		* This was due to rates with multiple package types, but used the same service code.
+		* Now, only the generic 'package' rate is returned.
+	* Order item metadata added that breaks down:
+		* Service (sevice_code)
+		* Carrier (carrier_code)
+		* Rate [Found shipping rate]
+		* Adjustment [Any price adjustments made and whehter it's Global or Specific]
+
+* Code Updates
+	* \IQLRSS\Core\Shipping_Method_Shipstation::labelify_meta_keys()
+		* Translatable Order Item metadata keys.
+	* \IQLRSS\Core\Shipping_Method_Shipstation::calculate_shipping()
+		* Updates to store metadata
+	* \IQLRSS\Core\Shipstation_Api::get_shipping_estimates()
+		* Adds conditional to exclude any rates that are not for generic 'package' types.
+
 = 1.0.4 =
 
 Relase Date: September 15, 2025
