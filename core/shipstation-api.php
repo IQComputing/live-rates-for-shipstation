@@ -246,6 +246,7 @@ class Shipstation_Api  {
 
 			// Sometimes rates can be cost $0, which isn't right - skip them.
 			if( $rate['shipping_amount']['amount'] <= 0 ) continue;
+			if( 'package' != $rate['package_type'] ) continue;
 
 			$est = array(
 				'name'					=> $rate['service_type'],
