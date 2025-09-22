@@ -3,7 +3,7 @@ Contributors: iqcomputing
 Tags: woocommerce, shipstation, usps, ups, fedex
 Requires at least: 5.9
 Tested up to: 6.8
-Stable tag: 1.0.5
+Stable tag: 1.0.6
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -15,13 +15,15 @@ Pulls live shipping rates from your favorite carriers connected to 3rd party pro
 
 This plugin connects to the ShipStation API using an authentication key to display shipping rates from various common carriers supported by ShipStation. This allows store owners to group all their shipping carriers under one umbrella which makes management easier and allows customers to choose the best shipping method for them which leads to happier customers.
 
-In order to use the Live Rates for ShipStation plugin, you must have a [premium ShipStation account](https://www.shipstation.com/pricing/), and purchased the [ShipStation for WooCommerce](https://woocommerce.com/products/shipstation-integration/) plugin. This plugin **will not work** without access to the ShipStation API which is tied to your premium ShipStation account.
+In order to use the Live Rates for ShipStation plugin, you must have a [premium ShipStation account](https://www.dpbolvw.net/click-101532691-11646582), and purchased the [ShipStation for WooCommerce](https://woocommerce.com/products/shipstation-integration/) plugin. This plugin **will not work** without access to the ShipStation API which is tied to your premium ShipStation account.
 
 Please review [ShipStations Terms of Service](https://www.shipstation.com/terms-of-service/) and [ShipStations Privacy Policy](https://auctane.com/legal/privacy-policy/) for more information about how your data is managed.
 
+Don't have a ShipStation account? [Open a ShipStation account today!](https://www.dpbolvw.net/click-101532691-11646582)
+
 == Plugin Requirements ==
 
-1. [A Premium ShipStation Account](https://www.shipstation.com/pricing/)
+1. [A Premium ShipStation Account](https://www.dpbolvw.net/click-101532691-11646582)
 1. [The WooCommerce Plugin](https://wordpress.org/plugins/woocommerce/)
 1. [The ShipStation for WooCommerce Plugin](https://woocommerce.com/products/shipstation-integration/)
 1. The Live Rates for ShipStation Plugin
@@ -48,6 +50,9 @@ Please review [ShipStations Terms of Service](https://www.shipstation.com/terms-
 
 == Changelog ==
 
+= 1.0.6 (2025-09-22) =
+* Updates to the general readme.
+
 = 1.0.5 (2025-09-16) =
 * Patches shipping rate price disrepencies due to rates with multiple package types.
 * Patches disabled shipping services displaying.
@@ -59,6 +64,3 @@ Please review [ShipStations Terms of Service](https://www.shipstation.com/terms-
 * Adds new Flat Rate Adjustments to global and shipping services.
 * Adds additional metadata to WC Order Items in regards to shipping.
 * Shoutouts to both @centuryperf and @jkmail120 for reporting these issues!
-
-= 1.0.3 (2025-08-05) =
-* Patches an issue with Shipping Method availability (Thanks to @sportswreathshop for reporting!)
