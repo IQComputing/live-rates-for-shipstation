@@ -14,11 +14,11 @@ if( ! defined( 'ABSPATH' ) ) {
 class Shipstation_Api  {
 
 	/**
-	 * Key prefix
+	 * Skip cache check
 	 *
-	 * @var String
+	 * @var Boolean
 	 */
-	protected $prefix;
+	public $skip_cache = false;
 
 
 	/**
@@ -31,11 +31,11 @@ class Shipstation_Api  {
 
 
 	/**
-	 * Skip cache check
+	 * Key prefix
 	 *
-	 * @var Boolean
+	 * @var String
 	 */
-	protected $skip_cache = false;
+	protected $prefix;
 
 
 	/**
@@ -322,7 +322,11 @@ class Shipstation_Api  {
 		);
 
 		if( ! empty( $args ) && is_array( $args ) ) {
-			$req_args['body'] = wp_json_encode( $args );
+			if( 'post' == $method ) {
+				$req_args['body'] = wp_json_encode( $args );
+			} else if( 'get' == $method ) {
+				$endpoint_url = add_query_arg( $args, $endpoint_url );
+			}
 		}
 
 		$request = call_user_func( $callback, esc_url( $endpoint_url ), $req_args );
@@ -334,7 +338,7 @@ class Shipstation_Api  {
 			return $this->log( $request );
 		} else if( 200 != $code || ! is_array( $body ) ) {
 
-			$err_code = 400;
+			$err_code = $code;
 			$err_msg = esc_html__( 'Error encountered during request.', 'live-rates-for-shipstation' );
 
 			if( ! empty( $body['errors'] ) && is_array( $body['errors'] ) ) {
