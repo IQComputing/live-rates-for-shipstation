@@ -410,6 +410,20 @@ Class Settings_Shipstation {
 					'default'		=> '',
 				);
 
+				$appended_fields[ \IQLRSS\Driver::plugin_prefix( 'apiv1_key' ) ] = array(
+					'title'			=> esc_html__( 'ShipStation [v1] API Key', 'live-rates-for-shipstation' ),
+					'type'			=> 'password',
+					'description'	=> esc_html__( 'See "ShipStation REST v2 API Key" description, but instead of selecting [v2], select [v1].', 'live-rates-for-shipstation' ),
+					'default'		=> '',
+				);
+
+				$appended_fields[ \IQLRSS\Driver::plugin_prefix( 'apiv1_secret' ) ] = array(
+					'title'			=> esc_html__( 'ShipStation [v1] API Secret', 'live-rates-for-shipstation' ),
+					'type'			=> 'password',
+					'description'	=> esc_html__( 'The v1 API is [required] to manage orders. The v2 API handles Live Rates.', 'live-rates-for-shipstation' ),
+					'default'		=> '',
+				);
+
 				$appended_fields[ \IQLRSS\Driver::plugin_prefix( 'carriers' ) ] = array(
 					'title'			=> esc_html__( 'Shipping Carriers', 'live-rates-for-shipstation' ),
 					'type'			=> 'multiselect',
