@@ -224,62 +224,120 @@ Class Settings_Shipstation {
 					// Verify API Key
 					case 'verify':
 
-						// Error - Missing API Key.
-						if( empty( $params['key'] ) ) {
-							wp_send_json_error( esc_html__( 'API Key not found.', 'live-rates-for-shipstation' ), 400 );
-						}
+						// Error - Unknown Type
+						if( empty( $params['type'] ) || ! in_array( $params['type'], array( 'v1', 'v2' ) ) ) {
+							wp_send_json_error( esc_html__( 'System could not discern API type.', 'live-rates-for-shipstation' ), 400 );
 
-						$apikeys = array(
-							'old' => '',
-							'new' => sanitize_text_field( $params['key'] ),
-						);
-						$prefixed = array( // Array of Prefixed Setting Slugs
-							'key' => \IQLRSS\Driver::plugin_prefix( 'api_key' ),
-							'valid' => \IQLRSS\Driver::plugin_prefix( 'api_key_valid' ),
-							'valid_time' => \IQLRSS\Driver::plugin_prefix( 'api_key_vt' ),
-						);
+						// Error - v1 API missing key or secret.
+						} else if( 'v1' == $params['type'] && ( empty( $params['key'] ) || empty( $params['secret'] ) ) ) {
+							wp_send_json_error( esc_html__( 'The ShipStation [v1] API required both a valid [v1] key and [v1] secret.', 'live-rates-for-shipstation' ), 400 );
+
+						// Error v2 API missing api key.
+						} else if( empty( $params['key'] ) ) {
+							wp_send_json_error( esc_html__( 'The ShipStation v2 API requires an API key.', 'live-rates-for-shipstation' ), 400 );
+						}
 
 						$shipstation_opt_slug = 'woocommerce_shipstation_settings';
+						$prefixed = array(
+							'v2'			=> \IQLRSS\Driver::plugin_prefix( 'api_key' ),
+							'v2valid'		=> \IQLRSS\Driver::plugin_prefix( 'api_key_valid' ),
+							'v2valid_time'	=> \IQLRSS\Driver::plugin_prefix( 'api_key_vt' ),
+							'v1'			=> \IQLRSS\Driver::plugin_prefix( 'apiv1_key' ),
+							'v1secret'		=> \IQLRSS\Driver::plugin_prefix( 'apiv1_secret' ),
+							'v1valid'		=> \IQLRSS\Driver::plugin_prefix( 'apiv1_key_valid' ),
+							'v1valid_time'	=> \IQLRSS\Driver::plugin_prefix( 'apiv1_key_vt' ),
+						);
+						$keydata = array(
+							'old' => array(
+								'key' 	 => '',
+								'secret' => '',
+							),
+							'new' => array(
+								'key'	 => sanitize_text_field( $params['key'] ),
+								'secret' => ( ! empty( $params['secret'] ) ) ? sanitize_text_field( $params['secret'] ) : '',
+							)
+						);
+
+						$type = sanitize_title( $params['type'] );
 						$settings = get_option( $shipstation_opt_slug, array() );
 
-						// Save the old key in case we need to revert.
-						if( ! empty( $settings[ $prefixed['key'] ] ) ) {
-							$apikeys['old'] = $settings[ $prefixed['key'] ];
+						$keydata['old']['key'] = ( ! empty( $settings[ $prefixed[ $type ] ] ) ) ? $settings[ $prefixed[  $type ] ] : '';
+						if( 'v1' == $type ) {
+							$keydata['old']['secret'] = ( ! empty( $settings[ $prefixed['v1secret'] ] ) ) ? $settings[ $prefixed['v1secret'] ] : '';
 						}
 
-						// Return Early - Maybe we don't need to make a call at all?
-						if( $apikeys['old'] == $apikeys['new'] && isset( $settings[ $prefixed['valid_time'] ] ) ) {
-							if( absint( $settings[ $prefixed['valid_time'] ] ) >= gmdate( 'Ymd', strtotime( 'today' ) ) ) {
+						// Only allow verification once a day if all the days are the same.
+						if( $keydata['old']['key'] == $keydata['new']['key'] ) {
+
+							$valid_time = 0;
+							if( 'v1' == $type &&  $keydata['old']['secret'] == $keydata['new']['secret'] ) {
+								$valid_time = ( ! empty( $settings[ $prefixed['v1valid_time'] ] ) ) ? absint( $settings[ $prefixed['v1valid_time'] ] ) : $valid_time;
+							} else if( 'v2' == $type && ! empty( $settings[ $prefixed['v2valid_time'] ] ) ) {
+								$valid_time = ( ! empty( $settings[ $prefixed['v1valid_time'] ] ) ) ? absint( $settings[ $prefixed['v2valid_time'] ] ) : $valid_time;
+							}
+
+							// Return Early - We don't need to make a call, it is still valid.
+							if( ! empty( $valid_time ) && $valid_time >= gmdate( 'Ymd', strtotime( 'today' ) ) ) {
 								wp_send_json_success();
 							}
 						}
 
-						// The API pulls the API Key directly from the ShipStation Settings on init.
-						$settings[ $prefixed['key'] ] = $apikeys['new'];
-						update_option( $shipstation_opt_slug, $settings );
+						// Verify the v1 API
+						if( 'v1' == $type ) {
 
-						$shipStationAPI = new Shipstation_Api();
-						$carriers = $shipStationAPI->get_carriers();
+							// The API Class pulls the API Key directly from the ShipStation Settings on init.
+							$settings[ $prefixed['v1'] ] = $keydata['new']['key'];
+							$settings[ $prefixed['v1secret'] ] = $keydata['new']['secret'];
+							update_option( $shipstation_opt_slug, $settings );
 
-						// Error - Something went wrong, the API should let us know.
-						if( is_wp_error( $carriers ) ) {
+							$shipStationAPI = new Shipstation_Apiv1();
+							$stores = $shipStationAPI->get_stores();
 
-							// Revert to old key
-							if( ! empty( $apikeys['old'] ) ) {
-								$settings = get_option( $shipstation_opt_slug, array() );
-								$settings[ $prefixed['key'] ] = $apikeys['old'];
-								update_option( $shipstation_opt_slug, $settings );
+							// Error - Something went wrong, the API should let us know.
+							if( is_wp_error( $stores ) ) {
+
+								// Revert to old key
+								if( ! empty( $keydata['old']['key'] ) ) {
+									$settings = get_option( $shipstation_opt_slug, array() );
+									$settings[ $prefixed['v1'] ] = $keydata['old']['key'];
+									$settings[ $prefixed['v1secret'] ] = $keydata['old']['secret'];
+									update_option( $shipstation_opt_slug, $settings );
+								}
+
+								wp_send_json_error( $stores );
 							}
 
-							wp_send_json_error( $carriers );
+						// Verify the v2 API
+						} else {
+
+							// The API Class pulls the API Key directly from the ShipStation Settings on init.
+							$settings[ $prefixed['v2'] ] = $keydata['new']['key'];
+							update_option( $shipstation_opt_slug, $settings );
+
+							$shipStationAPI = new Shipstation_Api();
+							$carriers = $shipStationAPI->get_carriers();
+
+							// Error - Something went wrong, the API should let us know.
+							if( is_wp_error( $carriers ) ) {
+
+								// Revert to old key
+								if( ! empty( $keydata['old']['key'] ) ) {
+									$settings = get_option( $shipstation_opt_slug, array() );
+									$settings[ $prefixed['v2'] ] = $keydata['old']['key'];
+									update_option( $shipstation_opt_slug, $settings );
+								}
+
+								wp_send_json_error( $carriers );
+							}
+
 						}
 
-						// Denote a valid key.
-						$settings[ $prefixed['valid'] ] = true;
-						$settings[ $prefixed['valid_time'] ] = gmdate( 'Ymd', strtotime( 'today' ) );
+						// Denote a valid key - send success!
+						$settings[ $prefixed["{$type}valid"] ] = true;
+						$settings[ $prefixed["{$type}valid_time"] ] = gmdate( 'Ymd', strtotime( 'today' ) );
 						update_option( $shipstation_opt_slug, $settings );
-
 						wp_send_json_success();
+
 					break;
 				}
 
