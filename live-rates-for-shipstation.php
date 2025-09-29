@@ -62,7 +62,34 @@ class Driver {
 
 		if( ! $skip_prefix ) $key = static::plugin_prefix( $key );
 		$settings = get_option( 'woocommerce_shipstation_settings' );
-		return ( isset( $settings[ $key ] ) && '' !== $settings[ $key ] ) ? $settings[ $key ] : $default;
+		return ( isset( $settings[ $key ] ) && '' !== $settings[ $key ] ) ? maybe_unserialize( $settings[ $key ] ) : $default;
+
+	}
+
+
+	/**
+	 * Set a ShipStation Plugin Option Value
+	 * 
+	 * @todo Move out of ShipStation for WooCommerce options.
+	 * @todo Create separate integration page.
+	 *
+	 * @param String $key
+	 * @param Mixed $value
+	 *
+	 * @return Mixed
+	 */
+	public static function set_ss_opt( $key, $value ) {
+
+		$key = static::plugin_prefix( $key );
+		$settings = get_option( 'woocommerce_shipstation_settings' );
+
+		if( is_bool( $value ) ) {
+			$settings[ $key ] = boolval( $value );
+		} else if( is_string( $value ) || is_numeric( $value ) ) {
+			$settings[ $key ] = sanitize_text_field( $value );
+		}
+
+		update_option( 'woocommerce_shipstation_settings', $settings );
 
 	}
 
