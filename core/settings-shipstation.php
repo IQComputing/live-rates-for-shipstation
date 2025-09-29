@@ -43,6 +43,10 @@ Class Settings_Shipstation {
 		add_action( 'rest_api_init',							array( $this, 'api_actions_endpoint' ) );
 		add_action( 'woocommerce_update_option',				array( $this, 'clear_cache_on_update' ) );
 
+		// Track and Update exported ShipStation Orders
+		add_action( 'added_order_meta',	array( $this, 'denote_shipstation_export' ), 15, 4 );
+		add_action( 'init',				array( $this, 'update_exported_orders' ), 15, 4 );
+
 	}
 
 
@@ -87,7 +91,8 @@ Class Settings_Shipstation {
 		}
 
 		$data = array(
-			'api_verified' => \IQLRSS\Driver::get_ss_opt( 'api_key_valid', false ),
+			'api_verified'	=> \IQLRSS\Driver::get_ss_opt( 'api_key_valid', false ),
+			'apiv1_verified'=> \IQLRSS\Driver::get_ss_opt( 'apiv1_key_valid', false ),
 			'global_adjustment_type' => \IQLRSS\Driver::get_ss_opt( 'global_adjustment_type', '' ),
 			'rest' => array(
 				'nonce'		=> wp_create_nonce( 'wp_rest' ),
@@ -226,31 +231,31 @@ Class Settings_Shipstation {
 
 						// Error - Unknown Type
 						if( empty( $params['type'] ) || ! in_array( $params['type'], array( 'v1', 'v2' ) ) ) {
-							wp_send_json_error( esc_html__( 'System could not discern API type.', 'live-rates-for-shipstation' ), 400 );
+							wp_send_json_error( esc_html__( 'System could not discern API type.', 'live-rates-for-shipstation' ), 401 );
 
 						// Error - v1 API missing key or secret.
 						} else if( 'v1' == $params['type'] && ( empty( $params['key'] ) || empty( $params['secret'] ) ) ) {
-							wp_send_json_error( esc_html__( 'The ShipStation [v1] API required both a valid [v1] key and [v1] secret.', 'live-rates-for-shipstation' ), 400 );
+							wp_send_json_error( esc_html__( 'The ShipStation [v1] API required both a valid [v1] key and [v1] secret.', 'live-rates-for-shipstation' ), 401 );
 
 						// Error v2 API missing api key.
 						} else if( empty( $params['key'] ) ) {
-							wp_send_json_error( esc_html__( 'The ShipStation v2 API requires an API key.', 'live-rates-for-shipstation' ), 400 );
+							wp_send_json_error( esc_html__( 'The ShipStation v2 API requires an API key.', 'live-rates-for-shipstation' ), 401 );
 						}
 
-						$shipstation_opt_slug = 'woocommerce_shipstation_settings';
-						$prefixed = array(
-							'v2'			=> \IQLRSS\Driver::plugin_prefix( 'api_key' ),
-							'v2valid'		=> \IQLRSS\Driver::plugin_prefix( 'api_key_valid' ),
-							'v2valid_time'	=> \IQLRSS\Driver::plugin_prefix( 'api_key_vt' ),
-							'v1'			=> \IQLRSS\Driver::plugin_prefix( 'apiv1_key' ),
-							'v1secret'		=> \IQLRSS\Driver::plugin_prefix( 'apiv1_secret' ),
-							'v1valid'		=> \IQLRSS\Driver::plugin_prefix( 'apiv1_key_valid' ),
-							'v1valid_time'	=> \IQLRSS\Driver::plugin_prefix( 'apiv1_key_vt' ),
+						$type = sanitize_title( $params['type'] );
+						$settings = array(
+							'v2'			=> \IQLRSS\Driver::get_ss_opt( 'api_key' ),
+							'v2valid'		=> \IQLRSS\Driver::get_ss_opt( 'api_key_valid' ),
+							'v2valid_time'	=> \IQLRSS\Driver::get_ss_opt( 'api_key_vt' ),
+							'v1'			=> \IQLRSS\Driver::get_ss_opt( 'apiv1_key' ),
+							'v1secret'		=> \IQLRSS\Driver::get_ss_opt( 'apiv1_secret' ),
+							'v1valid'		=> \IQLRSS\Driver::get_ss_opt( 'apiv1_key_valid' ),
+							'v1valid_time'	=> \IQLRSS\Driver::get_ss_opt( 'apiv1_key_vt' ),
 						);
 						$keydata = array(
 							'old' => array(
-								'key' 	 => '',
-								'secret' => '',
+								'key' 	 => $settings[ $type ],
+								'secret' => $settings['v1secret'],
 							),
 							'new' => array(
 								'key'	 => sanitize_text_field( $params['key'] ),
@@ -258,85 +263,78 @@ Class Settings_Shipstation {
 							)
 						);
 
-						$type = sanitize_title( $params['type'] );
-						$settings = get_option( $shipstation_opt_slug, array() );
-
-						$keydata['old']['key'] = ( ! empty( $settings[ $prefixed[ $type ] ] ) ) ? $settings[ $prefixed[  $type ] ] : '';
-						if( 'v1' == $type ) {
-							$keydata['old']['secret'] = ( ! empty( $settings[ $prefixed['v1secret'] ] ) ) ? $settings[ $prefixed['v1secret'] ] : '';
-						}
-
-						// Only allow verification once a day if all the days are the same.
+						// Only allow verification once a day if the data is the same.
 						if( $keydata['old']['key'] == $keydata['new']['key'] ) {
 
-							$valid_time = 0;
-							if( 'v1' == $type &&  $keydata['old']['secret'] == $keydata['new']['secret'] ) {
-								$valid_time = ( ! empty( $settings[ $prefixed['v1valid_time'] ] ) ) ? absint( $settings[ $prefixed['v1valid_time'] ] ) : $valid_time;
-							} else if( 'v2' == $type && ! empty( $settings[ $prefixed['v2valid_time'] ] ) ) {
-								$valid_time = ( ! empty( $settings[ $prefixed['v1valid_time'] ] ) ) ? absint( $settings[ $prefixed['v2valid_time'] ] ) : $valid_time;
+							$valid_time = $settings["{$type}valid_time"];
+							if( 'v1' == $type ) {
+								$valid_time = ( $keydata['old']['secret'] != $keydata['new']['secret'] ) ? 0 : $valid_time;
 							}
 
 							// Return Early - We don't need to make a call, it is still valid.
 							if( ! empty( $valid_time ) && $valid_time >= gmdate( 'Ymd', strtotime( 'today' ) ) ) {
 								wp_send_json_success();
 							}
+
 						}
 
 						// Verify the v1 API
 						if( 'v1' == $type ) {
 
-							// The API Class pulls the API Key directly from the ShipStation Settings on init.
-							$settings[ $prefixed['v1'] ] = $keydata['new']['key'];
-							$settings[ $prefixed['v1secret'] ] = $keydata['new']['secret'];
-							update_option( $shipstation_opt_slug, $settings );
+							// The API requires the keys to exist before being pinged.
+							\IQLRSS\Driver::set_ss_opt( 'apiv1_key', $keydata['new']['key'] );
+							\IQLRSS\Driver::set_ss_opt( 'apiv1_secret', $keydata['new']['secret'] );
 
+							// Ping the stores so that it sets the currently connected store ID.
 							$shipStationAPI = new Shipstation_Apiv1();
-							$stores = $shipStationAPI->get_stores();
+							$request = $shipStationAPI->get_stores();
 
 							// Error - Something went wrong, the API should let us know.
-							if( is_wp_error( $stores ) ) {
+							if( is_wp_error( $request ) || empty( $request ) ) {
 
-								// Revert to old key
-								if( ! empty( $keydata['old']['key'] ) ) {
-									$settings = get_option( $shipstation_opt_slug, array() );
-									$settings[ $prefixed['v1'] ] = $keydata['old']['key'];
-									$settings[ $prefixed['v1secret'] ] = $keydata['old']['secret'];
-									update_option( $shipstation_opt_slug, $settings );
-								}
+								// Revert to old key and secret.
+								\IQLRSS\Driver::set_ss_opt( 'apiv1_key', $keydata['old']['key'] );
+								\IQLRSS\Driver::set_ss_opt( 'apiv1_secret', $keydata['old']['secret'] );
 
-								wp_send_json_error( $stores );
+								$message = ( is_wp_error( $request ) ) ? $request->get_error_message() : '';
+								$code = ( is_wp_error( $request ) ) ? $request->get_error_code() : 400;
+								wp_send_json_error( $message, $code );
+
 							}
+
+							// Success! - Denote v2 validity and valid time.
+							\IQLRSS\Driver::set_ss_opt( 'apiv1_key_valid', true );
+							\IQLRSS\Driver::set_ss_opt( 'apiv1_key_vt', gmdate( 'Ymd', strtotime( 'today' ) ) );
+							wp_send_json_success();
 
 						// Verify the v2 API
 						} else {
 
-							// The API Class pulls the API Key directly from the ShipStation Settings on init.
-							$settings[ $prefixed['v2'] ] = $keydata['new']['key'];
-							update_option( $shipstation_opt_slug, $settings );
+							// The API requires the keys to exist before being pinged.
+							\IQLRSS\Driver::set_ss_opt( 'api_key', $keydata['new']['key'] );
 
+							// Ping the carriers so that they are cached.
 							$shipStationAPI = new Shipstation_Api();
-							$carriers = $shipStationAPI->get_carriers();
+							$request = $shipStationAPI->get_carriers();
 
 							// Error - Something went wrong, the API should let us know.
-							if( is_wp_error( $carriers ) ) {
+							if( is_wp_error( $request ) || empty( $request ) ) {
 
-								// Revert to old key
-								if( ! empty( $keydata['old']['key'] ) ) {
-									$settings = get_option( $shipstation_opt_slug, array() );
-									$settings[ $prefixed['v2'] ] = $keydata['old']['key'];
-									update_option( $shipstation_opt_slug, $settings );
-								}
+								// Revert to old key.
+								\IQLRSS\Driver::get_ss_opt( 'api_key', $keydata['old']['key'] );
 
-								wp_send_json_error( $carriers );
+								$message = ( is_wp_error( $request ) ) ? $request->get_error_message() : '';
+								$code = ( is_wp_error( $request ) ) ? $request->get_error_code() : 400;
+								wp_send_json_error( $message, $code );
+
 							}
 
-						}
+							// Success! - Denote v2 validity and valid time.
+							\IQLRSS\Driver::set_ss_opt( 'api_key_valid', true );
+							\IQLRSS\Driver::set_ss_opt( 'api_key_vt', gmdate( 'Ymd', strtotime( 'today' ) ) );
+							wp_send_json_success();
 
-						// Denote a valid key - send success!
-						$settings[ $prefixed["{$type}valid"] ] = true;
-						$settings[ $prefixed["{$type}valid_time"] ] = gmdate( 'Ymd', strtotime( 'today' ) );
-						update_option( $shipstation_opt_slug, $settings );
-						wp_send_json_success();
+						}
 
 					break;
 				}
@@ -394,6 +392,79 @@ Class Settings_Shipstation {
 	}
 
 
+	/**
+	 * Denote the exported order as a transient.
+	 * Use the transient later to update the order via the v1 API.
+	 * 
+	 * @param Integer $meta_id
+	 * @param Integer $order_id
+	 * @param String $meta_key
+	 * @param String $meta_value
+	 * 
+	 * @return void
+	 */
+	public function denote_shipstation_export( $meta_id, $order_id, $meta_key, $meta_value ) {
+
+		if( '_shipstation_exported' != $meta_key || 'yes' != $meta_value ) {
+			return;
+		}
+
+		$trans_key = \IQLRSS\Driver::plugin_prefix( 'exported_orders' );
+		$order_ids = get_transient( $trans_key );
+		$order_ids = ( ! empty( $order_ids ) ) ? $order_ids : array();
+
+		// Return Early - Order ID already exists.
+		if( in_array( $order_id, $order_ids ) ) {
+			return;
+		}
+
+		$order_ids[] = $order_id;
+		set_transient( $trans_key, $order_ids, HOUR_IN_SECONDS );
+
+	}
+
+
+	/**
+	 * If an `_exported_orders` transient exists
+	 * Update the order with some better info.
+	 * 
+	 * @return void
+	 */
+	public function update_exported_orders() {
+		
+		$trans_key = \IQLRSS\Driver::plugin_prefix( 'exported_orders' );
+		$order_ids = get_transient( $trans_key );
+
+		// Return Early - Delete transient, it's empty.
+		if( empty( $order_ids ) || ! is_array( $order_ids ) ) {
+			return delete_transient( $trans_key );
+		}
+
+		// Grab the oldest order while also priming the WC_Order cache.
+		$wc_orders = wc_get_orders( array(
+			'include'	=> array_map( 'absint', $order_ids ),
+			'orderby'	=> 'date',
+			'order'		=> 'ASC',
+			'limit'		=> count( $order_ids ),
+		) );
+
+		// Return Early - Could't associate WC_Orders with transient order ids.
+		if( empty( $wc_orders ) ) {
+			return delete_transient( $trans_key );
+		}
+
+		// createDateStart should be the ShipStation creation date and created after the WC_Order().
+		$v1Api = new Shipstation_Apiv1( true );
+		$orders = $v1Api->get_orders( array(
+			'createDateStart'   => $orders[0]->get_date_created( 'edit' )->format( 'c' ),
+			'storeId'			=> \IQLRSS\Driver::get_ss_opt( 'store_id' ),
+		) );
+
+		return delete_transient( $trans_key );
+
+	}
+
+
 
 	/**------------------------------------------------------------------------------------------------ **/
 	/** :: Filter Hooks :: **/
@@ -437,17 +508,25 @@ Class Settings_Shipstation {
 	 */
 	public function append_shipstation_integration_settings( $fields ) {
 
-		$appended_fields = array();
-		$carrier_desc = esc_html__( 'Select which ShipStation carriers you would like to see live shipping rates from.', 'live-rates-for-shipstation' );
-
 		$carriers = array();
-		$shipStationAPI = new Shipstation_Api();
-		$response = $shipStationAPI->get_carriers();
+		$appended_fields = array();
 
-		if( ! is_a( $response, 'WP_Error' ) ) {
-			foreach( $response as $carrier ) {
-				$carriers[ $carrier['carrier_id'] ] = $carrier['name'];
+		if( ! empty( \IQLRSS\Driver::get_ss_opt( 'api_key' ) ) ) {
+
+			$carrier_desc = esc_html__( 'Select which ShipStation carriers you would like to see live shipping rates from.', 'live-rates-for-shipstation' );
+			$shipStationAPI = new Shipstation_Api();
+			$response = $shipStationAPI->get_carriers();
+
+			if( is_a( $response, 'WP_Error' ) ) {
+				$carriers[''] = $response->get_error_message();
+			} else if( is_array( $response ) ) {
+				foreach( $response as $carrier ) {
+					$carriers[ $carrier['carrier_id'] ] = $carrier['name'];
+				}
 			}
+
+		} else {
+			$carrier_desc = esc_html__( 'Please set and verify your ShipStation API key. Then, click the Save button at the bottom of this page.', 'live-rates-for-shipstation' );
 		}
 
 		// Backwards compatibility for v1.0.3 when only percentage was supported by default.
@@ -478,7 +557,7 @@ Class Settings_Shipstation {
 				$appended_fields[ \IQLRSS\Driver::plugin_prefix( 'apiv1_secret' ) ] = array(
 					'title'			=> esc_html__( 'ShipStation [v1] API Secret', 'live-rates-for-shipstation' ),
 					'type'			=> 'password',
-					'description'	=> esc_html__( 'The v1 API is [required] to manage orders. The v2 API handles Live Rates.', 'live-rates-for-shipstation' ),
+					'description'	=> esc_html__( 'The v1 API is _required_ to manage orders. The v2 API handles Live Rates.', 'live-rates-for-shipstation' ),
 					'default'		=> '',
 				);
 
@@ -557,6 +636,20 @@ Class Settings_Shipstation {
 			if( isset( $settings[ \IQLRSS\Driver::plugin_prefix( 'api_key_vt' ) ] ) ) {
 				unset( $settings[ \IQLRSS\Driver::plugin_prefix( 'api_key_vt' ) ] );
 			}
+
+			$this->clear_cache();
+		}
+
+		// No [v1] API Key? Invalid!
+		$apiv1_key_key = \IQLRSS\Driver::plugin_prefix( 'apiv1_key' );
+		if( ! isset( $settings[ $apiv1_key_key ] ) || empty( $settings[ $apiv1_key_key ] ) ) {
+			
+			$settings[ \IQLRSS\Driver::plugin_prefix( 'apiv1_key_valid' ) ] = false;
+			if( isset( $settings[ \IQLRSS\Driver::plugin_prefix( 'apiv1_key_vt' ) ] ) ) {
+				unset( $settings[ \IQLRSS\Driver::plugin_prefix( 'apiv1_key_vt' ) ] );
+			}
+
+			$this->clear_cache();
 		}
 
 		return $settings;
@@ -566,9 +659,8 @@ Class Settings_Shipstation {
 
 	/**
 	 * Update the shipping method name to be the Service.
-	 * Usually not needed, but if a user updates a service name
-	 * to a nickname, this will make it easier to understand
-	 * once on ShipStation.
+	 * Usually not needed, but if the user saved a nickname?
+	 * This will make it easier to understand on ShipStation.
 	 *
 	 * @param WC_Order $order
 	 *
