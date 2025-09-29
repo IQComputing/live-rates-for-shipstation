@@ -434,7 +434,6 @@ Class Settings_Shipstation {
 		
 		$trans_key = \IQLRSS\Driver::plugin_prefix( 'exported_orders' );
 		$order_ids = get_transient( $trans_key );
-		$order_ids = array( 113, 114 );
 
 		// Return Early - Delete transient, it's empty.
 		if( empty( $order_ids ) || ! is_array( $order_ids ) ) {
@@ -460,11 +459,28 @@ Class Settings_Shipstation {
 			'createDateStart' => $wc_orders[0]->get_date_created( 'edit' )->format( 'c' ),
 		) );
 
-		foreach( $orders as $order_id => &$order_arr ) {
-			// @todo Update Order Carrier Info
+		$update_orders = array();
+		foreach( $wc_orders as $wc_order ) {
+
+			if( ! isset( $orders[ $wc_order->get_id() ] ) ) continue;
+
+			$ss_order = $orders[ $wc_order->get_id() ];
+			foreach( $wc_order->get_items( 'shipping' ) as $wc_ship ) {
+
+				$ss_order['carrierCode'] = $wc_ship->get_meta( '_' . \IQLRSS\Driver::plugin_prefix( 'carrier_code' ), true );
+				$ss_order['serviceCode'] = $wc_ship->get_meta( '_' . \IQLRSS\Driver::plugin_prefix( 'service_code' ), true );
+
+				if( empty( $ss_order['carrierCode'] ) || empty( $ss_order['serviceCode'] ) ) {
+					continue;
+				}
+
+				$update_orders[] = $ss_order;
+
+			}
 		}
 
-		return delete_transient( $trans_key );
+		// @todo Create API Callback for updating multiple orders.
+		// return delete_transient( $trans_key );
 
 	}
 
