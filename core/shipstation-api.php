@@ -98,7 +98,7 @@ class Shipstation_Api  {
 
 		// Return Early - Something went wrong getting carriers.
 		} else if( ! isset( $carriers[ $carrier_code ] ) ) {
-			return $this->log( new \WP_Error( 400, esc_html__( 'Could not find carrier information.', 'live-rates-for-shipstation' ) ) );
+			return $this->log( new \WP_Error( 404, esc_html__( 'Could not find carrier information.', 'live-rates-for-shipstation' ) ) );
 		}
 
 		$service_key = sprintf( '%s_%s_services', $trans_key, $carrier_code );
@@ -309,7 +309,7 @@ class Shipstation_Api  {
 
 		// Return Early - No API Key found.
 		if( empty( $this->key ) ) {
-			return $this->log( new \WP_Error( 400, esc_html__( 'No ShipStation REST API Key found.', 'live-rates-for-shipstation' ) ), 'warning' );
+			return $this->log( new \WP_Error( 401, esc_html__( 'No ShipStation REST API Key found.', 'live-rates-for-shipstation' ) ), 'warning' );
 		}
 
 		$endpoint_url = $this->get_endpoint_url( $endpoint );
