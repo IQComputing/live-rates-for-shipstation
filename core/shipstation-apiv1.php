@@ -120,6 +120,44 @@ class Shipstation_Apiv1 extends Shipstation_Api  {
 
 
 	/**
+	 * Retrieve data for a specific order.
+	 * Try to pull from the WC_Order metadata.
+	 * Otherwise, query orders with store ID and cache.
+	 *
+	 * @link https://www.shipstation.com/docs/api/orders/get-order
+	 *
+	 * @param Integer $order_id - WooCommerce Order ID. 
+	 *
+	 * @return Array|WP_Error
+	 */
+	public function get_order( $order_id ) {
+
+		$order = array();
+
+		if( ! $this->skip_cache ) {
+
+			$wc_order = wc_get_order( $order_id );
+			$order = $wc_order->get_meta( '_shipstation_order', true );
+
+		}
+
+		if( empty( $order ) || $this->skip_cache ) {
+
+			$orders = $this->get_orders( array( 'orderNumber' => $order_id ) );
+			if( is_wp_error( $orders ) ) {
+				return $orders;
+			} else if( ! empty( $orders ) ) {
+				$order = array_shift( $orders );
+			}
+
+		}
+
+		return $order;
+
+	}
+
+
+	/**
 	 * Return data for multiple orders.
 	 * Cache the data onto the WooCommerce order as metadata.
 	 * If WC_Order cannot be found, do not cache data.
@@ -162,7 +200,9 @@ class Shipstation_Apiv1 extends Shipstation_Api  {
 		// Pull from API
 		if( empty( $orders ) || $this->skip_cache ) {
 
-			$body = $this->make_request( 'get', 'orders', $args );
+			$body = $this->make_request( 'get', 'orders', array_merge( array(
+				'storeId' => \IQLRSS\Driver::get_ss_opt( 'store_id' ),
+			), $args ) );
 
 			// Return Early - API Request error - see logs.
 			if( is_wp_error( $body ) ) {
@@ -192,39 +232,14 @@ class Shipstation_Apiv1 extends Shipstation_Api  {
 
 			}
 
-			set_transient( $trans_key, array_keys( $orders ), HOUR_IN_SECONDS );
+			// Don't cache single order requests or order requests with only 1 result.
+			if( ! isset( $args['orderNumber'] ) && count( $orders ) > 1 ) {
+				set_transient( $trans_key, array_keys( $orders ), HOUR_IN_SECONDS );
+			}
 
 		}
 
 		return $orders;
-
-	}
-
-
-	/**
-	 * Retrieve data for a specific order.
-	 * Manage orders cache as well.
-	 *
-	 * @link https://www.shipstation.com/docs/api/orders/get-order
-	 *
-	 * @param Integer $order_id - WooCommerce Order ID. 
-	 *
-	 * @return Array|WP_Error
-	 */
-	public function get_order( $order_id ) {
-
-		$trans_key = $this->prefix_key( 'orders' );
-		$orders = get_transient( $trans_key );
-
-		if( empty( $orders['orders'][ $order_id ] ) ) {
-
-			$order = $this->make_request( 'get', sprintf( 'orders/%d', $order_id ) );
-			if( ! is_wp_error( $order ) && ! empty( $order ) ) {
-				// @todo Relate to WooCommerce order somehow. WC_Order Metadata?
-				// @todo Filter specific order data. No need to save everything.
-			}
-
-		}
 
 	}
 
