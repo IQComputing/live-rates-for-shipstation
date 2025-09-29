@@ -456,8 +456,7 @@ Class Settings_Shipstation {
 		// createDateStart should be the ShipStation creation date and created after the WC_Order().
 		$v1Api = new Shipstation_Apiv1( true );
 		$orders = $v1Api->get_orders( array(
-			'createDateStart'   => $orders[0]->get_date_created( 'edit' )->format( 'c' ),
-			'storeId'			=> \IQLRSS\Driver::get_ss_opt( 'store_id' ),
+			'createDateStart'   => $wc_orders[0]->get_date_created( 'edit' )->format( 'c' ),
 		) );
 
 		return delete_transient( $trans_key );
