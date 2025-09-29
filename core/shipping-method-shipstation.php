@@ -806,7 +806,11 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 * @return String
 	 */
 	protected function cache_key_gen( $arr, $kintersect ) {
-		return md5( maybe_serialize( array_intersect_key( $arr, $kintersect ) ) );
+
+		$cache_arr = array_intersect_key( $arr, $kintersect );
+		ksort( $cache_arr );
+		return md5( maybe_serialize( $cache_arr ) );
+		
 	}
 
 

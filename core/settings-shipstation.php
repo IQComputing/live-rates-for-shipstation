@@ -434,6 +434,7 @@ Class Settings_Shipstation {
 		
 		$trans_key = \IQLRSS\Driver::plugin_prefix( 'exported_orders' );
 		$order_ids = get_transient( $trans_key );
+		$order_ids = array( 113, 114 );
 
 		// Return Early - Delete transient, it's empty.
 		if( empty( $order_ids ) || ! is_array( $order_ids ) ) {
@@ -456,8 +457,12 @@ Class Settings_Shipstation {
 		// createDateStart should be the ShipStation creation date and created after the WC_Order().
 		$v1Api = new Shipstation_Apiv1( true );
 		$orders = $v1Api->get_orders( array(
-			'createDateStart'   => $wc_orders[0]->get_date_created( 'edit' )->format( 'c' ),
+			'createDateStart' => $wc_orders[0]->get_date_created( 'edit' )->format( 'c' ),
 		) );
+
+		foreach( $orders as $order_id => &$order_arr ) {
+			// @todo Update Order Carrier Info
+		}
 
 		return delete_transient( $trans_key );
 
