@@ -30,6 +30,10 @@ export class shipStationSettings {
 	 */
 	apiClearCache() {
 
+		if( ! ( iqlrss.api_verified || iqlrss.apiv1_verified ) ) {
+			return;
+		}
+
 		let $button = document.createElement( 'button' );
 			$button.innerText = iqlrss.text.button_api_clearcache;
 			$button.type = 'button';
@@ -184,6 +188,10 @@ class apiVerificationButton {
 			$button.type = 'button';
 			$button.classList.add( 'button-primary' );
 
+			if( 'v1' == this.#type ) {
+				$button.innerText += ` [${this.#type}]`;
+			}
+
 			/**
 			 * Event: Click
 			 * Hide any previous errors and try to get response from ShipStation REST API.
@@ -278,8 +286,8 @@ class apiVerificationButton {
 
 			/* Error- slidedown */
 			if( ! json.success ) {
-				iqlrss.api_verified = false;
-				rowAddError( $apiRow, ( json.data.length ) ? json.data[0].message : iqlrss.text.error_rest_generic );
+				if( 'v1' == this.#type ){ iqlrss.apiv1_verified = false; } else { iqlrss.api_verified = false };
+				rowAddError( $apiRow, ( json.data.length && 'string' == typeof json.data ) ? json.data : iqlrss.text.error_rest_generic );
 				return false;
 			}
 
@@ -304,7 +312,7 @@ class apiVerificationButton {
 
 			/* Trigger the return lowest checkbox - this may display it's connected label input. */
 			document.querySelector( '[type=checkbox][name*=return_lowest' ).dispatchEvent( new Event( 'change' ) );
-			iqlrss.api_verified = true;
+			if( 'v1' == this.#type ){ iqlrss.apiv1_verified = true; } else { iqlrss.api_verified = true };
 			return true;
 
 		} );
@@ -352,23 +360,28 @@ class apiVerificationButton {
 		$settingsForm.addEventListener( 'submit', ( e ) => {
 
 			rowClearError( $apiRow );
-			if( iqlrss.api_verified ) return true;
-
-			if( this.#apiInput.value ) {
-
-				e.preventDefault();
-				e.stopImmediatePropagation();
-
-				this.#button.animate( { opacity: 1 }, { duration: 300, fill: 'forwards' } )
-				rowAddError( $apiRow, iqlrss.text.error_verification_required );
-
-				const $wooSave = document.querySelector( '.woocommerce-save-button' );
-				if( $wooSave && $wooSave.classList.contains( 'is-busy' ) ) {
-					$wooSave.classList.remove( 'is-busy' );
-				}
-
-				return false;
+			if( ! this.#apiInput.value ) {
+				return true;
 			}
+
+			if( 'v1' == this.#type && iqlrss.apiv1_verified ) {
+				return true
+			} else if( 'v2' == this.#type && iqlrss.api_verified ) {
+				return true;
+			}
+
+			e.preventDefault();
+			e.stopImmediatePropagation();
+
+			this.#button.animate( { opacity: 1 }, { duration: 300, fill: 'forwards' } )
+			rowAddError( $apiRow, iqlrss.text.error_verification_required );
+
+			const $wooSave = document.querySelector( '.woocommerce-save-button' );
+			if( $wooSave && $wooSave.classList.contains( 'is-busy' ) ) {
+				$wooSave.classList.remove( 'is-busy' );
+			}
+
+			return false;
 
 		} );
 
