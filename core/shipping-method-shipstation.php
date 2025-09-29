@@ -109,6 +109,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		add_action( 'woocommerce_update_options_shipping_' . $this->id, array( $this, 'process_admin_options' ) );
 		add_filter( 'http_request_timeout',						array( $this, 'increase_request_timeout' ) );
 		add_filter( 'woocommerce_order_item_display_meta_key',	array( $this, 'labelify_meta_keys' ) );
+		add_filter( 'woocommerce_hidden_order_itemmeta',		array( $this, 'hide_metadata_from_admin_order' ) );
 
 	}
 
@@ -159,6 +160,22 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 		return ( isset( $matches[ $display ] ) ) ? $matches[ $display ] : $display;
 
+	}
+
+
+	/**
+	 * Hide certain metadata from the Admin Order screen.
+	 * Otherwise, it formats it as label value pairs.
+	 * 
+	 * @param Arary $meta_keys
+	 * 
+	 * @return Array $meta_keys
+	 */
+	public function hide_metadata_from_admin_order( $meta_keys ) {
+		return array_merge( $meta_keys, array(
+			"_{$this->plugin_prefix}_carrier_code",
+			"_{$this->plugin_prefix}_service_code",
+		) );
 	}
 
 
@@ -504,10 +521,15 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 				$service_arr = $enabled_services[ $shiprate['carrier_code'] ][ $shiprate['code'] ];
 				$cost = $shiprate['cost'];
+
 				$metadata = array(
-					'carrier'	=> sprintf( '%s (%s)', $shiprate['carrier_name'], $shiprate['carrier_code'] ),
-					'service'	=> sprintf( '%s (%s)', $shiprate['name'], $shiprate['code'] ),
+					'carrier'	=> $shiprate['carrier_name'],
+					'service'	=> $shiprate['name'],
 					'rate'		=> html_entity_decode( strip_tags( wc_price( $cost ) ) ),
+
+					// Private metadata fields must be excluded via filter way above.
+					"_{$this->plugin_prefix}_carrier_code" => $shiprate['carrier_code'],
+					"_{$this->plugin_prefix}_service_code" => $shiprate['code'],
 				);
 
 				// Apply service upcharge
@@ -810,7 +832,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		$cache_arr = array_intersect_key( $arr, $kintersect );
 		ksort( $cache_arr );
 		return md5( maybe_serialize( $cache_arr ) );
-		
+
 	}
 
 
