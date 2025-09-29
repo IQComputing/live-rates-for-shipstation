@@ -66,25 +66,50 @@ class Shipstation_Apiv1 extends Shipstation_Api  {
 
 		if( $this->skip_cache || empty( $stores ) ) {
 
-			$stores = $this->make_request( 'get', 'stores', array( 'showInactive' => false ) );
-			if( ! is_wp_error( $stores ) && ! empty( $stores ) ) {
+			$body = $this->make_request( 'get', 'stores', array( 'showInactive' => false ) );
 
-				// @todo Filter specific order data. No need to save everything.
-				set_transient( $trans_key, $stores, $this->cache_time );
-				
-				// Attempt to discern current store and store it.
-				$curr_store = array();
-				foreach( $stores as $store ) {
-					if( 'WooCommerce' != 'marketplaceName' ) continue;
-					if( false === strpos( untrailingslashit( $store['integrationUrl'] ), untrailingslashit( $siteurl ) ) ) continue;
-					$curr_store = $store;
-					break;
+			// Return Early - API Request Error - Probably bad API keys.
+			if( is_wp_error( $body ) ) {
+				return $body;
+			}
+
+			// Return Early - No stores found?
+			if( empty( $body ) ) {
+				return array();
+			}
+
+			$stores = array();
+			$curr_store_id = 0;
+
+			foreach( $body as $store ) {
+
+				// Skip anything that isn't WooCommerce
+				if( 'WooCommerce' != $store['marketplaceName'] ) continue;
+
+				// Save the currently connected store separately.
+				if( false !== strpos( untrailingslashit( $store['integrationUrl'] ), untrailingslashit( $siteurl ) ) ) {
+					$curr_store_id = $store['storeId'];
 				}
 
-				// @todo Filter specific order data. No need to save everything.
-				// @todo Save as a ShipStation option, skip if it exists.
-				// \IQLRSS\Driver::get_ss_opt( 'store', '' );
+				$stores[ $store['storeId'] ] = array_intersect_key( $store, array_flip( array(
+					'storeId',
+					'storeName',
+					'marketplaceId',
+					'marketplaceName',
+					'refreshDate',
+					'lastRefreshAttempt',
+				) ) );
 
+			}
+
+			// Save store data
+			if( ! empty( $stores ) ) {
+				set_transient( $trans_key, $stores, $this->cache_time );
+			}
+
+			// Save current store as option.
+			if( ! empty( $curr_store_id ) ) {
+				\IQLRSS\Driver::set_ss_opt( 'store_id', $curr_store_id );
 			}
 
 		}
@@ -96,7 +121,10 @@ class Shipstation_Apiv1 extends Shipstation_Api  {
 
 	/**
 	 * Return data for multiple orders.
-	 * Manage orders cache as well.
+	 * Cache the data onto the WooCommerce order as metadata.
+	 * If WC_Order cannot be found, do not cache data.
+	 * 
+	 * Cache the found order IDs as based on query hash.
 	 *
 	 * @link https://www.shipstation.com/docs/api/orders/list-orders
 	 *
@@ -107,18 +135,64 @@ class Shipstation_Apiv1 extends Shipstation_Api  {
 	 */
 	public function get_orders( $args = array() ) {
 
+		// Set the transient key to a hash of the arguments.
+		// The transient should hold an array of WC_Order IDs associated with the query.
 		$trans_key = $this->prefix_key( 'orders' );
-		$orders = get_transient( $trans_key );
+		if( ! empty( $args ) ) {
+			ksort( $args );
+			$trans_key .= sprintf( '_%s', md5( serialize( $args ) ) );
+		}
 
-		if( $this->skip_cache || empty( $orders ) ) {
+		$orders = array();
+		$order_ids = get_transient( $trans_key );
 
-			$orders = $this->make_request( 'get', 'orders', $args );
-			if( ! is_wp_error( $orders ) && ! empty( $orders ) ) {
+		// Maybe pull from WC_Order
+		if( is_array( $order_ids ) && ! empty( $order_ids ) && ! $this->skip_cache ) {
 
-				// @todo Filter specific order data. No need to save everything.
+			$wc_orders = wc_get_orders( array(
+				'include' => array_map( 'absint', $order_ids ),
+			) );
 
-				set_transient( $trans_key, $orders, $this->cache_time );
+			foreach( $wc_orders as $wc_order ) {
+				$orders[ $wc_order->get_id() ] = $wc_order->get_meta_data( '_shipstation_order', true );
 			}
+
+		}
+
+		// Pull from API
+		if( empty( $orders ) || $this->skip_cache ) {
+
+			$body = $this->make_request( 'get', 'orders', $args );
+
+			// Return Early - API Request error - see logs.
+			if( is_wp_error( $body ) ) {
+				return $body;
+			}
+
+			// Return Early - No orders to work with.
+			if( empty( $body['orders'] ) ) {
+				return array();
+			}
+
+			// Prime order cache.
+			wc_get_orders( array(
+				'include' => array_map( 'absint', wp_list_pluck( $body['orders'], 'orderNumber' ) ),
+			) );
+
+			foreach( $body['orders'] as $order_arr ) {
+
+				// Skip any orders that are not found in WooCommerce.
+				$wc_order = wc_get_order( $order_arr['orderNumber'] );
+				if( ! is_a( $wc_order, 'WC_Order' ) ) continue;
+
+				$wc_order->update_meta_data( '_shipstation_order', $order_arr );
+				$wc_order->save_meta_data();
+
+				$orders[ $wc_order->get_id() ] =  $order_arr;
+
+			}
+
+			set_transient( $trans_key, array_keys( $orders ), HOUR_IN_SECONDS );
 
 		}
 
@@ -185,10 +259,10 @@ class Shipstation_Apiv1 extends Shipstation_Api  {
 		);
 
 		if( ! empty( $args ) && is_array( $args ) ) {
-			if( 'post' == $method ) {
+			if( 'get' == $method ) {
+				$req_args['body'] = $args;
+			} else if( 'post' == $method ) {
 				$req_args['body'] = wp_json_encode( $args );
-			} else if( 'get' == $method ) {
-				$endpoint_url = add_query_arg( $args, $endpoint_url );
 			}
 		}
 
@@ -198,7 +272,14 @@ class Shipstation_Apiv1 extends Shipstation_Api  {
 
 		// Return Early - API encountered an error.
 		if( is_wp_error( $request ) ) {
+
+			// The API doesn't seem to return a proper error if the API keys are invalid.
+			if( false !== strpos( $request->get_error_message(), 'cURL error 28' ) ) {
+				$request = new \WP_Error( 401, esc_html__( 'Operation Timeout ([v1] API Key or Secret may be invalid)', 'live-rates-for-shipstation' ) );
+			}
+
 			return $this->log( $request );
+			
 		} else if( 200 != $code || ! is_array( $body ) ) {
 
 			$message = '';
@@ -218,6 +299,7 @@ class Shipstation_Apiv1 extends Shipstation_Api  {
 			}
 
 			return $this->log( new \WP_Error( $code, $message ) );
+
 		}
 
 		// Log API Request Result
