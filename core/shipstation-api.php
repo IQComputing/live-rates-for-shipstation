@@ -85,16 +85,15 @@ class Shipstation_Api  {
 
 		$trans_key = $this->prefix_key( 'carriers' );
 		$carriers = get_transient( $trans_key );
-		$carrier = array();
 
 		// No carriers cached - prime cache
 		if( empty( $carriers ) || $this->skip_cache ) {
 			$carriers = $this->get_carriers();
 		}
 
-		// Return Early - Carrierror!
+		// Return Early - Carrierror! Skip log since that should be called in get_carriers()
 		if( is_wp_error( $carriers ) ) {
-			return $this->log( $carriers );
+			return $carriers;
 
 		// Return Early - Something went wrong getting carriers.
 		} else if( ! isset( $carriers[ $carrier_code ] ) ) {
@@ -107,11 +106,11 @@ class Shipstation_Api  {
 		$package_key = sprintf( '%s_%s_packages', $trans_key, $carrier_code );
 		$packages = get_transient( $package_key );
 
-		return array_merge( $carrier, array(
+		return array(
 			'carrier'	=> $carriers[ $carrier_code ],
 			'services'	=> ( ! empty( $services ) ) ? $services : array(),
 			'packages'	=> ( ! empty( $packages ) ) ? $packages : array(),
-		) );
+		);
 
 	}
 
@@ -123,10 +122,11 @@ class Shipstation_Api  {
 	 * @link https://docs.shipstation.com/openapi/carriers
 	 *
 	 * @param String $carrier_code
+	 * @param Array $unused - Only used in [v1] but here for compatibility purposes. May be used in the future?
 	 *
 	 * @return Array|WP_Error
 	 */
-	public function get_carriers( $carrier_code = '' ) {
+	public function get_carriers( $carrier_code = '', $unused = array() ) {
 
 		if( ! empty( $carrier_code ) ) {
 			return $this->get_carrier( $carrier_code );
@@ -140,7 +140,7 @@ class Shipstation_Api  {
 			'packages' => array(),
 		);
 
-		if( empty( $data['carriers'] ) ) {
+		if( empty( $data['carriers'] ) || $this->skip_cache ) {
 
 			$body = $this->make_request( 'get', 'carriers' );
 
@@ -155,9 +155,9 @@ class Shipstation_Api  {
 			}
 
 			// We don't need all carrier data
-			foreach( $body['carriers'] as $carrier ) {
+			foreach( $body['carriers'] as $carrier_data ) {
 
-				$data['carriers'][ $carrier['carrier_id'] ] = array_intersect_key( $carrier, array_flip( array(
+				$carrier = array_intersect_key( $carrier_data, array_flip( array(
 					'carrier_id',
 					'carrier_code',
 					'account_number',
@@ -165,16 +165,18 @@ class Shipstation_Api  {
 					'friendly_name',
 				) ) );
 
-				$data['carriers'][ $carrier['carrier_id'] ]['is_shipstation'] 	= ( ! empty( $carrier['primary'] ) );
-				$data['carriers'][ $carrier['carrier_id'] ]['name'] 			= $data['carriers'][ $carrier['carrier_id'] ]['friendly_name'];
+				$carrier['is_shipstation'] 	= ( ! empty( $carrier_data['primary'] ) );
+				$carrier['name'] 			= $carrier['friendly_name'];
 
 				// Denote Manual Connected Carrier.
-				if( ! $data['carriers'][ $carrier['carrier_id'] ]['is_shipstation'] ) {
-					$data['carriers'][ $carrier['carrier_id'] ]['name'] .= ' ' . esc_html__( '(Manual)', 'live-rates-for-shipstation' );
+				if( ! $carrier['is_shipstation'] ) {
+					$carrier['name'] .= ' ' . esc_html__( '(Manual)', 'live-rates-for-shipstation' );
 				}
 
-				if( isset( $carrier['services'] ) ) {
-					foreach( $carrier['services'] as $service ) {
+				$data['carriers'][ $carrier['carrier_id'] ] = $carrier;
+
+				if( isset( $carrier_data['services'] ) ) {
+					foreach( $carrier_data['services'] as $service ) {
 						$data['services'][ $carrier['carrier_id'] ][] = array_intersect_key( $service, array_flip( array(
 							'carrier_id',
 							'carrier_code',
@@ -187,8 +189,8 @@ class Shipstation_Api  {
 					}
 				}
 
-				if( isset( $carrier['packages'] ) ) {
-					$data['packages'][ $carrier['carrier_id'] ] = $carrier['packages'];
+				if( isset( $carrier_data['packages'] ) ) {
+					$data['packages'][ $carrier['carrier_id'] ] = $carrier_data['packages'];
 				}
 			}
 
@@ -224,6 +226,8 @@ class Shipstation_Api  {
 	 *
 	 * @note ShipStation does have a /rates/ endpoint, but it requires the customers address_line1
 	 * In addition, it really is not much faster than the rates/estimate endpoint.
+	 * 
+	 * @todo Look into `delivery_days` field. UPS has, is it carrier consistent? 
 	 *
 	 * @param Array $est_opts
 	 *
@@ -253,7 +257,8 @@ class Shipstation_Api  {
 				'code'					=> $rate['service_code'],
 				'cost'					=> $rate['shipping_amount']['amount'],
 				'currency'				=> $rate['shipping_amount']['currency'],
-				'carrier_code'			=> $rate['carrier_id'],
+				'carrier_id'			=> $rate['carrier_id'],
+				'carrier_code'			=> $rate['carrier_code'],
 				'carrier_nickname'		=> $rate['carrier_nickname'],
 				'carrier_friendly_name'	=> $rate['carrier_friendly_name'],
 				'carrier_name'			=> $rate['carrier_friendly_name'],

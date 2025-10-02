@@ -455,32 +455,57 @@ Class Settings_Shipstation {
 
 		// createDateStart should be the ShipStation creation date and created after the WC_Order().
 		$v1Api = new Shipstation_Apiv1( true );
-		$orders = $v1Api->get_orders( array(
-			'createDateStart' => $wc_orders[0]->get_date_created( 'edit' )->format( 'c' ),
+		$ship_orders = $v1Api->get_orders( array(
+			'createDateEnd' => gmdate( 'c', time() ),
 		) );
 
-		$update_orders = array();
+		$wc_order_map = array();
+		$update_ship_orders = array();
+
 		foreach( $wc_orders as $wc_order ) {
 
-			if( ! isset( $orders[ $wc_order->get_id() ] ) ) continue;
+			$wc_order_map[ $wc_order->get_id() ] = $wc_order; // Easily associate order ID and order.
 
-			$ss_order = $orders[ $wc_order->get_id() ];
+			if( ! isset( $ship_orders[ $wc_order->get_id() ] ) ) continue;
+
+			$ship_order = $ship_orders[ $wc_order->get_id() ];
 			foreach( $wc_order->get_items( 'shipping' ) as $wc_ship ) {
 
-				$ss_order['carrierCode'] = $wc_ship->get_meta( '_' . \IQLRSS\Driver::plugin_prefix( 'carrier_code' ), true );
-				$ss_order['serviceCode'] = $wc_ship->get_meta( '_' . \IQLRSS\Driver::plugin_prefix( 'service_code' ), true );
+				// $ship_order['carrierCode'] 	= $wc_ship->get_meta( '_' . \IQLRSS\Driver::plugin_prefix( 'carrier_code' ), true ) . '_walleted';
+				$ship_order['carrierCode'] 	= 'stamps_com_wl';
+				$ship_order['serviceCode'] 	= $wc_ship->get_meta( '_' . \IQLRSS\Driver::plugin_prefix( 'service_code' ), true );
+				$ship_order['shipDate'] 	= gmdate( 'c', strtotime( 'tomorrow') );
 
-				if( empty( $ss_order['carrierCode'] ) || empty( $ss_order['serviceCode'] ) ) {
+				if( empty( $ship_order['carrierCode'] ) || empty( $ship_order['serviceCode'] ) ) {
 					continue;
 				}
 
-				$update_orders[] = $ss_order;
+				$update_ship_orders[] = $ship_order;
 
 			}
 		}
 
-		// @todo Create API Callback for updating multiple orders.
-		// return delete_transient( $trans_key );
+		$results = $v1Api->update_orders( $update_ship_orders );
+		if( ! empty( $results['error'] ) ) {
+			
+			foreach( $results['error'] as $order_id => $err_arr ) {
+
+				$wc_order = ( isset( $wc_order_map[ $order_id ] ) ) ? $wc_order_map[ $order_id ] : null;
+				$wc_order = ( is_null( $wc_order ) && isset( $err_arr['orderNumber'], $wc_order_map[ $err_arr['orderNumber'] ] ) ) ? $wc_order_map[ $err_arr['orderNumber'] ] : $wc_order;
+				if( empty( $wc_order ) || ! is_a( $wc_order, 'WC_Order' ) ) continue;
+
+				// Save error to order.
+				$wc_order->update_meta_data( '_shipstation_update_error', array(
+					'error'		=> sanitize_text_field( $err_arr['errorMessage'] ),
+					'timestamp'	=> time(),
+				) );
+				$wc_order->save_meta_data();
+
+			}
+
+		}
+
+		return delete_transient( $trans_key );
 
 	}
 
