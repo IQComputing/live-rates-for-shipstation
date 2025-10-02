@@ -150,8 +150,8 @@ class Shipstation_Apiv1 extends Shipstation_Api  {
 
 		return array(
 			'carrier'	=> $carriers[ $carrier_code ],
-			'services'	=> $this->get_services( $carrier_code ),
-			'packages'	=> $this->get_packages( $carrier_code ),
+			'services'	=> $this->get_services( $carriers[ $carrier_code ]['carrier_code'] ),
+			'packages'	=> $this->get_packages( $carriers[ $carrier_code ]['carrier_code'] ),
 		);
 
 	}
