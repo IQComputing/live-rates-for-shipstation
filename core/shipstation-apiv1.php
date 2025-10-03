@@ -258,6 +258,8 @@ class Shipstation_Apiv1 extends Shipstation_Api  {
 	/**
 	 * Return an array of services for a specific carrier.
 	 * 
+	 * @link https://www.shipstation.com/docs/api/carriers/list-services
+	 * 
 	 * @param String $carrier_code
 	 * 
 	 * @return Array|WP_Error
@@ -318,6 +320,8 @@ class Shipstation_Apiv1 extends Shipstation_Api  {
 
 	/**
 	 * Return an array of packages for a specific carrier.
+	 * 
+	 * @link https://www.shipstation.com/docs/api/carriers/list-packages
 	 * 
 	 * @param String $carrier_code
 	 * 

@@ -13,6 +13,8 @@
  * Requires Plugins: woocommerce, woocommerce-shipstation-integration
  * 
  * @todo Look at preventing ship_estimate checks on ajax add_to_cart. Prefer Cart or Checkout pages.
+ * @todo Add warehosue locations to Shipping Zone packages.
+ * @todo Look into updating warehouses through Edit Order > Order Items.
  */
 namespace IQLRSS;
 
