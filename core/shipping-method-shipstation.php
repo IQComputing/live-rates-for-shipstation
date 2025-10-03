@@ -144,9 +144,9 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	/**
 	 * Edit Order Screen
 	 * Display Order Item Metadata, but labelify the $dispaly Key
-	 * 
+	 *
 	 * @param String $display
-	 * 
+	 *
 	 * @return String $display
 	 */
 	public function labelify_meta_keys( $display ) {
@@ -245,21 +245,25 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			$sorted_services = array();
 
 			// See $this->validate_services_field()
-			foreach( $saved_services as $k => $s ) {
+			foreach( $saved_services as $carrier_id => $carrier_services ) {
 
 				// Skip any old carrier services.
-				if( ! in_array( $k, $saved_carriers ) ) {
-					unset( $saved_services[ $k ] );
-					continue;
-
-				// Skip any services not enabled.
-				} else if( ! isset( $s['enabled'] ) ) {
+				if( ! in_array( $carrier_id, $saved_carriers ) ) {
+					unset( $saved_services[ $carrier_id ] );
 					continue;
 				}
 
-				$sorted_services[ $k ] = $s;
-				unset( $saved_services[ $k ] );
+				// Skip any services which are not enabled.
+				foreach( $carrier_services as $service_code => $service_arr ) {
+					if( ! isset( $service_arr['enabled'] ) ) {
+						unset( $carrier_services[ $service_code ] );
+					}
+				}
+
+				$sorted_services[ $carrier_id ] = $carrier_services;
+				unset( $saved_services[ $carrier_id ] );
 			}
+
 			$saved_services = array_merge( $sorted_services, $saved_services );
 		}
 
@@ -354,7 +358,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 				/**
 				 * We don't want to array_filter() since
-				 * Global Adjust could be populated, and 
+				 * Global Adjust could be populated, and
 				 * Service is set to '' (No Adjustment).
 				 */
 				$services[ $carrier_id ][ $service_code ] = $data;
@@ -926,7 +930,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	/**------------------------------------------------------------------------------------------------ **/
 	/**
 	 * Return an array of Price Adjustment Type options.
-	 * 
+	 *
 	 * @return Array
 	 */
 	public static function get_adjustment_types( $include_empty = false ) {
@@ -945,7 +949,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 	/**
 	 * Return an m-array of enabled services grouped by carrier key.
-	 * 
+	 *
 	 * @return Array
 	 */
 	public function get_enabled_services() {
