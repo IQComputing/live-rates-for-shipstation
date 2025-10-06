@@ -453,57 +453,8 @@ Class Settings_Shipstation {
 			return delete_transient( $trans_key );
 		}
 
-		// createDateStart should be the ShipStation creation date and created after the WC_Order().
-		$v1Api = new Shipstation_Apiv1( true );
-		$ship_orders = $v1Api->get_orders( array(
-			'createDateEnd' => gmdate( 'c', time() ),
-		) );
-
-		$wc_order_map = array();
-		$update_ship_orders = array();
-
-		foreach( $wc_orders as $wc_order ) {
-
-			$wc_order_map[ $wc_order->get_id() ] = $wc_order; // Easily associate order ID and order.
-
-			if( ! isset( $ship_orders[ $wc_order->get_id() ] ) ) continue;
-
-			$ship_order = $ship_orders[ $wc_order->get_id() ];
-			foreach( $wc_order->get_items( 'shipping' ) as $wc_ship ) {
-
-				// $ship_order['carrierCode'] 	= $wc_ship->get_meta( '_' . \IQLRSS\Driver::plugin_prefix( 'carrier_code' ), true ) . '_walleted';
-				$ship_order['carrierCode'] 	= 'stamps_com_wl';
-				$ship_order['serviceCode'] 	= $wc_ship->get_meta( '_' . \IQLRSS\Driver::plugin_prefix( 'service_code' ), true );
-				$ship_order['shipDate'] 	= gmdate( 'c', strtotime( 'tomorrow') );
-
-				if( empty( $ship_order['carrierCode'] ) || empty( $ship_order['serviceCode'] ) ) {
-					continue;
-				}
-
-				$update_ship_orders[] = $ship_order;
-
-			}
-		}
-
-		$results = $v1Api->update_orders( $update_ship_orders );
-		if( ! empty( $results['error'] ) ) {
-			
-			foreach( $results['error'] as $order_id => $err_arr ) {
-
-				$wc_order = ( isset( $wc_order_map[ $order_id ] ) ) ? $wc_order_map[ $order_id ] : null;
-				$wc_order = ( is_null( $wc_order ) && isset( $err_arr['orderNumber'], $wc_order_map[ $err_arr['orderNumber'] ] ) ) ? $wc_order_map[ $err_arr['orderNumber'] ] : $wc_order;
-				if( empty( $wc_order ) || ! is_a( $wc_order, 'WC_Order' ) ) continue;
-
-				// Save error to order.
-				$wc_order->update_meta_data( '_shipstation_update_error', array(
-					'error'		=> sanitize_text_field( $err_arr['errorMessage'] ),
-					'timestamp'	=> time(),
-				) );
-				$wc_order->save_meta_data();
-
-			}
-
-		}
+		$api = new Shipstation_Api( true );
+		$api->create_shipments_from_wc_orders( $wc_orders );
 
 		return delete_transient( $trans_key );
 

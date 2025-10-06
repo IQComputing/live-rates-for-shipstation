@@ -537,6 +537,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					"_{$this->plugin_prefix}_carrier_id"	=> $shiprate['carrier_id'],
 					"_{$this->plugin_prefix}_carrier_code"	=> $shiprate['carrier_code'],
 					"_{$this->plugin_prefix}_service_code"	=> $shiprate['code'],
+					"_{$this->plugin_prefix}_boxes"			=> $req,
 				);
 
 				// Apply service upcharge
