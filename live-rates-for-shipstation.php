@@ -11,13 +11,13 @@
  * License URI: https://www.gnu.org/licenses/gpl-3.0.html
  * Text Domain: live-rates-for-shipstation
  * Requires Plugins: woocommerce, woocommerce-shipstation-integration
- * 
+ *
  * @notes ShipStation does not make it easy or obvious how to update / create a Shipment for an Order.
  * 		The shipment create endpoint keeps coming back successful, but nothing on the ShipStation side
- * 		appears to change. 
- * 		The v1 API update Order endpoint also doesn't seem to allow Shipment updates, but is required 
+ * 		appears to change.
+ * 		The v1 API update Order endpoint also doesn't seem to allow Shipment updates, but is required
  * 		to get the OrderID, required for any kind of create/update endpoints.
- * 
+ *
  * @todo Look at preventing ship_estimate checks on ajax add_to_cart. Prefer Cart or Checkout pages.
  * @todo Add warehosue locations to Shipping Zone packages.
  * @todo Look into updating warehouses through Edit Order > Order Items.
@@ -79,7 +79,7 @@ class Driver {
 
 	/**
 	 * Set a ShipStation Plugin Option Value
-	 * 
+	 *
 	 * @todo Move out of ShipStation for WooCommerce options.
 	 * @todo Create separate integration page.
 	 *
@@ -160,11 +160,11 @@ class Driver {
  */
 spl_autoload_register( function( $class ) {
 
-	if( false === strpos( $class, 'IQLRSS\\' ) ) {
+	if( false === strpos( $class, __NAMESPACE__ . '\\' ) ) {
 		return $class;
 	}
 
-	$class_path	= str_replace( 'IQLRSS\\', '', $class );
+	$class_path	= str_replace( __NAMESPACE__ . '\\', '', $class );
 	$class_path	= str_replace( '_', '-', strtolower( $class_path ) );
 	$class_path	= str_replace( '\\', '/', $class_path );
 	$file_path	= wp_normalize_path( sprintf( '%s/%s',
@@ -178,3 +178,11 @@ spl_autoload_register( function( $class ) {
 
 } );
 add_action( 'plugins_loaded', array( '\IQLRSS\Driver', 'drive' ), 8 );
+
+
+/**
+ * Activate, Deactivate, and Uninstall Hooks
+ */
+require_once rtrim( __DIR__, '\\/' ) . '/_stallation.php';
+register_deactivation_hook( __FILE__, array( '\IQLRSS\Stallation', 'deactivate' ) );
+register_activation_hook( 	__FILE__, array( '\IQLRSS\Stallation', 'uninstall' ) );
