@@ -70,7 +70,7 @@ class Shipstation_Apiv1 extends Shipstation_Api  {
 
 		if( empty( $stores ) || $this->skip_cache ) {
 
-			$body = $this->make_request( 'get', 'stores', array( 'showInactive' => false ) );
+			$body = $this->make_request( 'get', 'stores', array( 'showInactive' => 'false' ) ); // Must be a string.
 			$stores = array();
 			$curr_store_id = 0;
 
@@ -258,6 +258,8 @@ class Shipstation_Apiv1 extends Shipstation_Api  {
 	/**
 	 * Return an array of services for a specific carrier.
 	 * 
+	 * @link https://www.shipstation.com/docs/api/carriers/list-services
+	 * 
 	 * @param String $carrier_code
 	 * 
 	 * @return Array|WP_Error
@@ -318,6 +320,8 @@ class Shipstation_Apiv1 extends Shipstation_Api  {
 
 	/**
 	 * Return an array of packages for a specific carrier.
+	 * 
+	 * @link https://www.shipstation.com/docs/api/carriers/list-packages
 	 * 
 	 * @param String $carrier_code
 	 * 
@@ -506,6 +510,9 @@ class Shipstation_Apiv1 extends Shipstation_Api  {
 	 * This actually requires the entire Order entity from ShipStation.
 	 * WC_Order _shipstation_order meta for entity.
 	 * WC_Order _shipstation_order_fetched for timestamp to determine freshness.
+	 * 
+	 * This endpoint may work, but it looks like any shipping updates need to be made
+	 * in the v2 API Shipments endpoint. What a hassle...
 	 *
 	 * @link https://www.shipstation.com/docs/api/orders/create-update-multiple-orders
 	 *

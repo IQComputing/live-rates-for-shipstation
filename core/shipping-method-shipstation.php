@@ -109,6 +109,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		add_action( 'woocommerce_update_options_shipping_' . $this->id, array( $this, 'process_admin_options' ) );
 		add_filter( 'http_request_timeout',						array( $this, 'increase_request_timeout' ) );
 		add_filter( 'woocommerce_order_item_display_meta_key',	array( $this, 'labelify_meta_keys' ) );
+		add_filter( 'woocommerce_order_item_display_meta_value',array( $this, 'format_meta_values' ), 10, 2 );
 		add_filter( 'woocommerce_hidden_order_itemmeta',		array( $this, 'hide_metadata_from_admin_order' ) );
 
 	}
@@ -154,11 +155,97 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		$matches = array(
 			'carrier'	=> esc_html__( 'Carrier', 'live-rates-for-shipstation' ),
 			'service'	=> esc_html__( 'Service', 'live-rates-for-shipstation' ),
-			'rate'		=> esc_html__( 'Rate', 'live-rates-for-shipstation' ),
-			'adjustment'=> esc_html__( 'Adjustment', 'live-rates-for-shipstation' ),
+			'rates'		=> esc_html__( 'Rates', 'live-rates-for-shipstation' ),
+			'boxes'		=> esc_html__( 'Packages', 'live-rates-for-shipstation' ),
 		);
 
 		return ( isset( $matches[ $display ] ) ) ? $matches[ $display ] : $display;
+
+	}
+
+
+	/**
+	 * Edit Order Screen
+	 * Display Order Item Metadata, but labelify the $dispaly Key
+	 *
+	 * @param String $display
+	 * @param WC_Meta_Data $wc_meta
+	 *
+	 * @return String $display
+	 */
+	public function format_meta_values( $display, $wc_meta ) {
+
+		if( ! empty( $display ) ) {
+			switch( $wc_meta->key ) {
+
+				// Rates
+				case 'rates':
+					$value = json_decode( $display, true );
+					
+					$display_arr = array();
+					foreach( $value as $rate_arr ) {
+
+						if( isset( $rate_arr['adjustment'] ) ) {
+
+							$new_display = sprintf( '%s [ %s &times; ( %s + %s',
+								mb_strimwidth( $rate_arr['_name'], 0, 47, '...' ),
+								$rate_arr['qty'],
+								wc_price( $rate_arr['rate'] ),
+								wc_price( $rate_arr['adjustment']['cost'] ),
+							);
+
+							if( 'percentage' == $rate_arr['adjustment']['type'] ) {
+								$new_display .= sprintf( ' | %s', $rate_arr['adjustment']['rate'] . '%' );
+							}
+
+							$new_display .= sprintf( ' ) %s ]',
+								( $rate_arr['adjustment']['global'] ) ? esc_html__( 'Global', 'live-rates-for-shipstation' ) : esc_html__( 'Service', 'live-rates-for-shipstation' )
+							);
+
+							$display_arr[] = $new_display;
+
+						} else {
+
+							$display_arr[] = sprintf( '%s [ %s x %s ]',
+								mb_strimwidth( $rate_arr['_name'], 0, 47, '...' ),
+								$rate_arr['qty'],
+								wc_price( $rate_arr['rate'] ),
+							);
+
+						}
+
+					}
+
+					$display = implode( ',&nbsp;&nbsp;', $display_arr );
+
+					break;
+
+				// Boxes
+				case 'boxes':
+					$value = json_decode( $display, true );
+					
+					$display_arr = array();
+					foreach( $value as $box_arr ) {
+						
+						$display_arr[] = sprintf( '%s [ %s %s ( %s x %s x %s %s ) ]',
+							$box_arr['_name'],
+							$box_arr['weight']['value'],
+							$box_arr['weight']['unit'],
+							$box_arr['dimensions']['length'],
+							$box_arr['dimensions']['width'],
+							$box_arr['dimensions']['height'],
+							$box_arr['dimensions']['unit'],
+						);
+
+					}
+
+					$display = implode( ',&nbsp;&nbsp;', $display_arr );
+
+					break;
+			}
+		}
+
+		return $display;
 
 	}
 
@@ -527,16 +614,9 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 				$service_arr = $enabled_services[ $shiprate['carrier_id'] ][ $shiprate['code'] ];
 				$cost = $shiprate['cost'];
-
-				$metadata = array(
-					'carrier'	=> $shiprate['carrier_name'],
-					'service'	=> $shiprate['name'],
-					'rate'		=> html_entity_decode( strip_tags( wc_price( $cost ) ) ),
-
-					// Private metadata fields must be excluded via filter way above.
-					"_{$this->plugin_prefix}_carrier_id"	=> $shiprate['carrier_id'],
-					"_{$this->plugin_prefix}_carrier_code"	=> $shiprate['carrier_code'],
-					"_{$this->plugin_prefix}_service_code"	=> $shiprate['code'],
+				$ratemeta = array(
+					'_name'=> $req['_name'], // Item product name.
+					'rate' => $cost,
 				);
 
 				// Apply service upcharge
@@ -551,11 +631,12 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 					if( ! empty( $adjustment_type ) && $adjustment > 0 ) {
 
-						$adjustment_cost = ( 'flatrate' == $adjustment_type ) ? $adjustment : ( $cost * ( $adjustment / 100 ) );
-						$metadata['adjustment'] = sprintf( '%s (%s) - %s',
-							html_entity_decode( strip_tags( wc_price( $adjustment_cost ) ) ),
-							ucwords( $adjustment_type ),
-							esc_html__( 'Service Specific', 'live-rates-for-shipstation' ),
+						$adjustment_cost = ( 'percentage' == $adjustment_type ) ? ( $cost * ( floatval( $adjustment ) / 100 ) ) : floatval( $adjustment );
+						$ratemeta['adjustment'] = array(
+							'type' => $adjustment_type,
+							'rate' => $adjustment,
+							'cost' => $adjustment_cost,
+							'global'=> false,
 						);
 						$cost += $adjustment_cost;
 
@@ -563,37 +644,59 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 				} else if( ! empty( $global_adjustment_type ) && $global_adjustment > 0 ) {
 
-					$adjustment_cost = ( 'flatrate' == $global_adjustment_type ) ? floatval( $global_adjustment ) : ( $cost * ( floatval( $global_adjustment ) / 100 ) );
-					$metadata['adjustment'] = sprintf( '%s (%s) - %s',
-						html_entity_decode( strip_tags( wc_price( $adjustment_cost ) ) ),
-						ucwords( $global_adjustment_type ),
-						esc_html__( 'Global', 'live-rates-for-shipstation' ),
+					$adjustment_cost = ( 'percentage' == $global_adjustment_type ) ? ( $cost * ( floatval( $global_adjustment ) / 100 ) ) : floatval( $global_adjustment );
+					$ratemeta['adjustment'] = array(
+						'type' => $global_adjustment_type,
+						'rate' => $global_adjustment,
+						'cost' => $adjustment_cost,
+						'global'=> true,
 					);
 					$cost += $adjustment_cost;
 
 				}
 
 				// Maybe apply per item.
-				$cost = ( 'individual' == $packing_type ) ? ( $cost * $packages['contents'][ $item_id ]['quantity'] ) : $cost;
+				if( 'individual' == $packing_type ) {
+					$cost *= $packages['contents'][ $item_id ]['quantity'];
+					$ratemeta['qty'] = $packages['contents'][ $item_id ]['quantity'];
+				}
 
-				// Create the WooCommerce rate Array.
-				$rate = array(
-					'id'		=> $shiprate['code'],
-					'label'		=> ( ! empty( $service_arr['nickname'] ) ) ? $service_arr['nickname'] : $shiprate['name'],
-					'package'	=> $packages,
-					'meta_data' => array_merge( $metadata, array(
-						'dimensions'=> $req['dimensions'],
-						'weight'	=> $req['weight'],
-					) ),
+				// Set rate or append the estimated item ship cost.
+				if( ! isset( $rates[ $shiprate['code'] ] ) ) {
+
+					$rates[ $shiprate['code'] ] = array(
+						'id'		=> $shiprate['code'],
+						'label'		=> ( ! empty( $service_arr['nickname'] ) ) ? $service_arr['nickname'] : $shiprate['name'],
+						'package'	=> $packages,
+						'cost'		=> array( $cost ),
+						'meta_data' => array(
+							'carrier'	=> $shiprate['carrier_name'],
+							'service'	=> $shiprate['name'],
+							'rates'		=> array(),
+							'boxes'		=> array(),
+
+							// Private metadata fields must be excluded via filter way above.
+							"_{$this->plugin_prefix}_carrier_id"	=> $shiprate['carrier_id'],
+							"_{$this->plugin_prefix}_carrier_code"	=> $shiprate['carrier_code'],
+							"_{$this->plugin_prefix}_service_code"	=> $shiprate['code'],
+						),
+					);
+
+				} else {
+					$rates[ $shiprate['code'] ]['cost'][] = $cost;
+				}
+
+				// Merge item rates
+				$rates[ $shiprate['code'] ]['meta_data']['rates'] = array_merge(
+					$rates[ $shiprate['code'] ]['meta_data']['rates'],
+					array( $ratemeta ),
 				);
 
-				if( isset( $rates[ $shiprate['code'] ] ) ) {
-					$rates[ $shiprate['code'] ]['cost'][] = $cost;
-				} else {
-					$rates[ $shiprate['code'] ] = array_merge( $rate, array(
-						'cost' => array( $cost ),
-					) );
-				}
+				// Merge item boxes
+				$rates[ $shiprate['code'] ]['meta_data']['boxes'] = array_merge(
+					$rates[ $shiprate['code'] ]['meta_data']['boxes'],
+					array( $req ),
+				);
 
 			}
 
@@ -606,6 +709,17 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		if( 'no' == $single_lowest || empty( $single_lowest ) ) {
 
 			foreach( $rates as $rate_arr ) {
+
+				// Skip incomplete rate requests
+				if( count( $item_requests ) != count( $rate_arr['cost'] ) ) {
+					continue;
+				}
+
+				// WooCommerce skips serialized data when outputting order item meta, this is a workaround.
+				// See hooks above for formatting.
+				$rate_arr['meta_data']['rates'] = json_encode( $rate_arr['meta_data']['rates'] );
+				$rate_arr['meta_data']['boxes'] = json_encode( $rate_arr['meta_data']['boxes'] );
+
 				$this->add_rate( $rate_arr );
 			}
 
@@ -626,6 +740,11 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			if( ! empty( $single_lowest_label ) ) {
 				$rates[ $lowest_service ]['label'] = $single_lowest_label;
 			}
+
+			// WooCommerce skips serialized data when outputting order item meta, this is a workaround.
+			// See hooks above for formatting.
+			$rates[ $lowest_service ]['meta_data']['rates'] = json_encode( $rates[ $lowest_service ]['meta_data']['rates'] );
+			$rates[ $lowest_service ]['meta_data']['boxes'] = json_encode( $rates[ $lowest_service ]['meta_data']['boxes'] );
 
 			$this->add_rate( $rates[ $lowest_service ] );
 
@@ -651,7 +770,9 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				continue;
 			}
 
-			$request = array();
+			$request = array(
+				'_name' => $item['data']->get_name(),
+			);
 			$physicals = array_filter( array(
 				'weight'	=> $item['data']->get_weight(),
 				'length'	=> $item['data']->get_length(),

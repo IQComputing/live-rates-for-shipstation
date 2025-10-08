@@ -273,6 +273,162 @@ class Shipstation_Api  {
 	}
 
 
+	/**
+	 * Create a new Shipment
+	 * 
+	 * @param Array $args
+	 * 
+	 * @return Array $data
+	 */
+	public function create_shipments( $args ) {
+
+		$body = $this->make_request( 'post', 'shipments', array( 'shipments' => $args ) );
+
+		// Return Early - API Request error - see logs.
+		if( is_wp_error( $body ) ) {
+			return $body;
+		}
+
+		/**
+		 * API returns no errors but also doesn't do anything in ShipStation.
+		 */
+		$data = $body;
+
+		return $data;
+
+	}
+
+
+
+	/**
+	 * Create Shipments from given WC_Orders.
+	 * 
+	 * @param Array $wc_orders - Array of WC_Order objects.
+	 * 
+	 * @return Array|WP_Error
+	 */
+	public function create_shipments_from_wc_orders( $wc_orders ) {
+
+		$data = array();
+		if( empty( $wc_orders ) ) {
+			return $data;
+		}
+
+		$shipments = array();
+		foreach( $wc_orders as $wc_order ) {
+
+			// Skip
+			if( ! is_a( $wc_order, 'WC_Order' ) ) continue;
+
+			$shipstation_order_arr = $wc_order->get_meta( '_shipstation_order', true );
+
+			// Skip - No ShipStation Order data to work with.
+			if( empty( $shipstation_order_arr ) ) continue;
+
+			$order_items     = $wc_order->get_items();
+			$order_item_ship = $wc_order->get_items( 'shipping' );
+			$order_item_ship = ( ! empty( $order_item_ship ) ) ? $order_item_ship[ array_key_first( $order_item_ship ) ] : null;
+
+			$shipment = array(
+				'validate_address'  => 'no_validation',
+				'carrier_id'        => $order_item_ship->get_meta( '_iqlrss_carrier_id', true ),
+				'store_id'          => \IQLRSS\Driver::get_ss_opt( 'store_id' ),
+				'shipping_paid'     => array(
+					'currency'  => $wc_order->get_currency(),
+					'amount'    => $wc_order->get_shipping_total(),
+				),
+				'ship_from' => array(
+					'name'      => get_option( 'woocommerce_email_from_name' ),
+					'phone'     => '000-000-0000', // Phone Number is required.
+					'email'     => get_option( 'woocommerce_email_from_address' ),
+					'company'   => get_bloginfo( 'name' ),
+					'address_line1' => WC()->countries->get_base_address(),
+					'address_line2' => WC()->countries->get_base_address_2(),
+					'city_locality' => WC()->countries->get_base_city(),
+					'state_province'=> WC()->countries->get_base_state(),
+					'postal_code'   => WC()->countries->get_base_postcode(),
+					'country_code'  => WC()->countries->get_base_country(),
+					'address_residential_indicator' => 'unknown',
+				),
+				'ship_to' => array(
+					'name'      => $wc_order->get_formatted_shipping_full_name(),
+					'phone'     => ( ! empty( $wc_order->get_shipping_phone() ) ) ? $wc_order->get_shipping_phone() : '000-000-0000',
+					'email'     => $wc_order->get_billing_email(),
+					'company'   => $wc_order->get_shipping_company(),
+					'address_line1' => $wc_order->get_shipping_address_1(),
+					'address_line2' => $wc_order->get_shipping_address_2(),
+					'city_locality' => $wc_order->get_shipping_city(),
+					'state_province'=> $wc_order->get_shipping_state(),
+					'postal_code'   => $wc_order->get_shipping_postcode(),
+					'country_code'  => $wc_order->get_shipping_country(),
+					'address_residential_indicator' => 'unknown',
+				),
+				'items'     => array(),
+				'packages'  => array(),
+			);
+
+			$shipment['items'] = array();
+			foreach( $shipstation_order_arr['items'] as $ship_item ) {
+
+				// Skip any items that don't exist in our orders
+				if( ! isset( $order_items[ $ship_item['lineItemKey'] ] ) ) continue;
+
+				$wc_order_item = $order_items[ $ship_item['lineItemKey'] ];
+				$shipment['items'][] = array(
+					'external_order_id'     => $wc_order->get_id(),
+					'external_order_item_id'=> $ship_item['lineItemKey'],
+					'order_source_code'     => 'woocommerce',
+					'name'                  => $ship_item['name'],
+					'sku'                   => $ship_item['sku'],
+					'quantity'              => $ship_item['quantity'],
+					'image_url'             => $ship_item['imageUrl'],
+					'unit_price'            => $wc_order_item->get_product()->get_price(),
+					'weight'                => array(
+						'value' => $wc_order_item->get_product()->get_weight(),
+						'unit'  => $this->convert_unit_term( get_option( 'woocommerce_weight_unit', 'lbs' ) ),
+					),
+				);
+
+				$shipment['packages'][] = array(
+					'package_code'  => 'package',
+					'package_name'  => 'Foo Bar',
+					'weight'        => array(
+						'value' => $wc_order_item->get_product()->get_weight(),
+						'unit'  => $this->convert_unit_term( get_option( 'woocommerce_weight_unit', 'lbs' ) ),
+					),
+					'dimensions' => array(
+						'length'	=> round( wc_get_dimension( $wc_order_item->get_product()->get_length(), get_option( 'woocommerce_dimension_unit', 'in' ) ), 2 ),
+						'width'		=> round( wc_get_dimension( $wc_order_item->get_product()->get_width(), get_option( 'woocommerce_dimension_unit', 'in' ) ), 2 ),
+						'height'	=> round( wc_get_dimension( $wc_order_item->get_product()->get_height(), get_option( 'woocommerce_dimension_unit', 'in' ) ), 2 ),
+						'unit'		=> $this->convert_unit_term( get_option( 'woocommerce_dimension_unit', 'in' ) ),
+					),
+					'products' => array( array(
+						'description'   => $wc_order_item->get_product()->get_name(),
+						'sku'           => $ship_item['sku'],
+						'quantity'      => $ship_item['quantity'],
+						'product_url'   => get_permalink( $wc_order_item->get_product()->get_id() ),
+						'value'         => array(
+							'currency'  => $wc_order->get_currency(),
+							'amount'    => $wc_order_item->get_product()->get_price(),
+						),
+						'weight' => array(
+							'value' => $wc_order_item->get_product()->get_weight(),
+							'unit'  => $this->convert_unit_term( get_option( 'woocommerce_weight_unit', 'lbs' ) ),
+						),
+						'unit_of_measure' => get_option( 'woocommerce_dimension_unit', 'in' ),
+					) ),
+				);
+			}
+
+			$shipments[] = $shipment;
+
+		}
+
+		return $this->create_shipments( $shipments );
+
+	}
+
+
 
 	/**------------------------------------------------------------------------------------------------ **/
 	/** :: Helper Methods :: **/
@@ -366,7 +522,7 @@ class Shipstation_Api  {
 		$this->log( sprintf( esc_html__( 'ShipStation API Request to %s', 'live-rates-for-shipstation' ), $endpoint ), 'info', array(
 			'args'		=> $args,
 			'code'		=> $code,
-			'reponse'	=> $body,
+			'response'	=> $body,
 		) );
 
 		return $body;
