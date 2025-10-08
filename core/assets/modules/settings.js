@@ -3,7 +3,7 @@
  *
  * Not really meant to be used as an object but more for
  * encapsulation and organization.
- * 
+ *
  * @todo Populate (or recreate) Carriers Select2 whenever API is verified.
  *
  * @global {Object} iqlrss - Localized object of saved values.
@@ -128,7 +128,7 @@ class apiVerificationButton {
 
 	/**
 	 * API Input.
-	 * 
+	 *
 	 * @var {DOMObject}
 	 */
 	#apiInput;
@@ -136,7 +136,7 @@ class apiVerificationButton {
 
 	/**
 	 * API Type.
-	 * 
+	 *
 	 * @var {String}
 	 */
 	#type;
@@ -144,7 +144,7 @@ class apiVerificationButton {
 
 	/**
 	 * Verification Button.
-	 * 
+	 *
 	 * @var {String}
 	 */
 	#button;
@@ -152,12 +152,12 @@ class apiVerificationButton {
 
 	/**
 	 * Setup events.
-	 * 
-	 * @param {DOMObject} $parentInput 
+	 *
+	 * @param {DOMObject} $parentInput
 	 * @param {String} type - v1|v2
 	 */
 	constructor( $parentInput, type ) {
-		
+
 		if( ! $parentInput || $parentInput.length ) {
 			return;
 		}
@@ -298,12 +298,12 @@ class apiVerificationButton {
 				if( ! $row || 'none' != $row.style.display ) return;
 
 				/* Skip the Return Lowest Label if related isn't checked */
-				if( -1 != $elm.name.indexOf( 'global_adjustment' ) && '' == document.querySelectorAll( '[name*=global_adjustment_type]' ).value ) {
+				if( -1 != $elm.name.indexOf( 'global_adjustment' ) && '' == document.querySelector( 'select[name*=global_adjustment_type]' ).value ) {
 					return;
 				}
 
 				/* Skip the Return Lowest Label if related isn't checked */
-				if( -1 != $elm.name.indexOf( 'return_lowest_label' ) && ! document.querySelectorAll( '[type=checkbox][name*=return_lowest_label]' ).checked ) {
+				if( -1 != $elm.name.indexOf( 'return_lowest_label' ) && ! document.querySelector( '[type=checkbox][name*=return_lowest]' ).checked ) {
 					return;
 				}
 
