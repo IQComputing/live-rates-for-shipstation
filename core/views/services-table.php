@@ -57,11 +57,10 @@ $global_adjustment_type = ( empty( $global_adjustment_type ) && ! empty( $global
 				}
 
 				// Saved Services first.
-				foreach( $saved_services as $carrier_code => $carrier_arr ) {
+				foreach( $saved_services as $carrier_id => $carrier_arr ) {
 					foreach( $carrier_arr as $service_code => $service_arr ) {
 
-						$attr_name = sprintf( '%s[%s][%s]', $prefix, $service_arr['carrier_code'], $service_arr['service_code'] );
-
+						$attr_name = sprintf( '%s[%s][%s]', $prefix, $service_arr['carrier_id'], $service_arr['service_code'] );
 						$saved_atts = array(
 							'enabled'			=> ( isset( $service_arr['enabled'] ) ) ? $service_arr['enabled'] : false,
 							'nickname'			=> ( isset( $service_arr['nickname'] ) ) ? $service_arr['nickname'] : '',
@@ -83,6 +82,14 @@ $global_adjustment_type = ( empty( $global_adjustment_type ) && ! empty( $global
 									esc_attr( $attr_name . '[service_name]' ),
 									esc_attr( $service_arr['service_name'] )
 								);
+
+								if( isset( $service_arr['carrier_id'] ) ) {
+									printf( '<input type="hidden" name="%s" value="%s">',
+										esc_attr( $attr_name . '[carrier_id]' ),
+										esc_attr( $service_arr['carrier_id'] )
+									);
+								}
+
 								printf( '<input type="hidden" name="%s" value="%s">',
 									esc_attr( $attr_name . '[carrier_code]' ),
 									esc_attr( $service_arr['carrier_code'] )
@@ -108,7 +115,7 @@ $global_adjustment_type = ( empty( $global_adjustment_type ) && ! empty( $global
 										printf( '<option value="%s"%s>%s</option>',
 											esc_attr( $slug ),
 											selected( $saved_atts['adjustment_type'], $slug, false ),
-											$label
+											esc_html( $label )
 										);
 									}
 								print( '</select></div>' );
@@ -127,15 +134,15 @@ $global_adjustment_type = ( empty( $global_adjustment_type ) && ! empty( $global
 						print( '</tr>' );
 
 						// Set a processed flag for the next array which is not reorganized.
-						$saved_services[ $carrier_code ][ $service_code ]['processed'] = true;
+						$saved_services[ $carrier_id ][ $service_code ]['processed'] = true;
 
 					}
 				}
 
 				// Remaining Services next.
-				foreach( $saved_carriers as $carrier_code ) {
+				foreach( $saved_carriers as $carrier_id ) {
 
-					$response = $shipStationAPI->get_carrier( $carrier_code );
+					$response = $shipStationAPI->get_carrier( $carrier_id );
 					if( is_wp_error( $response ) ) {
 						printf( '<tr><td colspan="4" class="iqcss-err">%s - %s</td></tr>',
 							esc_html( $response->get_error_code() ),
@@ -147,11 +154,11 @@ $global_adjustment_type = ( empty( $global_adjustment_type ) && ! empty( $global
 					foreach( $response['services'] as $service_arr ) {
 
 						$service_arr = ( ! is_array( $service_arr ) ) ? (array)$service_arr : $service_arr;
-						if( isset( $saved_services[ $carrier_code ][ $service_arr['service_code'] ]['processed'] ) ) continue;
+						if( isset( $saved_services[ $carrier_id ][ $service_arr['service_code'] ]['processed'] ) ) continue;
 
 						print( '<tr>' );
 
-							$attr_name = sprintf( '%s[%s][%s]', $prefix, $carrier_code, $service_arr['service_code'] );
+							$attr_name = sprintf( '%s[%s][%s]', $prefix, $carrier_id, $service_arr['service_code'] );
 
 							// Service Checkbox and Metadata
 							print( '<td style="width: 50px;">' );
@@ -162,6 +169,14 @@ $global_adjustment_type = ( empty( $global_adjustment_type ) && ! empty( $global
 									esc_attr( $attr_name . '[service_name]' ),
 									esc_attr( $service_arr['name'] )
 								);
+
+								if( isset( $response['carrier']['carrier_id'] ) ) {
+									printf( '<input type="hidden" name="%s" value="%s">',
+										esc_attr( $attr_name . '[carrier_id]' ),
+										esc_attr( $response['carrier']['carrier_id'] )
+									);
+								}
+
 								printf( '<input type="hidden" name="%s" value="%s">',
 									esc_attr( $attr_name . '[carrier_code]' ),
 									esc_attr( $response['carrier']['carrier_code'] )
@@ -186,7 +201,7 @@ $global_adjustment_type = ( empty( $global_adjustment_type ) && ! empty( $global
 										printf( '<option value="%s"%s>%s</option>',
 											esc_attr( $slug ),
 											selected( $global_adjustment_type, $slug, false ),
-											$label
+											esc_html( $label )
 										);
 									}
 								print( '</select></div>' );

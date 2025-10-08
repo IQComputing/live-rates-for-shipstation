@@ -181,7 +181,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				// Rates
 				case 'rates':
 					$value = json_decode( $display, true );
-					
+
 					$display_arr = array();
 					foreach( $value as $rate_arr ) {
 
@@ -223,10 +223,10 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				// Boxes
 				case 'boxes':
 					$value = json_decode( $display, true );
-					
+
 					$display_arr = array();
 					foreach( $value as $box_arr ) {
-						
+
 						$display_arr[] = sprintf( '%s [ %s %s ( %s x %s x %s %s ) ]',
 							$box_arr['_name'],
 							$box_arr['weight']['value'],
@@ -253,9 +253,9 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	/**
 	 * Hide certain metadata from the Admin Order screen.
 	 * Otherwise, it formats it as label value pairs.
-	 * 
+	 *
 	 * @param Arary $meta_keys
-	 * 
+	 *
 	 * @return Array $meta_keys
 	 */
 	public function hide_metadata_from_admin_order( $meta_keys ) {
@@ -413,7 +413,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			foreach( $carrier_services as $service_code => $service_arr ) {
 
 				$carrier_id 	= sanitize_text_field( $carrier_id );
-				$service_code = sanitize_text_field( $service_code );
+				$service_code 	= sanitize_text_field( $service_code );
 				$data = array_filter( array(
 
 					// User Input
@@ -424,8 +424,8 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					'service_name'	=> sanitize_text_field( $service_arr['service_name'] ),
 					'service_code'	=> sanitize_text_field( $service_code ),
 					'carrier_name'	=> sanitize_text_field( $service_arr['carrier_name'] ),
-					'carrier_code'	=> sanitize_text_field( $carrier_services['carrier_code'] ),
-					'carrier_id'	=> sanitize_text_field( $carrier_id ),
+					'carrier_code'	=> ( isset( $service_arr['carrier_code'] ) ) ? sanitize_text_field( $service_arr['carrier_code'] ) : '',
+					'carrier_id'	=> ( isset( $service_arr['carrier_id'] ) ) ? sanitize_text_field( $service_arr['carrier_id'] ) : $carrier_id,
 				) );
 
 				// The above removes empty values.
