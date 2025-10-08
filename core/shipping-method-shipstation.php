@@ -82,7 +82,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	public function __construct( $instance_id = 0 ) {
 
 		$this->plugin_prefix 		= \IQLRSS\Driver::get( 'slug' );
-		$this->shipStationApi 		= new Shipstation_Api( true );
+		$this->shipStationApi 		= new Shipstation_Api();
 		$this->id 					= \IQLRSS\Driver::plugin_prefix( 'shipstation' );
 		$this->instance_id 			= absint( $instance_id );
 		$this->method_title 		= esc_html__( 'Live Rates for ShipStation', 'live-rates-for-shipstation' );
@@ -109,6 +109,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		add_action( 'woocommerce_update_options_shipping_' . $this->id, array( $this, 'process_admin_options' ) );
 		add_filter( 'http_request_timeout',						array( $this, 'increase_request_timeout' ) );
 		add_filter( 'woocommerce_order_item_display_meta_key',	array( $this, 'labelify_meta_keys' ) );
+		add_filter( 'woocommerce_hidden_order_itemmeta',		array( $this, 'hide_metadata_from_admin_order' ) );
 
 	}
 
@@ -159,6 +160,23 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 		return ( isset( $matches[ $display ] ) ) ? $matches[ $display ] : $display;
 
+	}
+
+
+	/**
+	 * Hide certain metadata from the Admin Order screen.
+	 * Otherwise, it formats it as label value pairs.
+	 * 
+	 * @param Arary $meta_keys
+	 * 
+	 * @return Array $meta_keys
+	 */
+	public function hide_metadata_from_admin_order( $meta_keys ) {
+		return array_merge( $meta_keys, array(
+			"_{$this->plugin_prefix}_carrier_id",
+			"_{$this->plugin_prefix}_carrier_code",
+			"_{$this->plugin_prefix}_service_code",
+		) );
 	}
 
 
@@ -304,10 +322,10 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 		// Group by Carriers then Services
 		$services = array();
-		foreach( $posted_services as $carrier_code => $carrier_services ) {
+		foreach( $posted_services as $carrier_id => $carrier_services ) {
 			foreach( $carrier_services as $service_code => $service_arr ) {
 
-				$carrier_code = sanitize_text_field( $carrier_code );
+				$carrier_id 	= sanitize_text_field( $carrier_id );
 				$service_code = sanitize_text_field( $service_code );
 				$data = array_filter( array(
 
@@ -319,7 +337,8 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					'service_name'	=> sanitize_text_field( $service_arr['service_name'] ),
 					'service_code'	=> sanitize_text_field( $service_code ),
 					'carrier_name'	=> sanitize_text_field( $service_arr['carrier_name'] ),
-					'carrier_code'	=> sanitize_text_field( $carrier_code ),
+					'carrier_code'	=> sanitize_text_field( $carrier_services['carrier_code'] ),
+					'carrier_id'	=> sanitize_text_field( $carrier_id ),
 				) );
 
 				// The above removes empty values.
@@ -342,7 +361,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				 * Global Adjust could be populated, and
 				 * Service is set to '' (No Adjustment).
 				 */
-				$services[ $carrier_code ][ $service_code ] = $data;
+				$services[ $carrier_id ][ $service_code ] = $data;
 
 			}
 		}
@@ -502,16 +521,22 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			// Loop the found rates and setup the WooCommerce rates array for each.
 			foreach( $available_rates as $shiprate ) {
 
-				if( ! isset( $enabled_services[ $shiprate['carrier_code'] ][ $shiprate['code'] ] ) ) {
+				if( ! isset( $enabled_services[ $shiprate['carrier_id'] ][ $shiprate['code'] ] ) ) {
 					continue;
 				}
 
-				$service_arr = $enabled_services[ $shiprate['carrier_code'] ][ $shiprate['code'] ];
+				$service_arr = $enabled_services[ $shiprate['carrier_id'] ][ $shiprate['code'] ];
 				$cost = $shiprate['cost'];
+
 				$metadata = array(
-					'carrier'	=> sprintf( '%s (%s)', $shiprate['carrier_name'], $shiprate['carrier_code'] ),
-					'service'	=> sprintf( '%s (%s)', $shiprate['name'], $shiprate['code'] ),
+					'carrier'	=> $shiprate['carrier_name'],
+					'service'	=> $shiprate['name'],
 					'rate'		=> html_entity_decode( strip_tags( wc_price( $cost ) ) ),
+
+					// Private metadata fields must be excluded via filter way above.
+					"_{$this->plugin_prefix}_carrier_id"	=> $shiprate['carrier_id'],
+					"_{$this->plugin_prefix}_carrier_code"	=> $shiprate['carrier_code'],
+					"_{$this->plugin_prefix}_service_code"	=> $shiprate['code'],
 				);
 
 				// Apply service upcharge
@@ -588,21 +613,21 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		} else if( 'yes' == $single_lowest ) {
 
 			$lowest = 0;
-			$lowest_carrier = array_key_first( $rates );
-			foreach( $rates as $carrier_code => $rate_arr ) {
+			$lowest_service = array_key_first( $rates );
+			foreach( $rates as $service_id => $rate_arr ) {
 
 				$total = array_sum( $rate_arr['cost'] );
 				if( 0 == $lowest || $total < $lowest ) {
 					$lowest = $total;
-					$lowest_carrier = $carrier_code;
+					$lowest_service = $service_id;
 				}
 			}
 
 			if( ! empty( $single_lowest_label ) ) {
-				$rates[ $lowest_carrier ]['label'] = $single_lowest_label;
+				$rates[ $lowest_service ]['label'] = $single_lowest_label;
 			}
 
-			$this->add_rate( $rates[ $lowest_carrier ] );
+			$this->add_rate( $rates[ $lowest_service ] );
 
 		}
 
@@ -810,7 +835,11 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 * @return String
 	 */
 	protected function cache_key_gen( $arr, $kintersect ) {
-		return md5( maybe_serialize( array_intersect_key( $arr, $kintersect ) ) );
+
+		$cache_arr = array_intersect_key( $arr, $kintersect );
+		ksort( $cache_arr );
+		return md5( maybe_serialize( $cache_arr ) );
+
 	}
 
 
