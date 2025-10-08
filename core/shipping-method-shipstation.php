@@ -81,6 +81,14 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 */
 	public function __construct( $instance_id = 0 ) {
 
+		// Don't Even if we're not on a Cart of Checkout page.
+		// This is specifically due to how long the API takes to respond.
+		if( ! is_admin() ) {
+			if( ! ( is_page( wc_get_page_id( 'cart' ) ) || is_page( wc_get_page_id( 'checkout' ) ) ) ) {
+				return;
+			}
+		}
+
 		$this->plugin_prefix 		= \IQLRSS\Driver::get( 'slug' );
 		$this->shipStationApi 		= new Shipstation_Api();
 		$this->id 					= \IQLRSS\Driver::plugin_prefix( 'shipstation' );
@@ -686,6 +694,8 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					$rates[ $shiprate['code'] ]['cost'][] = $cost;
 				}
 
+				error_log( sprintf( '%s | %s | %s', $req['_name'], $cost, $shiprate['code'] ) );
+
 				// Merge item rates
 				$rates[ $shiprate['code'] ]['meta_data']['rates'] = array_merge(
 					$rates[ $shiprate['code'] ]['meta_data']['rates'],
@@ -709,6 +719,11 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		if( 'no' == $single_lowest || empty( $single_lowest ) ) {
 
 			foreach( $rates as $rate_arr ) {
+
+				// Skip incomplete rate requests
+				if( count( $item_requests ) != count( $rate_arr['cost'] ) ) {
+					continue;
+				}
 
 				// WooCommerce skips serialized data when outputting order item meta, this is a workaround.
 				// See hooks above for formatting.
