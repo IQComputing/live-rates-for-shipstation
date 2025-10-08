@@ -484,6 +484,8 @@ Class Settings_Shipstation {
 		add_filter( 'woocommerce_settings_api_sanitized_fields_shipstation',array( $this, 'save_shipstation_integration_settings' ) );
 		add_filter( 'woocommerce_shipstation_export_get_order',				array( $this, 'export_shipstation_shipping_method' ) );
 
+		add_filter( 'plugin_action_links_live-rates-for-shipstation/live-rates-for-shipstation.php', array( $this, 'plugin_settings_link' ) );
+
 	}
 
 
@@ -692,6 +694,29 @@ Class Settings_Shipstation {
 		}
 
 		return $order;
+
+	}
+
+
+	/**
+	 * Add link to plugin settings
+	 *
+	 * @param Array $links
+	 *
+	 * @return Array $links
+	 */
+	public function plugin_settings_link( $links ) {
+
+		return array_merge( array(
+			sprintf( '<a href="%s">%s</a>',
+				add_query_arg( array(
+					'page'	  => 'wc-settings',
+					'tab'	  => 'integration',
+					'section' => 'shipstation',
+				), admin_url( 'admin.php' ) ),
+				esc_html__( 'Settings', 'live-rates-for-shipstation' ),
+			)
+		), $links );
 
 	}
 
