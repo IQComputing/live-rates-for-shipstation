@@ -188,7 +188,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 						if( isset( $rate_arr['adjustment'] ) ) {
 
 							$new_display = sprintf( '%s [ %s &times; ( %s + %s',
-								mb_strimwidth( $rate_arr['_name'], 0, 47, '...' ),
+								( ! empty( $rate_arr['_name'] ) ) ? mb_strimwidth( $rate_arr['_name'], 0, 47, '...' ) : '',
 								$rate_arr['qty'],
 								wc_price( $rate_arr['rate'] ),
 								wc_price( $rate_arr['adjustment']['cost'] ),
@@ -207,7 +207,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 						} else {
 
 							$display_arr[] = sprintf( '%s [ %s x %s ]',
-								mb_strimwidth( $rate_arr['_name'], 0, 47, '...' ),
+								( ! empty( $rate_arr['_name'] ) ) ? mb_strimwidth( $rate_arr['_name'], 0, 47, '...' ) : '',
 								$rate_arr['qty'],
 								wc_price( $rate_arr['rate'] ),
 							);
@@ -409,6 +409,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 		// Group by Carriers then Services
 		$services = array();
+
 		foreach( $posted_services as $carrier_id => $carrier_services ) {
 			foreach( $carrier_services as $service_code => $service_arr ) {
 
@@ -615,7 +616,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				$service_arr = $enabled_services[ $shiprate['carrier_id'] ][ $shiprate['code'] ];
 				$cost = $shiprate['cost'];
 				$ratemeta = array(
-					'_name'=> ( ! empty( $req['_name'] ) ) ? $req['_name'] : '', // Item product name.
+					'_name'=> ( isset( $req['_name'] ) ) ? $req['_name'] : '', // Item product name.
 					'rate' => $cost,
 				);
 
