@@ -32,7 +32,7 @@ Class Stallation {
 		$settings = get_option( 'woocommerce_shipstation_settings' );
 		foreach( $settings as $key => $val ) {
 			if( is_numeric( $key ) ) continue;
-			if( false !== strpos( $key, '_iqlrss_' ) ) {
+			if( 0 === strpos( $key, 'iqlrss_' ) ) {
 				unset( $settings[ $key ] );
 			}
 		}
