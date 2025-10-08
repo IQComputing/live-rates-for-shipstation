@@ -83,7 +83,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 		// Don't Even if we're not on a Cart of Checkout page.
 		// This is specifically due to how long the API takes to respond.
-		if( ! is_admin() ) {
+		if( ! is_admin() && ! wp_doing_ajax() && ! ( function_exists( 'wp_is_serving_rest_request' ) && wp_is_serving_rest_request() ) ) {
 			if( ! ( is_page( wc_get_page_id( 'cart' ) ) || is_page( wc_get_page_id( 'checkout' ) ) ) ) {
 				return;
 			}
@@ -693,8 +693,6 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				} else {
 					$rates[ $shiprate['code'] ]['cost'][] = $cost;
 				}
-
-				error_log( sprintf( '%s | %s | %s', $req['_name'], $cost, $shiprate['code'] ) );
 
 				// Merge item rates
 				$rates[ $shiprate['code'] ]['meta_data']['rates'] = array_merge(
