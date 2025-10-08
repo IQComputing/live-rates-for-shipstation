@@ -12,6 +12,12 @@
  * Text Domain: live-rates-for-shipstation
  * Requires Plugins: woocommerce, woocommerce-shipstation-integration
  * 
+ * @notes ShipStation does not make it easy or obvious how to update / create a Shipment for an Order.
+ * 		The shipment create endpoint keeps coming back successful, but nothing on the ShipStation side
+ * 		appears to change. 
+ * 		The v1 API update Order endpoint also doesn't seem to allow Shipment updates, but is required 
+ * 		to get the OrderID, required for any kind of create/update endpoints.
+ * 
  * @todo Look at preventing ship_estimate checks on ajax add_to_cart. Prefer Cart or Checkout pages.
  * @todo Add warehosue locations to Shipping Zone packages.
  * @todo Look into updating warehouses through Edit Order > Order Items.
