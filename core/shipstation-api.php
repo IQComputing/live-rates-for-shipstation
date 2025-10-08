@@ -301,9 +301,9 @@ class Shipstation_Api  {
 
 
 	/**
-	 * Create Shipments from given WC_Orders
+	 * Create Shipments from given WC_Orders.
 	 * 
-	 * @param Array $wc_orders - Array of WC_Order objects
+	 * @param Array $wc_orders - Array of WC_Order objects.
 	 * 
 	 * @return Array|WP_Error
 	 */
@@ -317,10 +317,13 @@ class Shipstation_Api  {
 		$shipments = array();
 		foreach( $wc_orders as $wc_order ) {
 
-			// Ship any non-orders
+			// Skip
 			if( ! is_a( $wc_order, 'WC_Order' ) ) continue;
 
 			$shipstation_order_arr = $wc_order->get_meta( '_shipstation_order', true );
+
+			// Skip - No ShipStation Order data to work with.
+			if( empty( $shipstation_order_arr ) ) continue;
 
 			$order_items     = $wc_order->get_items();
 			$order_item_ship = $wc_order->get_items( 'shipping' );
@@ -363,6 +366,9 @@ class Shipstation_Api  {
 				'items'     => array(),
 				'packages'  => array(),
 			);
+
+			printf( '<pre>%s</pre>', print_r( $wc_order, 1 ) );
+			die( 'end' );
 
 			$shipment['items'] = array();
 			foreach( $shipstation_order_arr['items'] as $ship_item ) {
@@ -519,7 +525,7 @@ class Shipstation_Api  {
 		$this->log( sprintf( esc_html__( 'ShipStation API Request to %s', 'live-rates-for-shipstation' ), $endpoint ), 'info', array(
 			'args'		=> $args,
 			'code'		=> $code,
-			'reponse'	=> $body,
+			'response'	=> $body,
 		) );
 
 		return $body;
@@ -590,11 +596,6 @@ class Shipstation_Api  {
 			if( null === $this->logger ) {
 				$this->logger = \wc_get_logger();
 			}
-
-			array_walk_recursive( $context, function( &$val ) {
-				if( empty( $val ) ) return;
-				$val = json_decode( $val );
-			} );
 
 			$this->logger->log( $level, $error_msg, array_merge( $context, array( 'source' => 'live-rates-for-shipstation' ) ) );
 

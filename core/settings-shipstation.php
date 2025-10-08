@@ -431,7 +431,7 @@ Class Settings_Shipstation {
 	 * @return void
 	 */
 	public function update_exported_orders() {
-		
+
 		$trans_key = \IQLRSS\Driver::plugin_prefix( 'exported_orders' );
 		$order_ids = get_transient( $trans_key );
 
@@ -452,6 +452,13 @@ Class Settings_Shipstation {
 		if( empty( $wc_orders ) ) {
 			return delete_transient( $trans_key );
 		}
+
+		// Prime the cache
+		// API v1 will always cache it's ShipStation data in the WC_Order as metadata.
+		$apiv1 = new Shipstation_Apiv1( true );
+		$apiv1->get_orders( array(
+			'createDateEnd' => gmdate( 'c', time() ),
+		) );
 
 		$api = new Shipstation_Api( true );
 		$api->create_shipments_from_wc_orders( $wc_orders );
@@ -539,14 +546,14 @@ Class Settings_Shipstation {
 				$appended_fields[ \IQLRSS\Driver::plugin_prefix( 'api_key' ) ] = array(
 					'title'			=> esc_html__( 'ShipStation REST API Key', 'live-rates-for-shipstation' ),
 					'type'			=> 'password',
-					'description'	=> esc_html__( 'ShipStation REST v2 API Key - Settings > Account > API Settings', 'live-rates-for-shipstation' ),
+					'description'	=> esc_html__( 'ShipStation Account > Settings > Account > API Settings', 'live-rates-for-shipstation' ),
 					'default'		=> '',
 				);
 
 				$appended_fields[ \IQLRSS\Driver::plugin_prefix( 'apiv1_key' ) ] = array(
 					'title'			=> esc_html__( 'ShipStation [v1] API Key', 'live-rates-for-shipstation' ),
 					'type'			=> 'password',
-					'description'	=> esc_html__( 'See "ShipStation REST v2 API Key" description, but instead of selecting [v2], select [v1].', 'live-rates-for-shipstation' ),
+					'description'	=> esc_html__( 'See "ShipStation REST API Key" description, but instead of selecting [v2], select [v1].', 'live-rates-for-shipstation' ),
 					'default'		=> '',
 				);
 
