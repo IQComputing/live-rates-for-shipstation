@@ -60,7 +60,7 @@ $global_adjustment_type = ( empty( $global_adjustment_type ) && ! empty( $global
 				foreach( $saved_services as $carrier_id => $carrier_arr ) {
 					foreach( $carrier_arr as $service_code => $service_arr ) {
 
-						$attr_name = sprintf( '%s[%s][%s]', $prefix, $service_arr['carrier_id'], $service_arr['service_code'] );
+						$attr_name = sprintf( '%s[%s][%s]', $prefix, $carrier_id, $service_arr['service_code'] );
 						$saved_atts = array(
 							'enabled'			=> ( isset( $service_arr['enabled'] ) ) ? $service_arr['enabled'] : false,
 							'nickname'			=> ( isset( $service_arr['nickname'] ) ) ? $service_arr['nickname'] : '',
@@ -82,13 +82,10 @@ $global_adjustment_type = ( empty( $global_adjustment_type ) && ! empty( $global
 									esc_attr( $attr_name . '[service_name]' ),
 									esc_attr( $service_arr['service_name'] )
 								);
-
-								if( isset( $service_arr['carrier_id'] ) ) {
-									printf( '<input type="hidden" name="%s" value="%s">',
-										esc_attr( $attr_name . '[carrier_id]' ),
-										esc_attr( $service_arr['carrier_id'] )
-									);
-								}
+								printf( '<input type="hidden" name="%s" value="%s">',
+									esc_attr( $attr_name . '[carrier_id]' ),
+									esc_attr( $carrier_id )
+								);
 
 								printf( '<input type="hidden" name="%s" value="%s">',
 									esc_attr( $attr_name . '[carrier_code]' ),
@@ -169,18 +166,17 @@ $global_adjustment_type = ( empty( $global_adjustment_type ) && ! empty( $global
 									esc_attr( $attr_name . '[service_name]' ),
 									esc_attr( $service_arr['name'] )
 								);
+								printf( '<input type="hidden" name="%s" value="%s">',
+									esc_attr( $attr_name . '[carrier_id]' ),
+									esc_attr( $carrier_id )
+								);
 
-								if( isset( $response['carrier']['carrier_id'] ) ) {
+								if( isset( $response['carrier']['carrier_code'] ) ) {
 									printf( '<input type="hidden" name="%s" value="%s">',
-										esc_attr( $attr_name . '[carrier_id]' ),
-										esc_attr( $response['carrier']['carrier_id'] )
+										esc_attr( $attr_name . '[carrier_code]' ),
+										esc_attr( $response['carrier']['carrier_code'] )
 									);
 								}
-
-								printf( '<input type="hidden" name="%s" value="%s">',
-									esc_attr( $attr_name . '[carrier_code]' ),
-									esc_attr( $response['carrier']['carrier_code'] )
-								);
 								printf( '<input type="hidden" name="%s" value="%s">',
 									esc_attr( $attr_name . '[carrier_name]' ),
 									esc_attr( $response['carrier']['name'] )
