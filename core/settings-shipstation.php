@@ -395,12 +395,12 @@ Class Settings_Shipstation {
 	/**
 	 * Denote the exported order as a transient.
 	 * Use the transient later to update the order via the v1 API.
-	 * 
+	 *
 	 * @param Integer $meta_id
 	 * @param Integer $order_id
 	 * @param String $meta_key
 	 * @param String $meta_value
-	 * 
+	 *
 	 * @return void
 	 */
 	public function denote_shipstation_export( $meta_id, $order_id, $meta_key, $meta_value ) {
@@ -427,7 +427,7 @@ Class Settings_Shipstation {
 	/**
 	 * If an `_exported_orders` transient exists
 	 * Update the order with some better info.
-	 * 
+	 *
 	 * @return void
 	 */
 	public function update_exported_orders() {
@@ -550,19 +550,19 @@ Class Settings_Shipstation {
 					'default'		=> '',
 				);
 
-				$appended_fields[ \IQLRSS\Driver::plugin_prefix( 'apiv1_key' ) ] = array(
-					'title'			=> esc_html__( 'ShipStation [v1] API Key', 'live-rates-for-shipstation' ),
-					'type'			=> 'password',
-					'description'	=> esc_html__( 'See "ShipStation REST API Key" description, but instead of selecting [v2], select [v1].', 'live-rates-for-shipstation' ),
-					'default'		=> '',
-				);
+				// $appended_fields[ \IQLRSS\Driver::plugin_prefix( 'apiv1_key' ) ] = array(
+				// 	'title'			=> esc_html__( 'ShipStation [v1] API Key', 'live-rates-for-shipstation' ),
+				// 	'type'			=> 'password',
+				// 	'description'	=> esc_html__( 'See "ShipStation REST API Key" description, but instead of selecting [v2], select [v1].', 'live-rates-for-shipstation' ),
+				// 	'default'		=> '',
+				// );
 
-				$appended_fields[ \IQLRSS\Driver::plugin_prefix( 'apiv1_secret' ) ] = array(
-					'title'			=> esc_html__( 'ShipStation [v1] API Secret', 'live-rates-for-shipstation' ),
-					'type'			=> 'password',
-					'description'	=> esc_html__( 'The v1 API is _required_ to manage orders. The v2 API handles Live Rates.', 'live-rates-for-shipstation' ),
-					'default'		=> '',
-				);
+				// $appended_fields[ \IQLRSS\Driver::plugin_prefix( 'apiv1_secret' ) ] = array(
+				// 	'title'			=> esc_html__( 'ShipStation [v1] API Secret', 'live-rates-for-shipstation' ),
+				// 	'type'			=> 'password',
+				// 	'description'	=> esc_html__( 'The v1 API is _required_ to manage orders. The v2 API handles Live Rates.', 'live-rates-for-shipstation' ),
+				// 	'default'		=> '',
+				// );
 
 				$appended_fields[ \IQLRSS\Driver::plugin_prefix( 'carriers' ) ] = array(
 					'title'			=> esc_html__( 'Shipping Carriers', 'live-rates-for-shipstation' ),
@@ -624,9 +624,9 @@ Class Settings_Shipstation {
 	/**
 	 * Modify the saved settings after WooCommerce has sanitized them.
 	 * Not much we need to do here, WooCommerce does most the heavy lifting.
-	 * 
+	 *
 	 * @param Array $settings
-	 * 
+	 *
 	 * @return Array $settings
 	 */
 	public function save_shipstation_integration_settings( $settings ) {
@@ -634,7 +634,7 @@ Class Settings_Shipstation {
 		// No API Key? Invalid!
 		$api_key_key = \IQLRSS\Driver::plugin_prefix( 'api_key' );
 		if( ! isset( $settings[ $api_key_key ] ) || empty( $settings[ $api_key_key ] ) ) {
-			
+
 			$settings[ \IQLRSS\Driver::plugin_prefix( 'api_key_valid' ) ] = false;
 			if( isset( $settings[ \IQLRSS\Driver::plugin_prefix( 'api_key_vt' ) ] ) ) {
 				unset( $settings[ \IQLRSS\Driver::plugin_prefix( 'api_key_vt' ) ] );
@@ -646,7 +646,7 @@ Class Settings_Shipstation {
 		// No [v1] API Key? Invalid!
 		$apiv1_key_key = \IQLRSS\Driver::plugin_prefix( 'apiv1_key' );
 		if( ! isset( $settings[ $apiv1_key_key ] ) || empty( $settings[ $apiv1_key_key ] ) ) {
-			
+
 			$settings[ \IQLRSS\Driver::plugin_prefix( 'apiv1_key_valid' ) ] = false;
 			if( isset( $settings[ \IQLRSS\Driver::plugin_prefix( 'apiv1_key_vt' ) ] ) ) {
 				unset( $settings[ \IQLRSS\Driver::plugin_prefix( 'apiv1_key_vt' ) ] );
@@ -682,7 +682,7 @@ Class Settings_Shipstation {
 
 			// Not our shipping method.
 			if( $method->get_method_id() != $plugin_method_id ) continue;
-			
+
 			$service_name = (string)$method->get_meta( 'service', true );
 			$method->set_props( array(
 				'name' => trim( explode( '(', $service_name )[0] ),
