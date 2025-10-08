@@ -367,9 +367,6 @@ class Shipstation_Api  {
 				'packages'  => array(),
 			);
 
-			printf( '<pre>%s</pre>', print_r( $wc_order, 1 ) );
-			die( 'end' );
-
 			$shipment['items'] = array();
 			foreach( $shipstation_order_arr['items'] as $ship_item ) {
 
