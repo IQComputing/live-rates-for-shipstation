@@ -70,7 +70,7 @@ class Shipstation_Apiv1 extends Shipstation_Api  {
 
 		if( empty( $stores ) || $this->skip_cache ) {
 
-			$body = $this->make_request( 'get', 'stores', array( 'showInactive' => false ) );
+			$body = $this->make_request( 'get', 'stores', array( 'showInactive' => 'false' ) ); // Must be a string.
 			$stores = array();
 			$curr_store_id = 0;
 
