@@ -138,8 +138,8 @@ $global_adjustment_type = ( empty( $global_adjustment_type ) && ! empty( $global
 					$response = $shipStationAPI->get_carrier( $carrier_code );
 					if( is_wp_error( $response ) ) {
 						printf( '<tr><td colspan="4" class="iqcss-err">%s - %s</td></tr>',
-							esc_html( $response->get_code() ),
-							wp_kses_post( $response->get_message() )
+							esc_html( $response->get_error_code() ),
+							wp_kses_post( $response->get_error_message() )
 						);
 						continue;
 					}
