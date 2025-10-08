@@ -2,6 +2,32 @@
 
 This is a brief text document keeping track of changes to the plugin. For a full history, see the Github Repository.
 
+= 1.0.7 =
+
+Relase Date: October 08, 2025
+
+* Overview
+	* Better Shipping Rate information on the Order screen.
+		* This denotes what items got what rates, the adjustments, where the adjustments come from.
+	* Patches issue on Shipping Zone where WP_Error was treated as an Exception
+	* Starts to noramlize code for carrier_id and carrier_code.
+		* Doing this makes it easier to integrate the v1 API.
+		* The Carrier ID is the ShipStation `se-` code.
+		* The Carrier Code is `usps` or `stamps` depending.
+	* Adds a Deactivate and Uninstall hooks for data removal.
+		* IQLRSS removes settings on uninstall, but not Shipping Zones.
+		* On Deativate, the cache gets cleared.
+
+	* Code Updates
+		* See Github, too many to track here.
+
+= 1.0.6 =
+
+Relase Date: September 22, 2025
+
+* Overview
+	* Updated ShipStation links in the readme.md
+
 = 1.0.5 =
 
 Relase Date: September 16, 2025

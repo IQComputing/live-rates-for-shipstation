@@ -3,7 +3,7 @@ Contributors: iqcomputing
 Tags: woocommerce, shipstation, usps, ups, fedex
 Requires at least: 5.9
 Tested up to: 6.8
-Stable tag: 1.0.6
+Stable tag: 1.0.7
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -49,6 +49,11 @@ Don't have a ShipStation account? [Open a ShipStation account today!](https://ww
 1. From here you can setup custom boxes and select which services from the previously selected carriers you would like to make available for the selected shipping zone.
 
 == Changelog ==
+
+= 1.0.7 (2025-10-08) =
+* Better rate reporting on the Edit Order screen.
+* Patches WP_Error misnomer on Shipping Zone screen.
+* Adds deactivate and uninstall hooks for data management and cleanup.
 
 = 1.0.6 (2025-09-22) =
 * Updates to the general readme.
