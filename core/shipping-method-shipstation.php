@@ -81,14 +81,6 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 */
 	public function __construct( $instance_id = 0 ) {
 
-		// Don't Even if we're not on a Cart of Checkout page.
-		// This is specifically due to how long the API takes to respond.
-		if( ! is_admin() && ! wp_doing_ajax() && ! ( function_exists( 'wp_is_serving_rest_request' ) && wp_is_serving_rest_request() ) ) {
-			if( ! ( is_page( wc_get_page_id( 'cart' ) ) || is_page( wc_get_page_id( 'checkout' ) ) ) ) {
-				return;
-			}
-		}
-
 		$this->plugin_prefix 		= \IQLRSS\Driver::get( 'slug' );
 		$this->shipStationApi 		= new Shipstation_Api();
 		$this->id 					= \IQLRSS\Driver::plugin_prefix( 'shipstation' );
