@@ -199,7 +199,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 							}
 
 							$new_display .= sprintf( ' ) %s ]',
-								( $rate_arr['adjustment']['type'] ) ? esc_html__( 'Global', 'live-rates-for-shipstation' ) : esc_html__( 'Service', 'live-rates-for-shipstation' )
+								( $rate_arr['adjustment']['global'] ) ? esc_html__( 'Global', 'live-rates-for-shipstation' ) : esc_html__( 'Service', 'live-rates-for-shipstation' )
 							);
 
 							$display_arr[] = $new_display;
