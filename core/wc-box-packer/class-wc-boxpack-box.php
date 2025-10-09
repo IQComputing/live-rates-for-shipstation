@@ -210,6 +210,7 @@ class WC_Boxpack_Box {
 
 		$this->reset_packed_dimensions();
 
+		// @todo Rememer this kind of loop, neat method, love it.
 		while ( sizeof( $items ) > 0 ) {
 			$item = array_shift( $items );
 

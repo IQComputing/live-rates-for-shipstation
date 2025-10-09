@@ -2,7 +2,10 @@
 /**
  * ShipStation Live Shipping Rates Method
  *
- * :: Actual Shipping Calculations
+ * :: Action Hooks
+ * :: Filter Hooks
+ * :: Shipping Zone
+ * :: Shipping Calculations
  * :: Helper Methods
  */
 namespace IQLRSS\Core;
@@ -90,7 +93,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		$this->supports 			= array( 'instance-settings' );
 
 		$this->carriers = \IQLRSS\Driver::get_ss_opt( 'carriers', array() );
-		$saved_key = \IQLRSS\Driver::get_ss_opt( 'api_key_valid', false );
+		$saved_key 		= \IQLRSS\Driver::get_ss_opt( 'api_key_valid', false ); // v2 key.
 
 		// Only show in Shipping Zones if API Key is invalid.
 		if( ! empty( $saved_key ) && ! empty( $this->carriers ) ) {
@@ -103,15 +106,33 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			'dim_unit'		=> get_option( 'woocommerce_dimension_unit', $this->store_data['dim_unit'] ),
 		);
 
+		/**
+		 * Init shipping methods.
+		 */
 		$this->init_instance_form_fields();
 		$this->init_instance_options();
 
-		add_action( 'woocommerce_update_options_shipping_' . $this->id, array( $this, 'process_admin_options' ) );
-		add_filter( 'http_request_timeout',						array( $this, 'increase_request_timeout' ) );
-		add_filter( 'woocommerce_order_item_display_meta_key',	array( $this, 'labelify_meta_keys' ) );
-		add_filter( 'woocommerce_order_item_display_meta_value',array( $this, 'format_meta_values' ), 10, 2 );
-		add_filter( 'woocommerce_hidden_order_itemmeta',		array( $this, 'hide_metadata_from_admin_order' ) );
+		/**
+		 * These hooks should/will only run whenever the Shipping Method is in active use.
+		 * Frontend and Admin.
+		 */
+		$this->action_hooks();
+		$this->filter_hooks();
 
+	}
+
+
+
+	/**------------------------------------------------------------------------------------------------ **/
+	/** :: Action Hooks :: **/
+	/**------------------------------------------------------------------------------------------------ **/
+	/**
+	 * Add any necessary action hooks
+	 *
+	 * @return void
+	 */
+	private function action_hooks() {
+		add_action( 'woocommerce_update_options_shipping_' . $this->id, array( $this, 'process_admin_options' ) );
 	}
 
 
@@ -124,6 +145,25 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 		( new \IQLRSS\Core\Settings_Shipstation() )->clear_cache();
 		return parent::process_admin_options();
+
+	}
+
+
+
+	/**------------------------------------------------------------------------------------------------ **/
+	/** :: Filter Hooks :: **/
+	/**------------------------------------------------------------------------------------------------ **/
+	/**
+	 * Add any necessary filter hooks
+	 *
+	 * @return void
+	 */
+	private function filter_hooks() {
+
+		add_filter( 'http_request_timeout',						array( $this, 'increase_request_timeout' ) );
+		add_filter( 'woocommerce_order_item_display_meta_key',	array( $this, 'labelify_meta_keys' ) );
+		add_filter( 'woocommerce_order_item_display_meta_value',array( $this, 'format_meta_values' ), 10, 2 );
+		add_filter( 'woocommerce_hidden_order_itemmeta',		array( $this, 'hide_metadata_from_admin_order' ) );
 
 	}
 
@@ -170,6 +210,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 *
 	 * @param String $display
 	 * @param WC_Meta_Data $wc_meta
+	 * @param WC_Order $wc_order
 	 *
 	 * @return String $display
 	 */
@@ -185,14 +226,32 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					$display_arr = array();
 					foreach( $value as $rate_arr ) {
 
+						// Maybe link to item name.
+						$name = esc_html__( 'Packages', 'live-rates-for-shipstation' );
+						if( ! empty( $rate_arr['_name'] ) ) {
+							$name = $this->format_shipitem_name( $rate_arr['_name'] );
+						}
+
 						if( isset( $rate_arr['adjustment'] ) ) {
 
-							$new_display = sprintf( '%s [ %s &times; ( %s + %s',
-								( ! empty( $rate_arr['_name'] ) ) ? mb_strimwidth( $rate_arr['_name'], 0, 47, '...' ) : '',
-								$rate_arr['qty'],
-								wc_price( $rate_arr['rate'] ),
-								wc_price( $rate_arr['adjustment']['cost'] ),
-							);
+							if( ! empty( $rate_arr['qty'] ) ) {
+
+								$new_display = sprintf( '%s [ %s &times; ( %s + %s',
+									$name,
+									$rate_arr['qty'],
+									wc_price( $rate_arr['rate'] ),
+									wc_price( $rate_arr['adjustment']['cost'] ),
+								);
+
+							} else {
+
+								$new_display = sprintf( '%s [ ( %s + %s',
+									$name,
+									wc_price( $rate_arr['rate'] ),
+									wc_price( $rate_arr['adjustment']['cost'] ),
+								);
+
+							}
 
 							if( 'percentage' == $rate_arr['adjustment']['type'] ) {
 								$new_display .= sprintf( ' | %s', $rate_arr['adjustment']['rate'] . '%' );
@@ -207,7 +266,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 						} else {
 
 							$display_arr[] = sprintf( '%s [ %s x %s ]',
-								( ! empty( $rate_arr['_name'] ) ) ? mb_strimwidth( $rate_arr['_name'], 0, 47, '...' ) : '',
+								$name,
 								$rate_arr['qty'],
 								wc_price( $rate_arr['rate'] ),
 							);
@@ -225,10 +284,20 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					$value = json_decode( $display, true );
 
 					$display_arr = array();
-					foreach( $value as $box_arr ) {
+					foreach( $value as $i => $box_arr ) {
 
-						$display_arr[] = sprintf( '%s [ %s %s ( %s x %s x %s %s ) ]',
-							$box_arr['_name'],
+						$names = array( esc_html__( 'Product', 'live-rates-for-shipstation' ) );
+						if( ! empty( $box_arr['packed'] ) ) {
+							$names = array_map( function( $name ) {
+								return $this->format_shipitem_name( $name );
+							}, $box_arr['packed'] );
+						}
+
+						$display_arr[] = sprintf( '%s ( %s ) [ %s %s ( %s x %s x %s %s ) ]',
+
+							/* translators: %1$d is box/package count (1,2,3). */
+							sprintf( esc_html__( 'Package %1$d' ), $i + 1 ),
+							implode( ', ', $names ),
 							$box_arr['weight']['value'],
 							$box_arr['weight']['unit'],
 							$box_arr['dimensions']['length'],
@@ -267,6 +336,10 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	}
 
 
+
+	/**------------------------------------------------------------------------------------------------ **/
+	/** :: Shipping Zone :: **/
+	/**------------------------------------------------------------------------------------------------ **/
 	/**
 	 * Setup the instance title.
 	 *
@@ -510,7 +583,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 
 	/**------------------------------------------------------------------------------------------------ **/
-	/** :: Actual Shipping Calculations :: **/
+	/** :: Shipping Calculations :: **/
 	/**------------------------------------------------------------------------------------------------ **/
 	/**
 	 * Calculate shipping costs
@@ -772,7 +845,10 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			}
 
 			$request = array(
-				'_name' => $item['data']->get_name(),
+				'_name' => sprintf( '%s|%s',
+					$item['data']->get_id(),
+					$item['data']->get_name(),
+				),
 			);
 			$physicals = array_filter( array(
 				'weight'	=> $item['data']->get_weight(),
@@ -906,6 +982,12 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					$data['height'],
 					$data['weight'],
 					$item['data']->get_price(),
+					array(
+						'_name' => sprintf( '%s|%s',
+							$item['data']->get_id(),
+							$item['data']->get_name(),
+						),
+					),
 				);
 			}
 		}
@@ -929,6 +1011,8 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					'height'	=> $package->height,
 					'unit'		=> $this->shipStationApi->convert_unit_term( $this->store_data['dim_unit'] ),
 				),
+				'packed'	=> array_map( function( $item ) { return $item->meta['_name']; }, $package->packed ),
+				'unpacked'	=> array_map( function( $item ) { return $item->meta['_name']; }, $package->unpacked ),
 			);
 
 			$box_log[] = array(
@@ -1088,6 +1172,39 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		}
 
 		return $enabled;
+
+	}
+
+
+	/**
+	 * Format a stringified product name.
+	 * ex. 213|Shirt|optional|meta|data
+	 *
+	 * @param String $shipitem_name
+	 * @param Boolean $link
+	 * @param String $context - edit|view
+	 *
+	 * @return String $name
+	 */
+	public function format_shipitem_name( $shipitem_name, $link = false, $context = 'edit' ) {
+
+		$name = mb_strimwidth( $shipitem_name, 0, 47, '...' );
+		$name_arr = explode( '|', $shipitem_name );
+
+		if( count( $name_arr ) >= 2 ) {
+
+			$name = mb_strimwidth( $name_arr[1], 0, 47, '...' );
+			if( $link ) {
+				$name = sprintf( '<a href="%s" target="_blank" title="%s">%s</a>',
+					( 'edit' == $context ) ? get_edit_post_link( $name_arr[0] ) : get_permalink( $name_arr[0] ),
+					esc_attr( $name_arr[1] ),
+					$name
+				);
+			}
+
+		}
+
+		return $name;
 
 	}
 
