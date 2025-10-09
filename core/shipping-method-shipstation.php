@@ -1010,8 +1010,6 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		$wc_box_packages = $wc_boxpack->get_packages();
 		$box_log = array();
 
-		error_log( print_r( $wc_box_packages, 1 ) );
-
 		// Delivery!
 		foreach( $wc_box_packages as $key => $package ) {
 
