@@ -226,7 +226,6 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					$display_arr = array();
 					foreach( $value as $rate_arr ) {
 
-						// Maybe link to item name.
 						$name = esc_html__( 'Packages', 'live-rates-for-shipstation' );
 						if( ! empty( $rate_arr['_name'] ) ) {
 							$name = $this->format_shipitem_name( $rate_arr['_name'] );
@@ -1011,8 +1010,8 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					'height'	=> $package->height,
 					'unit'		=> $this->shipStationApi->convert_unit_term( $this->store_data['dim_unit'] ),
 				),
-				'packed'	=> array_map( function( $item ) { return $item->meta['_name']; }, $package->packed ),
-				'unpacked'	=> array_map( function( $item ) { return $item->meta['_name']; }, $package->unpacked ),
+				'packed'	=> ( is_array( $package->packed ) )   ? array_map( function( $item ) { return $item->meta['_name']; }, $package->packed )   : array(),
+				'unpacked'	=> ( is_array( $package->unpacked ) ) ? array_map( function( $item ) { return $item->meta['_name']; }, $package->unpacked ) : array(),
 			);
 
 			$box_log[] = array(
