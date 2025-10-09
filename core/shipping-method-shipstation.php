@@ -607,8 +607,14 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 */
 	public function calculate_shipping( $packages = array() ) {
 
-		// Return Early - Empty Packages
-		if( empty( $packages ) || ! isset( $packages['contents'] ) ) {
+		if( empty( $packages ) || empty( $packages['contents'] ) ) {
+			return;
+		}
+
+		// Try to pull from cache. This may set $this->rates
+		// Return Early - We have cached rates to work with!
+		$packages_hash = $this->check_packages_rate_cache( $packages );
+		if( ! empty( $this->rates ) ) {
 			return;
 
 		// Return Early - No Destination to work with. Postcode is kinda required.
@@ -661,8 +667,6 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		 * This has to be done per package as the other rates endpoint
 		 * requires the customers address1 for verification and really
 		 * it's not much faster.
-		 *
-		 * WC()->session->set( '', '' );
 		 */
 		foreach( $item_requests as $item_id => $req ) {
 
@@ -675,21 +679,11 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				)
 			);
 
-			// Check Cache
-			$available_rates = $this->cache_get_package_rates( $api_request );
-			if( empty( $available_rates ) ) {
-
-				// Ping the ShipStation API to get rates per Carrier.
-				$available_rates = $this->shipStationApi->get_shipping_estimates( $api_request );
-
-				// Continue - Something went wrong, should be logged on the API side.
-				if( is_wp_error( $available_rates ) || empty( $available_rates ) ) {
-					continue;
-				}
-
-				// Cache request
-				$this->cache_package_rates( $api_request, $available_rates );
-
+			// Ping the ShipStation API to get rates per Carrier.
+			// Continue - Something went wrong, should be logged on the API side.
+			$available_rates = $this->shipStationApi->get_shipping_estimates( $api_request );
+			if( is_wp_error( $available_rates ) || empty( $available_rates ) ) {
+				continue;
 			}
 
 			// Loop the found rates and setup the WooCommerce rates array for each.
@@ -836,6 +830,13 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			$this->add_rate( $rates[ $lowest_service ] );
 
 		}
+
+		// Add a cache key to check against.
+		WC()->session->set( $this->plugin_prefix, array_merge(
+			WC()->session->get( $this->plugin_prefix, array() ),
+			array( 'method_hash' => $packages_hash ),
+			array( 'method_cache_time' => time() ),
+		) );
 
 	}
 
@@ -1055,99 +1056,82 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 
 	/**
-	 * Generate a cache key.
+	 * Attempt to pull from the WC() Session cache to prevent multiple caclulation
+	 * requests, which could unnecessarily ping the API or add duplicate logs.
+	 * This issue is common when dealing with WP Blocks/Gutenberg Editor.
 	 *
-	 * @param Array $arr
-	 * @param Array $kintersect
+	 * @param Array $packages - Packages in use.
 	 *
-	 * @return String
+	 * @return String $hash - hash key neded to reset cache.
 	 */
-	protected function cache_key_gen( $arr, $kintersect ) {
+	protected function check_packages_rate_cache( $packages ) {
 
-		$cache_arr = array_intersect_key( $arr, $kintersect );
-		ksort( $cache_arr );
-		return md5( maybe_serialize( $cache_arr ) );
+		$session 	= WC()->session->get( $this->plugin_prefix, array() );
+		$cleartime 	= get_transient( \IQLRSS\Driver::plugin_prefix( 'wcs_timeout' ) );
+
+		$keys = array();
+		foreach( $packages['contents'] as $key => $package ) {
+			$keys[] = array(
+				$key,
+				$package['quantity'],
+				$package['line_total'],
+			);
+		}
+		$hash = md5( wp_json_encode( $keys ) ) . \WC_Cache_Helper::get_transient_version( 'shipping' );
+
+		// Return Early - Cache cleared or 30 minuites has passed (invalidate cache).
+		if( isset( $session['method_cache_time'] ) && ( $cleartime > $session['method_cache_time'] || $session['method_cache_time'] < ( time() - ( 30 * 60 ) ) ) ) {
+			return $hash;
+
+		// Return Early- Cart has changed.
+		} else if( ! isset( $session['method_hash'] ) || $session['method_hash'] != $hash ) {
+			return $hash;
+		}
+
+		// Try to populate Rates.
+		$size = count( $packages );
+		for( $i = 0; $i < $size; $i++ ) {
+
+			$cache = WC()->session->get( 'shipping_for_package_' . $i, false );
+			if( empty( $cache ) || ! is_array( $cache ) ) {
+				break;
+			}
+			$this->rates = array_merge( $cache['rates'], $this->rates );
+
+		}
+
+		return $hash;
 
 	}
 
 
 	/**
-	 * Cache the estimate based on weight, dimensions, and zip.
-	 * This will prevent future API calls for the same data.
+	 * Generate a hash key based off of the given packages.
 	 *
-	 * @param Array $request - The ShipStation API request array.
-	 * @param Array $rates - The returned rates from ShipStation.
+	 * @param Array $packages
 	 *
-	 * @return void
+	 * @return String $hash
 	 */
-	protected function cache_package_rates( $request, $rates ) {
+	protected function generate_packages_cache_key( $packages ) {
 
-		if( empty( WC()->session ) ) {
-			return array();
+		// Maybe skip if cache was cleared.
+		$session 	= WC()->session->get( $this->plugin_prefix, array() );
+		$cleartime 	= get_transient( \IQLRSS\Driver::plugin_prefix( 'wcs_timeout' ) );
+		if( isset( $session['method_cache_time'] ) && $cleartime > $session['method_cache_time'] ) {
+			return '';
 		}
 
-		$session = WC()->session->get( $this->plugin_prefix, array() );
-		$cache = ( isset( $session['api'] ) ) ? $session['api'] : array();
-		$cleartime = get_transient( \IQLRSS\Driver::plugin_prefix( 'wcs_timeout' ), 0 );
-
-		// IF the cache has been cleared, invalidate any old caches.
-		if( isset( $session['apicached'] ) && $cleartime > $session['apicached'] ) {
-			$cache = array();
-
-		// Limit cache to 10.
-		} else if( count( $cache ) > 9 ) {
-			$cache = array_slice( $cache, 0, 9, true );
+		$keys = array();
+		foreach( $packages['contents'] as $key => $package ) {
+			$keys[] = array(
+				$key,
+				$package['quantity'],
+				$package['line_total'],
+			);
 		}
 
-		$key = $this->cache_key_gen( $request, array(
-			'from_postal_code'	=> '',
-			'to_postal_code'	=> '',
-			'dimensions'		=> array(),
-			'weight'			=> array(),
-		) );
-
-		$cache[ $key ] = $rates;
-		$session['api'] = $cache;
-		$session['apicached'] = time();
-
-		WC()->session->set( $this->plugin_prefix, $session );
-
-	}
-
-
-	/**
-	 * Return cached package rates based on request data.
-	 *
-	 * @param Array $request - The ShipStation API request array.
-	 *
-	 * @return Array
-	 */
-	protected function cache_get_package_rates( $request ) {
-
-		if( empty( WC()->session ) ) {
-			return array();
-		}
-
-		$session = WC()->session->get( $this->plugin_prefix, array() );
-		if( ! isset( $session['api'] ) || empty( $session['api'] ) ) {
-			return array();
-		}
-
-		// IF the cache has been cleared, invalidate any old caches.
-		$cleartime = get_transient( \IQLRSS\Driver::plugin_prefix( 'wcs_timeout' ) );
-		if( isset( $session['apicached'] ) && $cleartime > $session['apicached'] ) {
-			return array();
-		}
-
-		$cache = $session['api'];
-		$key = $this->cache_key_gen( $request, array(
-			'from_postal_code'	=> '',
-			'to_postal_code'	=> '',
-			'dimensions'		=> array(),
-			'weight'			=> array(),
-		) );
-
-		return ( isset( $cache[ $key ] ) && ! empty( $cache[ $key ] ) ) ? $cache[ $key ] : array();
+		$hash = md5( wp_json_encode( $keys ) ) . \WC_Cache_Helper::get_transient_version( 'shipping' );
+		return ( ! empty( $keys ) ) ? $hash : '';
 
 	}
 
