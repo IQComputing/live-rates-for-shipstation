@@ -19,6 +19,7 @@
  * 		to get the OrderID, required for any kind of create/update endpoints.
  *
  * @todo Look at preventing ship_estimate checks on ajax add_to_cart. Prefer Cart or Checkout pages.
+ * @todo When the v2 API key is validated, recreate the carrier Select2 and populate.
  * @todo Add warehosue locations to Shipping Zone packages.
  * @todo Look into updating warehouses through Edit Order > Order Items.
  */
