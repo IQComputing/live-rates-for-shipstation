@@ -224,9 +224,10 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					$value = json_decode( $display, true );
 
 					$display_arr = array();
-					foreach( $value as $rate_arr ) {
+					foreach( $value as $i => $rate_arr ) {
 
-						$name = esc_html__( 'Packages', 'live-rates-for-shipstation' );
+						/* translators: %1$d is box/package count (1,2,3). */
+						$name = sprintf( esc_html__( 'Package %1$d' ), $i + 1 );
 						if( ! empty( $rate_arr['_name'] ) ) {
 							$name = $this->format_shipitem_name( $rate_arr['_name'] );
 						}
@@ -264,11 +265,22 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 						} else {
 
-							$display_arr[] = sprintf( '%s [ %s x %s ]',
-								$name,
-								$rate_arr['qty'],
-								wc_price( $rate_arr['rate'] ),
-							);
+
+							if( ! empty( $rate_arr['qty'] ) ) {
+
+								$display_arr[] = sprintf( '%s [ %s x %s ]',
+									$name,
+									$rate_arr['qty'],
+									wc_price( $rate_arr['rate'] ),
+								);
+
+							} else {
+
+								$display_arr[] = sprintf( '%s [ %s ]',
+									$name,
+									wc_price( $rate_arr['rate'] ),
+								);
+							}
 
 						}
 
@@ -285,8 +297,10 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					$display_arr = array();
 					foreach( $value as $i => $box_arr ) {
 
-						$names = array( esc_html__( 'Product', 'live-rates-for-shipstation' ) );
-						if( ! empty( $box_arr['packed'] ) ) {
+						$names = esc_html__( 'Product', 'live-rates-for-shipstation' );
+						if( isset( $box_arr['_name'] ) ) {
+							$names = $this->format_shipitem_name( $box_arr['_name'] );
+						} else if( ! empty( $box_arr['packed'] ) ) {
 							$names = array_map( function( $name ) {
 								return $this->format_shipitem_name( $name );
 							}, $box_arr['packed'] );
@@ -296,7 +310,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 							/* translators: %1$d is box/package count (1,2,3). */
 							sprintf( esc_html__( 'Package %1$d' ), $i + 1 ),
-							implode( ', ', $names ),
+							implode( ', ', (array)$names ),
 							$box_arr['weight']['value'],
 							$box_arr['weight']['unit'],
 							$box_arr['dimensions']['length'],
@@ -1010,8 +1024,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					'height'	=> $package->height,
 					'unit'		=> $this->shipStationApi->convert_unit_term( $this->store_data['dim_unit'] ),
 				),
-				'packed'	=> ( is_array( $package->packed ) )   ? array_map( function( $item ) { return $item->meta['_name']; }, $package->packed )   : array(),
-				'unpacked'	=> ( is_array( $package->unpacked ) ) ? array_map( function( $item ) { return $item->meta['_name']; }, $package->unpacked ) : array(),
+				'packed' => ( is_array( $package->packed ) ) ? array_map( function( $item ) { return $item->meta['_name']; }, $package->packed ) : array(),
 			);
 
 			$box_log[] = array(

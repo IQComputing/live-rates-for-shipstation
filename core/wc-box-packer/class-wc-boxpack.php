@@ -171,7 +171,7 @@ class WC_Boxpack {
 					$package->value    = $item->get_value();
 					$package->volume   = $item->get_volume();
 					$package->unpacked = true;
-					$package->packed   = array();
+					$package->packed   = array( $item );
 					$this->packages[]  = $package;
 				}
 			}
