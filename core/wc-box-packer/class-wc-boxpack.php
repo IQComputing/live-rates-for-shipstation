@@ -153,6 +153,7 @@ class WC_Boxpack {
 
 					// Update items array
 					$this->items = $best_package->unpacked;
+					$best_package->unpacked = false;
 
 					// Store package
 					$this->packages[] = $best_package;
