@@ -1010,9 +1010,12 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		$wc_box_packages = $wc_boxpack->get_packages();
 		$box_log = array();
 
+		error_log( print_r( $wc_box_packages, 1 ) );
+
 		// Delivery!
 		foreach( $wc_box_packages as $key => $package ) {
 
+			$packed_items = ( is_array( $package->packed ) ) ? array_map( function( $item ) { return $item->meta['_name']; }, $package->packed ) : array();
 			$item_requests[] = array(
 				'weight' => array(
 					'value' => $package->weight,
@@ -1024,13 +1027,22 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					'height'	=> $package->height,
 					'unit'		=> $this->shipStationApi->convert_unit_term( $this->store_data['dim_unit'] ),
 				),
-				'packed' => ( is_array( $package->packed ) ) ? array_map( function( $item ) { return $item->meta['_name']; }, $package->packed ) : array(),
+				'packed' => $packed_items,
 			);
 
 			$box_log[] = array(
-				'box_dimensions' => sprintf( '%s x %s x %s x %s x %s (LxWxHxWeightxVolume)', $package->length, $package->width, $package->height, $package->weight, $package->volume ),
+				'is_packed'		 => boolval( empty( $package->unpacked ) ),
 				'item_count'	 => count( $package->packed ),
-				'max_volume'	 => floatval( $package->width * $package->height * $package->length ),
+				'items'			 => $packed_items,
+				'box_dimensions' => sprintf( '%s x %s x %s | %s | %s', $package->length, $package->width, $package->height, $package->weight, $package->volume ),
+				'box_dim_key'	 => sprintf( '%s x %s x %s | %s | %s',
+					esc_html__( 'Length', 'live-rates-for-shipstation' ),
+					esc_html__( 'Width', 'live-rates-for-shipstation' ),
+					esc_html__( 'Height', 'live-rates-for-shipstation' ),
+					esc_html__( 'Weight', 'live-rates-for-shipstation' ),
+					esc_html__( 'Volume', 'live-rates-for-shipstation' ),
+				),
+				'max_volume' => floatval( $package->width * $package->height * $package->length ),
 			);
 
 		}
