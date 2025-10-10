@@ -257,6 +257,13 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 								$new_display .= sprintf( ' | %s', $rate_arr['adjustment']['rate'] . '%' );
 							}
 
+							// Add any other charges
+							if( isset( $rate_arr['other_costs'] ) ) {
+								foreach( $rate_arr['other_costs'] as $o_slug => $o_amount ) {
+									$new_display .= sprintf( ' | %s: %s', ucwords( $o_slug ), wc_price( $o_amount ) );
+								}
+							}
+
 							$new_display .= sprintf( ' ) %s ]',
 								( $rate_arr['adjustment']['global'] ) ? esc_html__( 'Global', 'live-rates-for-shipstation' ) : esc_html__( 'Service', 'live-rates-for-shipstation' )
 							);
@@ -265,10 +272,10 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 						} else {
 
-
+							$new_display = '';
 							if( ! empty( $rate_arr['qty'] ) ) {
 
-								$display_arr[] = sprintf( '%s [ %s x %s ]',
+								$new_display = sprintf( '%s [ %s x %s',
 									$name,
 									$rate_arr['qty'],
 									wc_price( $rate_arr['rate'] ),
@@ -276,11 +283,21 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 							} else {
 
-								$display_arr[] = sprintf( '%s [ %s ]',
+								$new_display = sprintf( '%s [ %s',
 									$name,
 									wc_price( $rate_arr['rate'] ),
 								);
 							}
+
+							// Add any other charges
+							if( isset( $rate_arr['other_costs'] ) ) {
+								foreach( $rate_arr['other_costs'] as $o_slug => $o_amount ) {
+									$new_display .= sprintf( ' | %s: %s', ucwords( $o_slug ), wc_price( $o_amount ) );
+								}
+							}
+
+							$new_display .= ' ]';
+							$display_arr[] = $new_display;
 
 						}
 
@@ -738,9 +755,14 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 				// Loop and add any other shipment amounts.
 				if( ! empty( $shiprate['other_costs'] ) ) {
+
+					$ratemeta['other_costs'] = array();
 					foreach( $shiprate['other_costs'] as $slug => $cost_arr ) {
+
 						if( empty( $cost_arr['amount'] ) ) continue;
 						$cost += floatval( $cost_arr['amount'] );
+						$ratemeta['other_costs'][ $slug ] = $cost_arr['amount'];
+
 					}
 				}
 
