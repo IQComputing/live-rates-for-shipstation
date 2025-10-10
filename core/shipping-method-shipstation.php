@@ -694,7 +694,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				}
 
 				$service_arr = $enabled_services[ $shiprate['carrier_id'] ][ $shiprate['code'] ];
-				$cost = $shiprate['cost'];
+				$cost = floatval( $shiprate['cost'] );
 				$ratemeta = array(
 					'_name'=> ( isset( $req['_name'] ) ) ? $req['_name'] : '', // Item product name.
 					'rate' => $cost,
@@ -734,6 +734,14 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					);
 					$cost += $adjustment_cost;
 
+				}
+
+				// Loop and add any other shipment amounts.
+				if( ! empty( $shiprate['other_costs'] ) ) {
+					foreach( $shiprate['other_costs'] as $slug => $cost_arr ) {
+						if( empty( $cost_arr['amount'] ) ) continue;
+						$cost += floatval( $cost_arr['amount'] );
+					}
 				}
 
 				// Maybe apply per item.

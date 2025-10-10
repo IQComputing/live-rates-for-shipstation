@@ -262,7 +262,13 @@ class Shipstation_Api  {
 				'carrier_nickname'		=> $rate['carrier_nickname'],
 				'carrier_friendly_name'	=> $rate['carrier_friendly_name'],
 				'carrier_name'			=> $rate['carrier_friendly_name'],
+				'other_costs'			=> array(),
 			);
+
+			// If other amount has a value, return it to the estimate.
+			if( isset( $rate['other_amount'], $rate['other_amount']['amount'] ) && ! empty( $rate['other_amount']['amount'] ) ) {
+				$est['other_costs']['other'] = $rate['other_amount'];
+			}
 
 			$data[] = $est;
 
