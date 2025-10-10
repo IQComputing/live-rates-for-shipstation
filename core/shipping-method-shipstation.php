@@ -227,7 +227,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					foreach( $value as $i => $rate_arr ) {
 
 						/* translators: %1$d is box/package count (1,2,3). */
-						$name = sprintf( esc_html__( 'Package %1$d' ), $i + 1 );
+						$name = sprintf( esc_html__( 'Package %1$d', 'live-rates-for-shipstation' ), $i + 1 );
 						if( ! empty( $rate_arr['_name'] ) ) {
 							$name = $this->format_shipitem_name( $rate_arr['_name'] );
 						}
@@ -326,7 +326,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 						$display_arr[] = sprintf( '%s ( %s ) [ %s %s ( %s x %s x %s %s ) ]',
 
 							/* translators: %1$d is box/package count (1,2,3). */
-							sprintf( esc_html__( 'Package %1$d' ), $i + 1 ),
+							sprintf( esc_html__( 'Package %1$d', 'live-rates-for-shipstation' ), $i + 1 ),
 							implode( ', ', (array)$names ),
 							$box_arr['weight']['value'],
 							$box_arr['weight']['unit'],
