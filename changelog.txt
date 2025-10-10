@@ -2,6 +2,31 @@
 
 This is a brief text document keeping track of changes to the plugin. For a full history, see the Github Repository.
 
+= 1.0.8 =
+
+Relase Date: October 10, 2025
+
+* Overview
+	* Fixes an issue where some carriers return additional costs that were not being added to the rate estimate.
+		* This gets reflected for new orders when outputting the rate information.
+		* Thanks to @centuryperf for reporting this issue on the WordPress.org forums!
+	* Fixes Shipping Zone WP_Error Fatal Error.
+		* Shoutout to @sarawill as well for reporting the WP_Error issue on the WordPress.org forums!
+	* Fixes WC Status Logs formatting.
+		* Carrier API responses would break the WC Status formatting due to double quotes.
+		* This has been fixed by replacing double quotes with double single quotes because for logging, it doesn't matter.
+	* Adds better formatting for rates and packages.
+		* This applies to packed individually, but mostly for custom packages.
+	* Adds a layer of caching for Shipping Calculations.
+		* Ugh, the Block Editor + WooCommerce makes _multiple_ async requests to shipping calculations which would re-trigger things unnecessarily.
+		* The new methodology uses the WC()->session to automatically return the known rates if the cart has not changed.
+		* This is a noticable increase in speed when browsing the shop when your cart hasn't necessarily changed.
+	* Caching layer also prevents multiple / duplciate API requests being logged which is nice.
+
+* Code Updates
+	* I don't think I'm going to do code updating moving forward unless it's for Developer Hook updates.
+		* See Github for code, commits, changes, branches.
+
 = 1.0.7 =
 
 Relase Date: October 08, 2025
