@@ -18,7 +18,6 @@
  * 		The v1 API update Order endpoint also doesn't seem to allow Shipment updates, but is required
  * 		to get the OrderID, required for any kind of create/update endpoints.
  *
- * @todo Look at preventing ship_estimate checks on ajax add_to_cart. Prefer Cart or Checkout pages.
  * @todo Add warehosue locations to Shipping Zone packages.
  * @todo Look into updating warehouses through Edit Order > Order Items.
  */
