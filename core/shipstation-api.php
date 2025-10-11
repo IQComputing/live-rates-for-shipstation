@@ -226,8 +226,8 @@ class Shipstation_Api  {
 	 *
 	 * @note ShipStation does have a /rates/ endpoint, but it requires the customers address_line1
 	 * In addition, it really is not much faster than the rates/estimate endpoint.
-	 * 
-	 * @todo Look into `delivery_days` field. UPS has, is it carrier consistent? 
+	 *
+	 * @todo Look into `delivery_days` field. UPS has, is it carrier consistent?
 	 *
 	 * @param Array $est_opts
 	 *
@@ -262,7 +262,13 @@ class Shipstation_Api  {
 				'carrier_nickname'		=> $rate['carrier_nickname'],
 				'carrier_friendly_name'	=> $rate['carrier_friendly_name'],
 				'carrier_name'			=> $rate['carrier_friendly_name'],
+				'other_costs'			=> array(),
 			);
+
+			// If other amount has a value, return it to the estimate.
+			if( isset( $rate['other_amount'], $rate['other_amount']['amount'] ) && ! empty( $rate['other_amount']['amount'] ) ) {
+				$est['other_costs']['other'] = $rate['other_amount'];
+			}
 
 			$data[] = $est;
 
@@ -275,9 +281,9 @@ class Shipstation_Api  {
 
 	/**
 	 * Create a new Shipment
-	 * 
+	 *
 	 * @param Array $args
-	 * 
+	 *
 	 * @return Array $data
 	 */
 	public function create_shipments( $args ) {
@@ -302,9 +308,9 @@ class Shipstation_Api  {
 
 	/**
 	 * Create Shipments from given WC_Orders.
-	 * 
+	 *
 	 * @param Array $wc_orders - Array of WC_Order objects.
-	 * 
+	 *
 	 * @return Array|WP_Error
 	 */
 	public function create_shipments_from_wc_orders( $wc_orders ) {
@@ -593,6 +599,14 @@ class Shipstation_Api  {
 			if( null === $this->logger ) {
 				$this->logger = \wc_get_logger();
 			}
+
+			/**
+			 * The WC_Logger does not handle double quotes well.
+			 * This will conver double quotes to faux: " -> ''
+			 */
+			array_walk_recursive( $context, function( &$val ) {
+				$val = ( is_string( $val ) ) ? str_replace( '"', "''", $val ) : $val;
+			} );
 
 			$this->logger->log( $level, $error_msg, array_merge( $context, array( 'source' => 'live-rates-for-shipstation' ) ) );
 

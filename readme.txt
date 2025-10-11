@@ -3,7 +3,7 @@ Contributors: iqcomputing
 Tags: woocommerce, shipstation, usps, ups, fedex
 Requires at least: 5.9
 Tested up to: 6.8
-Stable tag: 1.0.7
+Stable tag: 1.0.8
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -50,6 +50,14 @@ Don't have a ShipStation account? [Open a ShipStation account today!](https://ww
 
 == Changelog ==
 
+= 1.0.8 (2025-10-10) =
+* Patches issue of missing `other_amount` when applying shipping rates (thanks @centuryperf)!
+* Shout out to @sarawill for reporting the WP_Error error.
+* Better formatting for rate reporting on Edit Order screen when dealing with custom packages.
+* Added caching layer to prevent multiple requests and logs - this should speed up frontend per-page shop requests.
+* Fixed issue of duplicate logs when debugging.
+* Fixed issue where API Log would lose formatting during certain requests.
+
 = 1.0.7 (2025-10-08) =
 * Better rate reporting on the Edit Order screen.
 * Patches WP_Error misnomer on Shipping Zone screen.
@@ -57,15 +65,3 @@ Don't have a ShipStation account? [Open a ShipStation account today!](https://ww
 
 = 1.0.6 (2025-09-22) =
 * Updates to the general readme.
-
-= 1.0.5 (2025-09-16) =
-* Patches shipping rate price disrepencies due to rates with multiple package types.
-* Patches disabled shipping services displaying.
-* Patches nicknames not applying properly.
-* Adds/Displays order item metadata to track ship rate, rate adjustment, carrier, service, and codes.
-
-= 1.0.4 (2025-09-15) =
-* Patches issues with shipping units not match store set units.
-* Adds new Flat Rate Adjustments to global and shipping services.
-* Adds additional metadata to WC Order Items in regards to shipping.
-* Shoutouts to both @centuryperf and @jkmail120 for reporting these issues!

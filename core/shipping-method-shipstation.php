@@ -2,7 +2,10 @@
 /**
  * ShipStation Live Shipping Rates Method
  *
- * :: Actual Shipping Calculations
+ * :: Action Hooks
+ * :: Filter Hooks
+ * :: Shipping Zone
+ * :: Shipping Calculations
  * :: Helper Methods
  */
 namespace IQLRSS\Core;
@@ -90,7 +93,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		$this->supports 			= array( 'instance-settings' );
 
 		$this->carriers = \IQLRSS\Driver::get_ss_opt( 'carriers', array() );
-		$saved_key = \IQLRSS\Driver::get_ss_opt( 'api_key_valid', false );
+		$saved_key 		= \IQLRSS\Driver::get_ss_opt( 'api_key_valid', false ); // v2 key.
 
 		// Only show in Shipping Zones if API Key is invalid.
 		if( ! empty( $saved_key ) && ! empty( $this->carriers ) ) {
@@ -103,15 +106,33 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			'dim_unit'		=> get_option( 'woocommerce_dimension_unit', $this->store_data['dim_unit'] ),
 		);
 
+		/**
+		 * Init shipping methods.
+		 */
 		$this->init_instance_form_fields();
 		$this->init_instance_options();
 
-		add_action( 'woocommerce_update_options_shipping_' . $this->id, array( $this, 'process_admin_options' ) );
-		add_filter( 'http_request_timeout',						array( $this, 'increase_request_timeout' ) );
-		add_filter( 'woocommerce_order_item_display_meta_key',	array( $this, 'labelify_meta_keys' ) );
-		add_filter( 'woocommerce_order_item_display_meta_value',array( $this, 'format_meta_values' ), 10, 2 );
-		add_filter( 'woocommerce_hidden_order_itemmeta',		array( $this, 'hide_metadata_from_admin_order' ) );
+		/**
+		 * These hooks should/will only run whenever the Shipping Method is in active use.
+		 * Frontend and Admin.
+		 */
+		$this->action_hooks();
+		$this->filter_hooks();
 
+	}
+
+
+
+	/**------------------------------------------------------------------------------------------------ **/
+	/** :: Action Hooks :: **/
+	/**------------------------------------------------------------------------------------------------ **/
+	/**
+	 * Add any necessary action hooks
+	 *
+	 * @return void
+	 */
+	private function action_hooks() {
+		add_action( 'woocommerce_update_options_shipping_' . $this->id, array( $this, 'process_admin_options' ) );
 	}
 
 
@@ -124,6 +145,25 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 		( new \IQLRSS\Core\Settings_Shipstation() )->clear_cache();
 		return parent::process_admin_options();
+
+	}
+
+
+
+	/**------------------------------------------------------------------------------------------------ **/
+	/** :: Filter Hooks :: **/
+	/**------------------------------------------------------------------------------------------------ **/
+	/**
+	 * Add any necessary filter hooks
+	 *
+	 * @return void
+	 */
+	private function filter_hooks() {
+
+		add_filter( 'http_request_timeout',						array( $this, 'increase_request_timeout' ) );
+		add_filter( 'woocommerce_order_item_display_meta_key',	array( $this, 'labelify_meta_keys' ) );
+		add_filter( 'woocommerce_order_item_display_meta_value',array( $this, 'format_meta_values' ), 10, 2 );
+		add_filter( 'woocommerce_hidden_order_itemmeta',		array( $this, 'hide_metadata_from_admin_order' ) );
 
 	}
 
@@ -170,6 +210,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 *
 	 * @param String $display
 	 * @param WC_Meta_Data $wc_meta
+	 * @param WC_Order $wc_order
 	 *
 	 * @return String $display
 	 */
@@ -183,19 +224,44 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					$value = json_decode( $display, true );
 
 					$display_arr = array();
-					foreach( $value as $rate_arr ) {
+					foreach( $value as $i => $rate_arr ) {
+
+						/* translators: %1$d is box/package count (1,2,3). */
+						$name = sprintf( esc_html__( 'Package %1$d', 'live-rates-for-shipstation' ), $i + 1 );
+						if( ! empty( $rate_arr['_name'] ) ) {
+							$name = $this->format_shipitem_name( $rate_arr['_name'] );
+						}
 
 						if( isset( $rate_arr['adjustment'] ) ) {
 
-							$new_display = sprintf( '%s [ %s &times; ( %s + %s',
-								( ! empty( $rate_arr['_name'] ) ) ? mb_strimwidth( $rate_arr['_name'], 0, 47, '...' ) : '',
-								$rate_arr['qty'],
-								wc_price( $rate_arr['rate'] ),
-								wc_price( $rate_arr['adjustment']['cost'] ),
-							);
+							if( ! empty( $rate_arr['qty'] ) ) {
+
+								$new_display = sprintf( '%s [ %s &times; ( %s + %s',
+									$name,
+									$rate_arr['qty'],
+									wc_price( $rate_arr['rate'] ),
+									wc_price( $rate_arr['adjustment']['cost'] ),
+								);
+
+							} else {
+
+								$new_display = sprintf( '%s [ ( %s + %s',
+									$name,
+									wc_price( $rate_arr['rate'] ),
+									wc_price( $rate_arr['adjustment']['cost'] ),
+								);
+
+							}
 
 							if( 'percentage' == $rate_arr['adjustment']['type'] ) {
 								$new_display .= sprintf( ' | %s', $rate_arr['adjustment']['rate'] . '%' );
+							}
+
+							// Add any other charges
+							if( isset( $rate_arr['other_costs'] ) ) {
+								foreach( $rate_arr['other_costs'] as $o_slug => $o_amount ) {
+									$new_display .= sprintf( ' | %s: %s', ucwords( $o_slug ), wc_price( $o_amount ) );
+								}
 							}
 
 							$new_display .= sprintf( ' ) %s ]',
@@ -206,11 +272,32 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 						} else {
 
-							$display_arr[] = sprintf( '%s [ %s x %s ]',
-								( ! empty( $rate_arr['_name'] ) ) ? mb_strimwidth( $rate_arr['_name'], 0, 47, '...' ) : '',
-								$rate_arr['qty'],
-								wc_price( $rate_arr['rate'] ),
-							);
+							$new_display = '';
+							if( ! empty( $rate_arr['qty'] ) ) {
+
+								$new_display = sprintf( '%s [ %s x %s',
+									$name,
+									$rate_arr['qty'],
+									wc_price( $rate_arr['rate'] ),
+								);
+
+							} else {
+
+								$new_display = sprintf( '%s [ %s',
+									$name,
+									wc_price( $rate_arr['rate'] ),
+								);
+							}
+
+							// Add any other charges
+							if( isset( $rate_arr['other_costs'] ) ) {
+								foreach( $rate_arr['other_costs'] as $o_slug => $o_amount ) {
+									$new_display .= sprintf( ' | %s: %s', ucwords( $o_slug ), wc_price( $o_amount ) );
+								}
+							}
+
+							$new_display .= ' ]';
+							$display_arr[] = $new_display;
 
 						}
 
@@ -225,10 +312,22 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					$value = json_decode( $display, true );
 
 					$display_arr = array();
-					foreach( $value as $box_arr ) {
+					foreach( $value as $i => $box_arr ) {
 
-						$display_arr[] = sprintf( '%s [ %s %s ( %s x %s x %s %s ) ]',
-							$box_arr['_name'],
+						$names = esc_html__( 'Product', 'live-rates-for-shipstation' );
+						if( isset( $box_arr['_name'] ) ) {
+							$names = $this->format_shipitem_name( $box_arr['_name'] );
+						} else if( ! empty( $box_arr['packed'] ) ) {
+							$names = array_map( function( $name ) {
+								return $this->format_shipitem_name( $name );
+							}, $box_arr['packed'] );
+						}
+
+						$display_arr[] = sprintf( '%s ( %s ) [ %s %s ( %s x %s x %s %s ) ]',
+
+							/* translators: %1$d is box/package count (1,2,3). */
+							sprintf( esc_html__( 'Package %1$d', 'live-rates-for-shipstation' ), $i + 1 ),
+							implode( ', ', (array)$names ),
 							$box_arr['weight']['value'],
 							$box_arr['weight']['unit'],
 							$box_arr['dimensions']['length'],
@@ -267,6 +366,10 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	}
 
 
+
+	/**------------------------------------------------------------------------------------------------ **/
+	/** :: Shipping Zone :: **/
+	/**------------------------------------------------------------------------------------------------ **/
 	/**
 	 * Setup the instance title.
 	 *
@@ -510,7 +613,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 
 	/**------------------------------------------------------------------------------------------------ **/
-	/** :: Actual Shipping Calculations :: **/
+	/** :: Shipping Calculations :: **/
 	/**------------------------------------------------------------------------------------------------ **/
 	/**
 	 * Calculate shipping costs
@@ -521,8 +624,14 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 */
 	public function calculate_shipping( $packages = array() ) {
 
-		// Return Early - Empty Packages
-		if( empty( $packages ) || ! isset( $packages['contents'] ) ) {
+		if( empty( $packages ) || empty( $packages['contents'] ) ) {
+			return;
+		}
+
+		// Try to pull from cache. This may set $this->rates
+		// Return Early - We have cached rates to work with!
+		$packages_hash = $this->check_packages_rate_cache( $packages );
+		if( ! empty( $this->rates ) ) {
 			return;
 
 		// Return Early - No Destination to work with. Postcode is kinda required.
@@ -575,8 +684,6 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		 * This has to be done per package as the other rates endpoint
 		 * requires the customers address1 for verification and really
 		 * it's not much faster.
-		 *
-		 * WC()->session->set( '', '' );
 		 */
 		foreach( $item_requests as $item_id => $req ) {
 
@@ -589,21 +696,11 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				)
 			);
 
-			// Check Cache
-			$available_rates = $this->cache_get_package_rates( $api_request );
-			if( empty( $available_rates ) ) {
-
-				// Ping the ShipStation API to get rates per Carrier.
-				$available_rates = $this->shipStationApi->get_shipping_estimates( $api_request );
-
-				// Continue - Something went wrong, should be logged on the API side.
-				if( is_wp_error( $available_rates ) || empty( $available_rates ) ) {
-					continue;
-				}
-
-				// Cache request
-				$this->cache_package_rates( $api_request, $available_rates );
-
+			// Ping the ShipStation API to get rates per Carrier.
+			// Continue - Something went wrong, should be logged on the API side.
+			$available_rates = $this->shipStationApi->get_shipping_estimates( $api_request );
+			if( is_wp_error( $available_rates ) || empty( $available_rates ) ) {
+				continue;
 			}
 
 			// Loop the found rates and setup the WooCommerce rates array for each.
@@ -614,7 +711,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				}
 
 				$service_arr = $enabled_services[ $shiprate['carrier_id'] ][ $shiprate['code'] ];
-				$cost = $shiprate['cost'];
+				$cost = floatval( $shiprate['cost'] );
 				$ratemeta = array(
 					'_name'=> ( isset( $req['_name'] ) ) ? $req['_name'] : '', // Item product name.
 					'rate' => $cost,
@@ -654,6 +751,19 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					);
 					$cost += $adjustment_cost;
 
+				}
+
+				// Loop and add any other shipment amounts.
+				if( ! empty( $shiprate['other_costs'] ) ) {
+
+					$ratemeta['other_costs'] = array();
+					foreach( $shiprate['other_costs'] as $slug => $cost_arr ) {
+
+						if( empty( $cost_arr['amount'] ) ) continue;
+						$cost += floatval( $cost_arr['amount'] );
+						$ratemeta['other_costs'][ $slug ] = $cost_arr['amount'];
+
+					}
 				}
 
 				// Maybe apply per item.
@@ -751,6 +861,13 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 		}
 
+		// Add a cache key to check against.
+		WC()->session->set( $this->plugin_prefix, array_merge(
+			WC()->session->get( $this->plugin_prefix, array() ),
+			array( 'method_hash' => $packages_hash ),
+			array( 'method_cache_time' => time() ),
+		) );
+
 	}
 
 
@@ -772,7 +889,10 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			}
 
 			$request = array(
-				'_name' => $item['data']->get_name(),
+				'_name' => sprintf( '%s|%s',
+					$item['data']->get_id(),
+					$item['data']->get_name(),
+				),
 			);
 			$physicals = array_filter( array(
 				'weight'	=> $item['data']->get_weight(),
@@ -906,6 +1026,12 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					$data['height'],
 					$data['weight'],
 					$item['data']->get_price(),
+					array(
+						'_name' => sprintf( '%s|%s',
+							$item['data']->get_id(),
+							$item['data']->get_name(),
+						),
+					),
 				);
 			}
 		}
@@ -918,6 +1044,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		// Delivery!
 		foreach( $wc_box_packages as $key => $package ) {
 
+			$packed_items = ( is_array( $package->packed ) ) ? array_map( function( $item ) { return $item->meta['_name']; }, $package->packed ) : array();
 			$item_requests[] = array(
 				'weight' => array(
 					'value' => $package->weight,
@@ -929,12 +1056,22 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					'height'	=> $package->height,
 					'unit'		=> $this->shipStationApi->convert_unit_term( $this->store_data['dim_unit'] ),
 				),
+				'packed' => $packed_items,
 			);
 
 			$box_log[] = array(
-				'box_dimensions' => sprintf( '%s x %s x %s x %s x %s (LxWxHxWeightxVolume)', $package->length, $package->width, $package->height, $package->weight, $package->volume ),
+				'is_packed'		 => boolval( empty( $package->unpacked ) ),
 				'item_count'	 => count( $package->packed ),
-				'max_volume'	 => floatval( $package->width * $package->height * $package->length ),
+				'items'			 => $packed_items,
+				'box_dimensions' => sprintf( '%s x %s x %s | %s | %s', $package->length, $package->width, $package->height, $package->weight, $package->volume ),
+				'box_dim_key'	 => sprintf( '%s x %s x %s | %s | %s',
+					esc_html__( 'Length', 'live-rates-for-shipstation' ),
+					esc_html__( 'Width', 'live-rates-for-shipstation' ),
+					esc_html__( 'Height', 'live-rates-for-shipstation' ),
+					esc_html__( 'Weight', 'live-rates-for-shipstation' ),
+					esc_html__( 'Volume', 'live-rates-for-shipstation' ),
+				),
+				'max_volume' => floatval( $package->width * $package->height * $package->length ),
 			);
 
 		}
@@ -949,99 +1086,82 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 
 	/**
-	 * Generate a cache key.
+	 * Attempt to pull from the WC() Session cache to prevent multiple caclulation
+	 * requests, which could unnecessarily ping the API or add duplicate logs.
+	 * This issue is common when dealing with WP Blocks/Gutenberg Editor.
 	 *
-	 * @param Array $arr
-	 * @param Array $kintersect
+	 * @param Array $packages - Packages in use.
 	 *
-	 * @return String
+	 * @return String $hash - hash key neded to reset cache.
 	 */
-	protected function cache_key_gen( $arr, $kintersect ) {
+	protected function check_packages_rate_cache( $packages ) {
 
-		$cache_arr = array_intersect_key( $arr, $kintersect );
-		ksort( $cache_arr );
-		return md5( maybe_serialize( $cache_arr ) );
+		$session 	= WC()->session->get( $this->plugin_prefix, array() );
+		$cleartime 	= get_transient( \IQLRSS\Driver::plugin_prefix( 'wcs_timeout' ) );
+
+		$keys = array();
+		foreach( $packages['contents'] as $key => $package ) {
+			$keys[] = array(
+				$key,
+				$package['quantity'],
+				$package['line_total'],
+			);
+		}
+		$hash = md5( wp_json_encode( $keys ) ) . \WC_Cache_Helper::get_transient_version( 'shipping' );
+
+		// Return Early - Cache cleared or 30 minuites has passed (invalidate cache).
+		if( isset( $session['method_cache_time'] ) && ( $cleartime > $session['method_cache_time'] || $session['method_cache_time'] < ( time() - ( 30 * 60 ) ) ) ) {
+			return $hash;
+
+		// Return Early- Cart has changed.
+		} else if( ! isset( $session['method_hash'] ) || $session['method_hash'] != $hash ) {
+			return $hash;
+		}
+
+		// Try to populate Rates.
+		$size = count( $packages );
+		for( $i = 0; $i < $size; $i++ ) {
+
+			$cache = WC()->session->get( 'shipping_for_package_' . $i, false );
+			if( empty( $cache ) || ! is_array( $cache ) ) {
+				break;
+			}
+			$this->rates = array_merge( $cache['rates'], $this->rates );
+
+		}
+
+		return $hash;
 
 	}
 
 
 	/**
-	 * Cache the estimate based on weight, dimensions, and zip.
-	 * This will prevent future API calls for the same data.
+	 * Generate a hash key based off of the given packages.
 	 *
-	 * @param Array $request - The ShipStation API request array.
-	 * @param Array $rates - The returned rates from ShipStation.
+	 * @param Array $packages
 	 *
-	 * @return void
+	 * @return String $hash
 	 */
-	protected function cache_package_rates( $request, $rates ) {
+	protected function generate_packages_cache_key( $packages ) {
 
-		if( empty( WC()->session ) ) {
-			return array();
+		// Maybe skip if cache was cleared.
+		$session 	= WC()->session->get( $this->plugin_prefix, array() );
+		$cleartime 	= get_transient( \IQLRSS\Driver::plugin_prefix( 'wcs_timeout' ) );
+		if( isset( $session['method_cache_time'] ) && $cleartime > $session['method_cache_time'] ) {
+			return '';
 		}
 
-		$session = WC()->session->get( $this->plugin_prefix, array() );
-		$cache = ( isset( $session['api'] ) ) ? $session['api'] : array();
-		$cleartime = get_transient( \IQLRSS\Driver::plugin_prefix( 'wcs_timeout' ), 0 );
-
-		// IF the cache has been cleared, invalidate any old caches.
-		if( isset( $session['apicached'] ) && $cleartime > $session['apicached'] ) {
-			$cache = array();
-
-		// Limit cache to 10.
-		} else if( count( $cache ) > 9 ) {
-			$cache = array_slice( $cache, 0, 9, true );
+		$keys = array();
+		foreach( $packages['contents'] as $key => $package ) {
+			$keys[] = array(
+				$key,
+				$package['quantity'],
+				$package['line_total'],
+			);
 		}
 
-		$key = $this->cache_key_gen( $request, array(
-			'from_postal_code'	=> '',
-			'to_postal_code'	=> '',
-			'dimensions'		=> array(),
-			'weight'			=> array(),
-		) );
-
-		$cache[ $key ] = $rates;
-		$session['api'] = $cache;
-		$session['apicached'] = time();
-
-		WC()->session->set( $this->plugin_prefix, $session );
-
-	}
-
-
-	/**
-	 * Return cached package rates based on request data.
-	 *
-	 * @param Array $request - The ShipStation API request array.
-	 *
-	 * @return Array
-	 */
-	protected function cache_get_package_rates( $request ) {
-
-		if( empty( WC()->session ) ) {
-			return array();
-		}
-
-		$session = WC()->session->get( $this->plugin_prefix, array() );
-		if( ! isset( $session['api'] ) || empty( $session['api'] ) ) {
-			return array();
-		}
-
-		// IF the cache has been cleared, invalidate any old caches.
-		$cleartime = get_transient( \IQLRSS\Driver::plugin_prefix( 'wcs_timeout' ) );
-		if( isset( $session['apicached'] ) && $cleartime > $session['apicached'] ) {
-			return array();
-		}
-
-		$cache = $session['api'];
-		$key = $this->cache_key_gen( $request, array(
-			'from_postal_code'	=> '',
-			'to_postal_code'	=> '',
-			'dimensions'		=> array(),
-			'weight'			=> array(),
-		) );
-
-		return ( isset( $cache[ $key ] ) && ! empty( $cache[ $key ] ) ) ? $cache[ $key ] : array();
+		$hash = md5( wp_json_encode( $keys ) ) . \WC_Cache_Helper::get_transient_version( 'shipping' );
+		return ( ! empty( $keys ) ) ? $hash : '';
 
 	}
 
@@ -1088,6 +1208,39 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		}
 
 		return $enabled;
+
+	}
+
+
+	/**
+	 * Format a stringified product name.
+	 * ex. 213|Shirt|optional|meta|data
+	 *
+	 * @param String $shipitem_name
+	 * @param Boolean $link
+	 * @param String $context - edit|view
+	 *
+	 * @return String $name
+	 */
+	public function format_shipitem_name( $shipitem_name, $link = false, $context = 'edit' ) {
+
+		$name = mb_strimwidth( $shipitem_name, 0, 47, '...' );
+		$name_arr = explode( '|', $shipitem_name );
+
+		if( count( $name_arr ) >= 2 ) {
+
+			$name = mb_strimwidth( $name_arr[1], 0, 47, '...' );
+			if( $link ) {
+				$name = sprintf( '<a href="%s" target="_blank" title="%s">%s</a>',
+					( 'edit' == $context ) ? get_edit_post_link( $name_arr[0] ) : get_permalink( $name_arr[0] ),
+					esc_attr( $name_arr[1] ),
+					$name
+				);
+			}
+
+		}
+
+		return $name;
 
 	}
 
