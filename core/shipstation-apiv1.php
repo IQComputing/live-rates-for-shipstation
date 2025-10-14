@@ -576,6 +576,91 @@ class Shipstation_Apiv1 extends Shipstation_Api  {
 	}
 
 
+	/**
+	 * Create a new Shipment
+	 *
+	 * @param Array $args
+	 *
+	 * @return Array $data
+	 */
+	public function create_shipping_label( $args ) {
+
+		$body = $this->make_request( 'post', 'orders/createlabelfororder', array( 'shipments' => $args ) );
+
+		// Return Early - API Request error - see logs.
+		if( is_wp_error( $body ) ) {
+			return $body;
+		}
+
+		/**
+		 * API returns no errors but also doesn't do anything in ShipStation.
+		 */
+		$data = $body;
+
+		return $data;
+
+	}
+
+
+	/**
+	 * Create Shipping Labels from given WC_Orders.
+	 *
+	 * @param Array $wc_orders - Array of WC_Order objects
+	 *
+	 * @return Array|WP_Error
+	 */
+	public function create_shipping_labels_from_wc_orders( $wc_orders ) {
+
+		$data = array();
+		if( empty( $wc_orders ) ) {
+			return $data;
+		}
+
+		$labels = array();
+		foreach( $wc_orders as $wc_order ) {
+
+			// Skip - Not WC_Order
+			if( ! is_a( $wc_order, 'WC_Order' ) ) continue;
+
+			$shipstation_order_arr = $wc_order->get_meta( '_shipstation_order', true );
+
+			// Skip - No ShipStation Order data to work with.
+			if( empty( $shipstation_order_arr ) ) continue;
+
+			$order_items     = $wc_order->get_items();
+			$order_item_ship = $wc_order->get_items( 'shipping' );
+			$order_item_ship = ( ! empty( $order_item_ship ) ) ? $order_item_ship[ array_key_first( $order_item_ship ) ] : null;
+
+			$order_ship_boxes= $order_item_ship->get_meta( 'boxes', true );
+
+			// Skip - No Boxes to work with.
+			if( empty( $order_ship_boxes ) ) continue;
+
+			// Loop the saved order boxes (could be individual products, or custom boxes, doesn't matter).
+			foreach( $order_ship_boxes as $box_arr ) {
+
+				$label = array(
+					'orderId'		=> $shipstation_order_arr['orderId'],
+					'carrierCode'	=> $order_item_ship->get_meta( "_{$this->prefix}_carrier_code", true ),
+					'serviceCode'	=> $order_item_ship->get_meta( "_{$this->prefix}_service_code", true ),
+					'weight'		=> $box_arr['weight'],
+					'dimensions'	=> $box_arr['dimensions'],
+					'advancedOptions' => array(
+						'storeId' => \IQLRSS\Driver::get_ss_opt( 'store_id' ),
+					),
+				);
+
+				$labels[] = $label;
+
+			}
+
+		}
+
+		return $labels;
+
+	}
+
+
 
 	/**------------------------------------------------------------------------------------------------ **/
 	/** :: Helper Methods :: **/
@@ -589,7 +674,7 @@ class Shipstation_Apiv1 extends Shipstation_Api  {
 	 *
 	 * @return Array|WP_Error $response
 	 */
-	protected function make_request( $method, $endpoint, $args = array() ) {
+	public function make_request( $method, $endpoint, $args = array() ) {
 
 		// Return Early - No API Key found.
 		if( empty( $this->key ) || empty( $this->secret ) ) {
@@ -605,8 +690,8 @@ class Shipstation_Apiv1 extends Shipstation_Api  {
 			),
 		);
 
-		if( ! empty( $args ) && is_array( $args ) ) {
-			if( 'get' == $method ) {
+		if( ! empty( $args )) {
+			if( 'get' == $method && is_array( $args )  ) {
 				$req_args['body'] = $args;
 			} else if( 'post' == $method ) {
 				$req_args['body'] = wp_json_encode( $args );
@@ -629,23 +714,26 @@ class Shipstation_Apiv1 extends Shipstation_Api  {
 
 		} else if( 200 != $code || ! is_array( $body ) ) {
 
-			$message = '';
-			if( isset( $body['Message'] ) ) {
-				$message = '[v1] ' . $body['Message'];
-			} else {
-				$message = esc_html__( '[v1] Error encountered during request.', 'live-rates-for-shipstation' );
+			$err_code = $code;
+			$err_msg = esc_html__( '[v1] Error encountered during request.', 'live-rates-for-shipstation' );
+
+			if( isset( $body['ExceptionMessage'] ) ) {
+				$err_msg = '[v1] ' . $body['ExceptionMessage'];
+			} else if( isset( $body['Message'] ) ) {
+				$err_msg = '[v1] ' . $body['Message'];
 			}
 
 			if( isset( $body['ModelState'] ) ) {
 
 				foreach( $body['ModelState'] as $field => $msg_arr ) {
-					$message .= sprintf( ' ( %s - %s ) |', $field, implode( ', ', $msg_arr ) );
+					$err_msg .= sprintf( ' ( %s - %s ) |', $field, implode( ', ', $msg_arr ) );
 				}
 
-				$message = rtrim( $message, ' |' );
+				$err_msg = rtrim( $err_msg, ' |' );
 			}
 
-			return $this->log( new \WP_Error( $code, $message ), 'error', array(
+			return $this->log( new \WP_Error( absint( $err_code ), sanitize_text_field( $err_msg ) ), 'error', array(
+				'args' => $args,
 				'body' => $body,
 			) );
 

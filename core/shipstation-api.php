@@ -323,7 +323,7 @@ class Shipstation_Api  {
 		$shipments = array();
 		foreach( $wc_orders as $wc_order ) {
 
-			// Skip
+			// Skip - Not WC_Order
 			if( ! is_a( $wc_order, 'WC_Order' ) ) continue;
 
 			$shipstation_order_arr = $wc_order->get_meta( '_shipstation_order', true );
@@ -337,7 +337,7 @@ class Shipstation_Api  {
 
 			$shipment = array(
 				'validate_address'  => 'no_validation',
-				'carrier_id'        => $order_item_ship->get_meta( '_iqlrss_carrier_id', true ),
+				'carrier_id'        => $order_item_ship->get_meta( "_{$this->prefix}_carrier_id", true ),
 				'store_id'          => \IQLRSS\Driver::get_ss_opt( 'store_id' ),
 				'shipping_paid'     => array(
 					'currency'  => $wc_order->get_currency(),
@@ -520,7 +520,10 @@ class Shipstation_Api  {
 
 			}
 
-			return $this->log( new \WP_Error( $err_code, $err_msg ) );
+			return $this->log( new \WP_Error( absint( $err_code ), sanitize_text_field( $err_msg ) ), array(
+				'args' => $args,
+				'body' => $body,
+			) );
 		}
 
 		// Log API Request Result
