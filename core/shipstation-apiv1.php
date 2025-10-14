@@ -125,11 +125,11 @@ class Shipstation_Apiv1 extends Shipstation_Api  {
 	 * Return a single carrier and all their info.
 	 * This includes services and packages.
 	 *
-	 * @param String $carrier_code
+	 * @param String $carrier_id - Unique ShipStation Resource ID.
 	 *
 	 * @return Array|WP_Error
 	 */
-	public function get_carrier( $carrier_code ) {
+	public function get_carrier( $carrier_id ) {
 
 		$trans_key = $this->prefix_key( 'v1carriers' );
 		$carriers = get_transient( $trans_key );
@@ -144,14 +144,14 @@ class Shipstation_Apiv1 extends Shipstation_Api  {
 			return $carriers;
 
 		// Return Early - Something went wrong getting carriers.
-		} else if( ! isset( $carriers[ $carrier_code ] ) ) {
+		} else if( ! isset( $carriers[ $carrier_id ] ) ) {
 			return $this->log( new \WP_Error( 404, esc_html__( '[v1] Could not find carrier information.', 'live-rates-for-shipstation' ) ) );
 		}
 
 		return array(
-			'carrier'	=> $carriers[ $carrier_code ],
-			'services'	=> $this->get_services( $carriers[ $carrier_code ]['carrier_code'] ),
-			'packages'	=> $this->get_packages( $carriers[ $carrier_code ]['carrier_code'] ),
+			'carrier'	=> $carriers[ $carrier_id ],
+			'services'	=> $this->get_services( $carriers[ $carrier_id ]['carrier_code'] ),
+			'packages'	=> $this->get_packages( $carriers[ $carrier_id ]['carrier_code'] ),
 		);
 
 	}
@@ -163,7 +163,7 @@ class Shipstation_Apiv1 extends Shipstation_Api  {
 	 *
 	 * @link https://www.shipstation.com/docs/api/carriers/list
 	 *
-	 * @param String $carrier_code
+	 * @param String $carrier_id - Unique ShipStation Resource ID.
 	 * @param Array $args - Array(
 	 * 		'services' => false - Additional API requests to retrieve services.
 	 * 		'packages' => false - Additional API requests to retrieve packages.
@@ -171,10 +171,10 @@ class Shipstation_Apiv1 extends Shipstation_Api  {
 	 *
 	 * @return Array|WP_Error
 	 */
-	public function get_carriers( $carrier_code = '', $args = array() ) {
+	public function get_carriers( $carrier_id = '', $args = array() ) {
 
-		if( ! empty( $carrier_code ) ) {
-			return $this->get_carrier( $carrier_code );
+		if( ! empty( $carrier_id ) ) {
+			return $this->get_carrier( $carrier_id );
 		}
 
 		$trans_key = $this->prefix_key( 'v1carriers' );
