@@ -435,34 +435,6 @@ class Shipstation_Api  {
 	}
 
 
-
-	/**------------------------------------------------------------------------------------------------ **/
-	/** :: Helper Methods :: **/
-	/**------------------------------------------------------------------------------------------------ **/
-	/**
-	 * Convert a WooCommerce unit term to a
-	 * ShipStation unit term.
-	 *
-	 * @param String $unit
-	 *
-	 * @return String $term
-	 */
-	public function convert_unit_term( $unit ) {
-
-		$known = array(
-			'kg'	=> 'kilogram',
-			'g'		=> 'gram',
-			'lbs'	=> 'pound',
-			'oz'	=> 'ounce',
-			'cm'	=> 'centimeter',
-			'in'	=> 'inch',
-		);
-
-		return ( isset( $known[ $unit ] ) ) ? $known[ $unit ] : $unit;
-
-	}
-
-
 	/**
 	 * Make an API Request
 	 *
@@ -535,6 +507,34 @@ class Shipstation_Api  {
 		) );
 
 		return $body;
+
+	}
+
+
+
+	/**------------------------------------------------------------------------------------------------ **/
+	/** :: Helper Methods :: **/
+	/**------------------------------------------------------------------------------------------------ **/
+	/**
+	 * Convert a WooCommerce unit term to a
+	 * ShipStation unit term.
+	 *
+	 * @param String $unit
+	 *
+	 * @return String $term
+	 */
+	public function convert_unit_term( $unit ) {
+
+		$known = array(
+			'kg'	=> 'kilogram',
+			'g'		=> 'gram',
+			'lbs'	=> 'pound',
+			'oz'	=> 'ounce',
+			'cm'	=> 'centimeter',
+			'in'	=> 'inch',
+		);
+
+		return ( isset( $known[ $unit ] ) ) ? $known[ $unit ] : $unit;
 
 	}
 
