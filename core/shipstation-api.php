@@ -444,7 +444,7 @@ class Shipstation_Api  {
 	 *
 	 * @return Array|WP_Error $response
 	 */
-	protected function make_request( $method, $endpoint, $args = array() ) {
+	public function make_request( $method, $endpoint, $args = array() ) {
 
 		// Return Early - No API Key found.
 		if( empty( $this->key ) ) {
@@ -492,7 +492,7 @@ class Shipstation_Api  {
 
 			}
 
-			return $this->log( new \WP_Error( absint( $err_code ), sanitize_text_field( $err_msg ) ), array(
+			return $this->log( new \WP_Error( absint( $err_code ), sanitize_text_field( $err_msg ) ), 'error', array(
 				'args' => $args,
 				'body' => $body,
 			) );
