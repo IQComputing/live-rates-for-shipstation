@@ -318,13 +318,13 @@ Class Settings_Shipstation {
 							$request = $shipStationAPI->get_carriers();
 
 							// Error - Something went wrong, the API should let us know.
-							if( is_wp_error( $request ) || empty( $request ) ) {
+							if( is_wp_error( $request ) || empty( $request ) || ! is_array( $request ) ) {
 
 								// Revert to old key.
 								\IQLRSS\Driver::get_ss_opt( 'api_key', $keydata['old']['key'] );
 
+								$code 	 = ( is_wp_error( $request ) ) ? $request->get_error_code() : 400;
 								$message = ( is_wp_error( $request ) ) ? $request->get_error_message() : '';
-								$code = ( is_wp_error( $request ) ) ? $request->get_error_code() : 400;
 								wp_send_json_error( $message, $code );
 
 							}
