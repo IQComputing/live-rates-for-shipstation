@@ -19,7 +19,7 @@
  * @todo API call statistics, tracking, and limiting.
  * @todo Create custom Integration page.
  * @todo Recreate the Shipping Zone packages table
- * @todo Add warehosue locations to Shipping Zone packages.
+ * @todo Add warehouse locations to Shipping Zone packages.
  * @todo Look into adding global warehouse option in options.
  * @todo Look into updating warehouses through Edit Order > Order Items.
  * @todo Ship date estimates? Many endpoints have shipdate args, not every service gives shipdates.
