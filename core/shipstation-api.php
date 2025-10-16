@@ -470,7 +470,13 @@ class Shipstation_Api  {
 
 		$request = call_user_func( $callback, esc_url( $endpoint_url ), $req_args );
 		$code = wp_remote_retrieve_response_code( $request );
-		$body = json_decode( wp_remote_retrieve_body( $request ), true );
+		$body = wp_remote_retrieve_body( $request );
+
+		if( is_string( $body ) ) {
+			$body = preg_replace( '/^\xEF\xBB\xBF/', '', $body ); // da BOM
+			$json = json_decode( $body, true );
+			$body = ( ! empty( $json ) ) ? $json : $body;
+		}
 
 		// Return Early - API encountered an error.
 		if( is_wp_error( $request ) ) {
@@ -478,23 +484,33 @@ class Shipstation_Api  {
 		} else if( 200 != $code || ! is_array( $body ) ) {
 
 			$err_code = $code;
-			$err_msg = esc_html__( 'Error encountered during request.', 'live-rates-for-shipstation' );
+			$err_msg  = esc_html__( 'Error encountered during request.', 'live-rates-for-shipstation' );
 
 			if( ! empty( $body['errors'] ) && is_array( $body['errors'] ) ) {
-				$error = array_shift( $body['errors'] );
+
+				$error 	  = array_shift( $body['errors'] );
 				$err_code = ( isset( $error['error_code'] ) && 'unspecified' != $error['error_code'] ) ? $error['error_code'] : $err_code;
-				$err_msg = ( isset( $error['message'] ) ) ? $error['message'] : $err_msg;
+				$err_msg  = ( isset( $error['message'] ) ) ? $error['message'] : $err_msg;
+				$err_type = ( isset( $error['error_type'] ) ) ? $error['error_type'] : 'ghosts';
 
 				// Add a bit more context.
 				if( 'unauthorized' == $err_code ) {
 					$err_msg .= ' ' . esc_html__( '(API Key may be invalid)', 'live-rates-for-shipstation' );
 				}
 
+				// Add even more context.
+				if( 'account_status' == $err_type ) {
+					$err_msg .= sprintf( '<a href="%s" target="_blank" rel="nofollow noopener" class="button button-primary button-small">%s&nbsp;&nbsp;<span class="dashicons dashicons-external" aria-hidden="true"></span></a>',
+						'https://www.dpbolvw.net/click-101532691-11646582',
+						esc_html__( 'Sign up for a ShipStation Account', 'live-rates-for-shipstation' ),
+					);
+				}
 			}
 
-			return $this->log( new \WP_Error( absint( $err_code ), sanitize_text_field( $err_msg ) ), 'error', array(
-				'args' => $args,
-				'body' => $body,
+			return $this->log( new \WP_Error( $err_code, $err_msg ), 'error', array(
+				'args'		=> $args,
+				'code'		=> $err_code,
+				'response'	=> $body,
 			) );
 		}
 
