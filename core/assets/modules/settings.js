@@ -433,7 +433,7 @@ function rowAddError( $row, message ) {
 
 	let $err = document.createElement( 'p' );
 		$err.classList.add( 'description', 'iqcss-err' );
-		$err.innerText = message;
+		$err.innerHTML = message;
 
 	$row.querySelector( 'fieldset' ).appendChild( $err );
 	const errHeight = $err.getBoundingClientRect().height;
