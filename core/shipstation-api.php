@@ -2,6 +2,8 @@
 /**
  * ShipStation API Helper
  *
+ * @link https://docs.shipstation.com/openapi
+ *
  * :: API Requests
  * :: Helper Methods
  */

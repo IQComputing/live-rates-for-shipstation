@@ -1,6 +1,8 @@
 <?php
 /**
- * ShipStation API Helper
+ * ShipStation [v1] API Helper
+ *
+ * @link https://www.shipstation.com/docs/api
  *
  * orderNumber 	- Associated with WC_Order ID.'
  * orderId		- ShipStation Unique
@@ -660,7 +662,7 @@ class Shipstation_Apiv1 extends Shipstation_Api  {
 
 	}
 
-	
+
 	/**
 	 * Make an API Request
 	 *
