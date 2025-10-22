@@ -34,6 +34,15 @@ export class shippingZoneSettings {
 		document.querySelector( '.custom-boxes-control' ).addEventListener( 'change', function() {
 			if( 'wc-box-packer' == this.value ) {
 
+				/**
+				 * Setup the Custom Boxes Module.
+				 * @import CustomBoxes
+				 */
+				import( './custom-boxes.js' ).then( ( Module ) => {
+					new Module.CustomBoxes();
+					document.getElementById( 'customBoxesRow' ).style.display = 'table-row';
+				} );
+
 				document.getElementById( 'customBoxes' ).style.display = 'table-row';
 				if( document.querySelectorAll( '#customBoxes tbody tr' ).length < 2 ) {
 					document.querySelector( '#customBoxes button[name=add]' ).click();
@@ -45,6 +54,7 @@ export class shippingZoneSettings {
 					if( 'text' == $elm.type ) $elm.removeAttribute( 'required' );
 				} );
 				document.getElementById( 'customBoxes' ).style.display = 'none';
+				document.getElementById( 'customBoxesRow' ).style.display = 'none';
 
 			}
 		} );

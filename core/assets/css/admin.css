@@ -1,7 +1,12 @@
 .iqcss-err		{font-style: italic; color: darkred !important;}
+.iqlrss-hidden,
 .iqlrss-hide	{display: none;}
 .iqlrss-show	{display: block;}
 tr.iqlrss-show	{display: table-row;}
+
+.iqlrss-flexrow         {display: flex;}
+.iqlrss-flexgrid        {display: flex; flex-wrap: wrap; margin: 0 -10px;}
+.iqlrss-flexgrid > *    {margin: 10px;}
 
 table.nottoofat th,
 table.nottoofat td	{padding: 9px 7px;}
@@ -37,3 +42,20 @@ th.no-padleft		{padding-left: 0;}
 .iqlrss-api-row #iqlrssClearCacheButton:after			{content: ''; display: inline-block; position: relative; top: 4px; margin-left: 4px;}
 .iqlrss-api-row #iqlrssClearCacheButton.working:after	{background: url( 'images/spinner.gif' ) no-repeat center/contain;}
 .iqlrss-api-row #iqlrssClearCacheButton.complete:after	{content: "\f12a"; top: 3px; font-size: 16px; line-height: 1; font-family: dashicons; font-weight: 400; font-style: normal;}
+
+#customBoxActions button        {min-height: 0; padding: 2px 8px 3px; line-height: normal; font-size: 12px; transition: background 0.3s;}
+
+#customBoxSearchWrap            {max-width: 400px;}
+#customBoxSearchWrap > p        {padding-left: 2px; font-style: italic; font-size: 12px;}
+#customBoxesSearch              {width: 100%; margin-top: 4px; border: 0; border-bottom: 1px solid rgba(0, 0, 0, 0.75); border-radius: 0; background: #FFFFFF; background: linear-gradient(90deg, rgba(255, 255, 255, 1) 88%, rgba(240, 240, 241, 1) 100%);}
+#customBoxesSearch::placeholder {font-style: italic; color: #3c434a;}
+#customBoxSearchWrap > button   {position: relative; top: -1px; right: -2px; float: right; padding: 0 8px; border: 1px solid #000; border-top: 0px; font-size: 12px; background: none; cursor: pointer; transition: background 0.3s;}
+#customBoxSearchWrap > button:hover,
+#customBoxSearchWrap > button:focus,
+#customBoxSearchWrap > button:active    {background: #fff;}
+
+#customBoxesFormModal .description          {margin-top: 0; letter-spacing: 0.01em; font-style: italic; font-size: 13px;}
+#customBoxesFormModal label                 {margin-bottom: 2px; font-weight: 500;}
+#customBoxesFormModal .iqlrss-field         {width: calc( 33.33% - 20px );}
+#customBoxesFormModal .iqlrss-field.-w25    {width: calc( 25% - 20px );}
+#customBoxesFormModal .iqlrss-field:not(.-noninput) input   {width: 100%;}

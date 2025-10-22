@@ -60,7 +60,7 @@ Class Settings_Shipstation {
 		// CSS
 		wp_register_style(
 			\IQLRSS\Driver::plugin_prefix( 'admin', '-' ),
-			\IQLRSS\Driver::get_asset_url( 'admin.css' ),
+			\IQLRSS\Driver::get_asset_url( 'css/admin.css' ),
 			array(),
 			\IQLRSS\Driver::get( 'version', '1.0.0' )
 		);
@@ -68,7 +68,7 @@ Class Settings_Shipstation {
 		// JS
 		wp_register_script_module(
 			\IQLRSS\Driver::plugin_prefix( 'admin', '-' ),
-			\IQLRSS\Driver::get_asset_url( 'admin.js' ),
+			\IQLRSS\Driver::get_asset_url( 'js/admin.js' ),
 			array( 'jquery' ),
 			\IQLRSS\Driver::get( 'version', '1.0.0' )
 		);
@@ -286,7 +286,7 @@ Class Settings_Shipstation {
 							\IQLRSS\Driver::set_ss_opt( 'apiv1_secret', $keydata['new']['secret'] );
 
 							// Ping the stores so that it sets the currently connected store ID.
-							$shipStationAPI = new Shipstation_Apiv1();
+							$shipStationAPI = new Api\Shipstationv1();
 							$request = $shipStationAPI->get_stores();
 
 							// Error - Something went wrong, the API should let us know.
@@ -314,7 +314,7 @@ Class Settings_Shipstation {
 							\IQLRSS\Driver::set_ss_opt( 'api_key', $keydata['new']['key'] );
 
 							// Ping the carriers so that they are cached.
-							$shipStationAPI = new Shipstation_Api();
+							$shipStationAPI = new Api\Shipstation();
 							$request = $shipStationAPI->get_carriers();
 
 							// Error - Something went wrong, the API should let us know.
@@ -455,12 +455,12 @@ Class Settings_Shipstation {
 
 		// Prime the cache
 		// API v1 will always cache it's ShipStation data in the WC_Order as metadata.
-		$apiv1 = new Shipstation_Apiv1( true );
+		$apiv1 = new Api\Shipstationv1( true );
 		$apiv1->get_orders( array(
 			'createDateEnd' => gmdate( 'c', time() ),
 		) );
 
-		$api = new Shipstation_Api( true );
+		$api = new Api\Shipstation( true );
 		$api->create_shipments_from_wc_orders( $wc_orders );
 
 		return delete_transient( $trans_key );
@@ -519,7 +519,7 @@ Class Settings_Shipstation {
 		if( ! empty( \IQLRSS\Driver::get_ss_opt( 'api_key' ) ) ) {
 
 			$carrier_desc = esc_html__( 'Select which ShipStation carriers you would like to see live shipping rates from.', 'live-rates-for-shipstation' );
-			$shipStationAPI = new Shipstation_Api();
+			$shipStationAPI = new Api\Shipstation();
 			$response = $shipStationAPI->get_carriers();
 
 			if( is_a( $response, 'WP_Error' ) ) {

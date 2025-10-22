@@ -10,13 +10,13 @@
  * :: Helper Methods
  * :: v2 API Request Overrides - Returns WP Errors to show invalid request.
  */
-namespace IQLRSS\Core;
+namespace IQLRSS\Core\Api;
 
 if( ! defined( 'ABSPATH' ) ) {
 	return;
 }
 
-class Shipstation_Apiv1 extends Shipstation_Api  {
+class Shipstationv1 extends Shipstation  {
 
 	/**
 	 * The API Key
@@ -691,7 +691,7 @@ class Shipstation_Apiv1 extends Shipstation_Api  {
 	 * @return WP_Error
 	 */
 	public function get_shipping_estimates( $est_opts ) {
-		return $this->log( new \WP_Error( 400, esc_html__( 'Live Rates for ShipStation v1 API Class does not support this endpoint. Use the v2 API Class: \IQLRSS\Core\Shipstation_Api', 'live-rates-for-shipstation' ) ) );
+		return $this->log( new \WP_Error( 400, esc_html__( 'Live Rates for ShipStation v1 API Class does not support this endpoint. Use the v2 API Class: \IQLRSS\Core\Api\Shipstation', 'live-rates-for-shipstation' ) ) );
 	}
 
 }

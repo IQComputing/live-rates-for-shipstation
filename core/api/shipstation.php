@@ -5,13 +5,13 @@
  * :: API Requests
  * :: Helper Methods
  */
-namespace IQLRSS\Core;
+namespace IQLRSS\Core\Api;
 
 if( ! defined( 'ABSPATH' ) ) {
 	return;
 }
 
-class Shipstation_Api  {
+class Shipstation  {
 
 	/**
 	 * Skip cache check

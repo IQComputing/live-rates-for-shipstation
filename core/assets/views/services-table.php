@@ -7,7 +7,7 @@
  * Pull in new rates based on selected carriers.
  *
  * @param \IQLRSS\Core\Shipping_Method_Shipstation $this
- * @param \IQLRSS\Core\Shipstation_Api $shipStationAPI
+ * @param \IQLRSS\Core\Api\Shipstation $shipStationAPI
  * @param String $prefix - Plugin prefix
  * @param Array $saved_services - Saved Zone Services
  * @param Array $saved_carriers - Saved ShipStation Carriers

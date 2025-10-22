@@ -85,7 +85,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	public function __construct( $instance_id = 0 ) {
 
 		$this->plugin_prefix 		= \IQLRSS\Driver::get( 'slug' );
-		$this->shipStationApi 		= new Shipstation_Api();
+		$this->shipStationApi 		= new Api\Shipstation();
 		$this->id 					= \IQLRSS\Driver::plugin_prefix( 'shipstation' );
 		$this->instance_id 			= absint( $instance_id );
 		$this->method_title 		= esc_html__( 'Live Rates for ShipStation', 'live-rates-for-shipstation' );
@@ -405,6 +405,9 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				),
 				'description'	=> esc_html__( 'Individually can be more costly. Custom packing boxes will automatically fit as many products in set dimensions lowering shipping costs.', 'live-rates-for-shipstation' ),
 			),
+			'customboxes_new' => array(
+				'type' => 'customboxes_new', // See self::generate_customboxes_html()
+			),
 			'customboxes' => array(
 				'type' => 'customboxes', // See self::generate_customboxes_html()
 			),
@@ -458,7 +461,26 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		}
 
 		ob_start();
-			include 'views/services-table.php';
+			include 'assets/views/services-table.php';
+		return ob_get_clean();
+
+	}
+
+
+	/**
+	 * Automatic dynamic method inherited from parent.
+	 * Generate HTML for custom boxes fields.
+	 *
+	 * @return String - HTML
+	 */
+	public function generate_customboxes_new_html() {
+
+		$prefix 		= $this->plugin_prefix;
+		$show_custom 	= ( 'wc-box-packer' == $this->get_option( 'packing', 'individual' ) );
+		$saved_boxes 	= $this->get_option( 'customboxes', array() );
+
+		ob_start();
+			include 'assets/views/customboxes-new.php';
 		return ob_get_clean();
 
 	}
@@ -477,7 +499,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		$saved_boxes 	= $this->get_option( 'customboxes', array() );
 
 		ob_start();
-			include 'views/customboxes-table.php';
+			include 'assets/views/customboxes-table.php';
 		return ob_get_clean();
 
 	}
