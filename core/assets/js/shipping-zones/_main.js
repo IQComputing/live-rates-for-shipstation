@@ -38,10 +38,13 @@ export class shippingZoneSettings {
 				 * Setup the Custom Boxes Module.
 				 * @import CustomBoxes
 				 */
-				import( './custom-boxes.js' ).then( ( Module ) => {
-					new Module.CustomBoxes();
-					document.getElementById( 'customBoxesRow' ).style.display = 'table-row';
-				} );
+				document.getElementById( 'customBoxesRow' ).style.display = 'table-row';
+				if( ! document.getElementById( 'customBoxesRow' ).classList.contains( 'ready' ) ) {
+					import( './custom-boxes.js' ).then( ( Module ) => {
+						new Module.CustomBoxes();
+						document.getElementById( 'customBoxesRow' ).classList.add( 'ready' );
+					} );
+				}
 
 				document.getElementById( 'customBoxes' ).style.display = 'table-row';
 				if( document.querySelectorAll( '#customBoxes tbody tr' ).length < 2 ) {
@@ -58,6 +61,7 @@ export class shippingZoneSettings {
 
 			}
 		} );
+		document.querySelector( '.custom-boxes-control' ).dispatchEvent( new Event( 'change' ) );
 
 	}
 

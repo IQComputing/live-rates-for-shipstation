@@ -1,4 +1,39 @@
-export let ModuleMap = new Map();
+const ModuleMap = new Map();
+
+
+/**
+ * Return a module for a given element
+ * Loads the module if it doesn't exist yet.
+ *
+ * @param {String} slug 	- Module slug to load.
+ * @param {DOMObject} $elm 	- The element associated with the module.
+ * @param {Object} pargs 	- Arguments to pass to the module.
+ *
+ * @return {Object} Module - The module object.
+ */
+export function loadModule( slug, $elm, pargs ) {
+
+	let Modules = ModuleMap.get( slug );
+	if( Modules ) {
+		let obj = Modules.get( $elm );
+		if( obj ) return Promise.resolve( obj );
+	}
+
+	return import( `./${slug}.js` ).then( ( Module ) => {
+
+		const margs = { ...$elm.dataset, ...pargs };
+		const obj = new Module[ slug ]( $elm, margs );
+
+		Modules = Modules || new WeakMap();
+		Modules.set( $elm, obj );
+		ModuleMap.set( slug, Modules );
+
+		return obj
+
+	} );
+
+}
+
 
 /**
  * Returns an object property or default value.
@@ -31,12 +66,12 @@ export function getProp( obj, prop, ifnull ) {
  *
  * @return {Boolean}
  */
-export function notEmpty( val ) {
+export function isEmpty( val ) {
 
-	if( 'undefined' === typeof val ) return false;
-	if( 'object' === typeof val ) return Boolean( Object.keys( val ).length );
+	if( 'undefined' === typeof val ) return true;
+	if( 'object' === typeof val ) return ! Boolean( Object.keys( val ).length );
 
-	return Boolean( ( val ) );
+	return ! Boolean( ( val ) );
 
 }
 
@@ -54,7 +89,7 @@ export function notEmpty( val ) {
  */
 export function createElement( tagname, atts ) {
 
-	atts = atts ?? {}
+	atts = atts || {}
 	let $elm = document.createElement( tagname );
 
 	if( atts ) {
@@ -93,5 +128,28 @@ export function css( $elm, atts ) {
 	$elm.style.cssText = style;
 
 	return $elm;
+
+}
+
+
+/**
+ * Convert a FormData object to JSON.
+ *
+ * @link https://stackoverflow.com/a/46774073/800452
+ *
+ * @param {FormData} formData
+ */
+export function formDataToJSON( formData ) {
+
+	let json = {};
+	formData.forEach( ( v, k ) => {
+
+		if( ! Reflect.has( json, k ) ) { return json[ k ] = v;}
+		if( ! Array.isArray( json[ k ] ) ) json[ k ] = [ json[ k ] ];
+		json[ k ].push( v );
+
+	} );
+
+	return json;
 
 }
