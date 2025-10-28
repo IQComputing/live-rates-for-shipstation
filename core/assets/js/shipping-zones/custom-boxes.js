@@ -38,7 +38,7 @@ export class CustomBoxes {
     setupCustomBoxes() {
 
         this.#data.domList = document.getElementById( 'iqlrssCustomBoxes' );
-        this.#data.domItemClone = document.getElementById( 'iqlrssCustomBoxes' ).querySelector( 'clone' );
+        this.#data.domItemClone = this.#data.domList.querySelector( '.clone' );
 
         if( this.#data.domList.children ) {
             [...this.#data.domList.children].forEach( ( $boxItem ) => {
@@ -60,7 +60,20 @@ export class CustomBoxes {
      */
     addCustomBox( box ) {
 
-        const boxString = JSON.stringify( box );
+        box.id = ( 'id' in box ) ? box.id : ( this.#data.boxes.length + 1 );
+
+        const box_string = JSON.stringify( box );
+        let $clone = this.#data.domItemClone.cloneNode( true );
+            $clone.classList.remove( 'clone' );
+            $clone.innerHTML.replaceAll( '-1', box.id );
+
+        $clone.querySelector( '[name*="[json]"]' ).value = box_string;
+        $clone.querySelector( '[name*="[json]"] + a' ).innerText = box.nickname;
+
+        this.#data.boxes.push( box );
+        this.#data.domList.appendChild( $clone );
+
+        return box.id;
 
     }
 
@@ -100,7 +113,13 @@ export class CustomBoxes {
              */
             $btn.addEventListener( 'modal-open', ( e ) => {
 
-                const Module = e.detail.modal;
+                const Module    = e.detail.modal;
+                const $wpWrap   = document.querySelector( '.wrap' );
+
+                if( $wpWrap ) {
+                    const widthDiff = ( document.body.getBoundingClientRect().width - $wpWrap.querySelector( 'form' ).getBoundingClientRect().width );
+                    Module.domModal().style.left  = ( widthDiff - 20 ) + 'px';
+                }
 
                 Module.domModal().animate( {
                     opacity: [ 0, 1 ],
@@ -108,9 +127,7 @@ export class CustomBoxes {
                 }, {
                     duration: 300,
                     easing: 'ease-in-out',
-                } );
-
-                Module.domModal().querySelector( 'input:first-of-type' ).focus();
+                } ).onfinish = () => Module.domModal().querySelector( 'input' ).focus();
 
             } );
 
@@ -143,11 +160,49 @@ export class CustomBoxes {
      */
     setupModalFieldEvents() {
 
+        /**
+         * Toggle Field Visiblity
+         *
+         * @param {DOMObject} $elm
+         * @param {Boolean} visible
+         */
+        const toggleFieldVisibility = ( $elm, visible ) => {
+
+            if( visible ) {
+
+                util.css( $elm, { 'display': 'block' } );
+                $elm.animate( {
+                    opacity: [ 0, 1 ],
+                    transform: [ 'scale(0.85)', 'scale(1)' ],
+                }, {
+                    duration: 300,
+                    easing: 'ease-in',
+                } ).onfinish = () => 'enabledby' in $elm.dataset && $elm.classList.add( 'enabled' );
+
+            } else {
+
+                $elm.animate( {
+                    opacity: [ 1, 0 ],
+                    transform: [ 'scale(1)', 'scale(0.85)' ],
+                }, {
+                    duration: 300,
+                    easing: 'ease-out',
+                } ).onfinish = () => {
+
+                    util.css( $elm, {} );
+                    if( 'enabledby' in $elm.dataset ) $elm.classList.remove( 'enabled' );
+
+                };
+
+            }
+
+        }
+
         document.querySelectorAll( '#customBoxesFormModal [class*="field-switch"] [type="checkbox"]' ).forEach( ( $checkbox ) => {
             $checkbox.addEventListener( 'change', ( e ) => {
                 e.target.value = e.target.checked;
                 document.querySelectorAll( `#customBoxesFormModal [data-enabledby="${e.target.id}"]` ).forEach( ( $field ) => {
-                    this.toggleFieldVisibility( $field, e.target.checked )
+                    toggleFieldVisibility( $field, e.target.checked )
                 } );
             } );
         } );
@@ -170,7 +225,8 @@ export class CustomBoxes {
         const $modal = document.getElementById( 'customBoxesFormModal' );
         if( ! $modal.open ) return;
 
-        const errorColor = '#d63638';
+        const errorColor    = '#d63638';
+        const successColor  = '#248A3D';
 
 
         /**
@@ -249,15 +305,15 @@ export class CustomBoxes {
         }
 
         let jsonBox     = util.formDataToJSON( data );
-        let boxString   = ( jsonBox.length ) ? JSON.stringify( jsonBox ) : '';
+        let box_string  = ( ! util.isEmpty( jsonBox ) ) ? JSON.stringify( jsonBox ) : '';
 
         /* Error - Something went wrong, denote it to User */
-        if( ! jsonBox.length || ! nickname in jsonBox || ! boxString.length ) {
+        if( util.isEmpty( jsonBox ) || ! ( 'nickname' in jsonBox ) || ! box_string.length ) {
             modalLighting( errorColor );
             return this.modalToast( 'error', iqlrss.text.error_custombox_json );
         }
 
-        if( ! jsonBox.custombox_id && this.addCustomBox( jsonBox ) ) {
+        if( ! ( 'id' in jsonBox ) && this.addCustomBox( jsonBox ) ) {
             modalLighting( successColor );
             return this.modalToast( 'success', iqlrss.text.success_custombox_added );
         }
@@ -290,7 +346,7 @@ export class CustomBoxes {
         $modal.prepend( $toasty );
         $toasty.animate( {
             height: [ 0, height + 'px' ],
-            opacity: [0, 1],
+            opacity: [ 0, 1 ],
             transform: [ 'translateY(10px)', 'translateY(0)' ],
         }, {
             duration: 300,
@@ -332,50 +388,11 @@ export class CustomBoxes {
 
         $toast.animate( {
             opacity: 0,
-            transform: 'translateY( 10px )'
+            height: 0
         }, {
             duration: 300,
             easing: 'ease-out',
         } ).onfinish = () => $toast.remove();
-
-    }
-
-
-    /**
-     * Toggle Field Visiblity
-     *
-     * @param {DOMObject} $elm
-     * @param {Boolean} visible
-     */
-    toggleFieldVisibility( $elm, visible ) {
-
-        if( visible ) {
-
-            util.css( $elm, { 'display': 'block' } );
-            $elm.animate( {
-                opacity: [ 0, 1 ],
-                transform: [ 'scale(0.85)', 'scale(1)' ],
-            }, {
-                duration: 300,
-                easing: 'ease-in',
-            } ).onfinish = () => 'enabledby' in $elm.dataset && $elm.classList.add( 'enabled' );
-
-        } else {
-
-             $elm.animate( {
-                opacity: [ 1, 0 ],
-                transform: [ 'scale(1)', 'scale(0.85)' ],
-            }, {
-                duration: 300,
-                easing: 'ease-out',
-            } ).onfinish = () => {
-
-                util.css( $elm, {} );
-                if( 'enabledby' in $elm.dataset ) $elm.classList.remove( 'enabled' );
-
-            };
-
-        }
 
     }
 

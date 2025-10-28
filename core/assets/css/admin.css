@@ -14,9 +14,9 @@
 .iqlrss-flex > .--w33,
 .iqlrss-flex.--cols3 > *    {width: calc( 33.33% - 20px );}
 .iqlrss-flex > .--w20,
-.iqlrss-flex.--cols4 > *    {width: calc( 20% - 20px );}
+.iqlrss-flex.--cols4 > *    {width: calc( 25% - 20px );}
 .iqlrss-flex > .--w25,
-.iqlrss-flex.--cols5 > *    {width: calc( 25% - 20px );}
+.iqlrss-flex.--cols5 > *    {width: calc( 20% - 20px );}
 .iqlrss-flex[class*="--cols"]       {margin-right: -10px; margin-left: -10px;}
 .iqlrss-flex[class*="--cols"] > *   {margin: 10px;}
 
@@ -144,5 +144,6 @@ th.no-padleft		{padding-left: 0;}
 #iqlrssCustomBoxes li.clone {display: none;}
 
 #customBoxesFormModal   {border-color: var( --wp-admin-theme-color );}
+#customBoxesFormModal .--w22            {width: calc( 22.22% - 20px );}
 #customBoxesFormModal .description      {margin-top: 0; letter-spacing: 0.01em; font-style: italic; font-size: 13px;}
 #customBoxesFormModal #saveCustomBox    {display: block; margin-top: 4px; margin-right: 0; margin-left: auto;}
