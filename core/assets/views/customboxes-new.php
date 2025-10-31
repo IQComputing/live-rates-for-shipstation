@@ -39,11 +39,6 @@ function iqlrssPrintCustomBoxItem( $data ) {
 
 	$item_html = sprintf( '<li class="%s">', esc_attr( implode( ' ', $box_arr['classes']  ) ) );
 
-		// Handle / Mover
-		$item_html .= sprintf( '<div><button type="button" class="iqlrss-boxhandle"><span class="dashicons dashicons-menu" aria-hidden="true"></span><span class="screen-reader-text">%s</span></button></div>',
-			esc_html__( 'Moves custom box priority up or down.', 'live-rates-for-shipstation' ),
-		);
-
 		// Removal Checkbox
 		$item_html .= '<div>';
 			$item_html .= sprintf( '<label for="removeCustomBox_%1$d"><input type="checkbox" name="custombox[%1$d][remove]" id="removeCustomBox_%1$d"><span class="screen-reader-text">%s</span></label>',
@@ -79,7 +74,7 @@ function iqlrssPrintCustomBoxItem( $data ) {
 		$item_html .= '<div><div data-assoc="box_dimensions"></div></div>';
 
 		// Price
-		$item_html .= '<div><div data-assoc="box_dimensions"></div></div>';
+		$item_html .= '<div><div data-assoc="box_price"></div></div>';
 
 		// Warehouse?
 		$item_html .= '<div><div data-assoc="box_warehouse"></div></div>';
