@@ -165,12 +165,12 @@ class Shipstation  {
 					'friendly_name',
 				) ) );
 
-				$carrier['is_shipstation'] 	= ( ! empty( $carrier_data['primary'] ) );
+				$carrier['is_shipstation'] 	= $carrier_data['requires_funded_amount'];
 				$carrier['name'] 			= $carrier['friendly_name'];
 
 				// Denote Manual Connected Carrier.
 				if( ! $carrier['is_shipstation'] ) {
-					$carrier['name'] .= ' ' . esc_html__( '(Manual)', 'live-rates-for-shipstation' );
+					$carrier['name'] .= ' ' . esc_html__( '(Personal)', 'live-rates-for-shipstation' );
 				}
 
 				$data['carriers'][ $carrier['carrier_id'] ] = $carrier;

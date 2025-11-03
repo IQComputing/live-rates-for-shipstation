@@ -13,7 +13,8 @@ export class CustomBoxes {
      */
     #data = {
         boxes: [],
-        domList: null
+        domRow: null,
+        domList: null,
     }
 
 
@@ -37,6 +38,7 @@ export class CustomBoxes {
      */
     setupCustomBoxes() {
 
+        this.#data.domRow = document.getElementById( 'customBoxesRow' );
         this.#data.domList = document.getElementById( 'iqlrssCustomBoxes' );
         this.#data.domItemClone = this.#data.domList.querySelector( '.clone' );
 
@@ -51,33 +53,6 @@ export class CustomBoxes {
     }
 
 
-    /**
-     * Add a Custom Box to the list.
-     *
-     * @param {Object} box
-     *
-     * @return {Integer}
-     */
-    addCustomBox( box ) {
-
-        box.id = ( 'id' in box ) ? box.id : ( this.#data.boxes.length + 1 );
-
-        const box_string = JSON.stringify( box );
-        let $clone = this.#data.domItemClone.cloneNode( true );
-            $clone.classList.remove( 'clone' );
-            $clone.innerHTML.replaceAll( '-1', box.id );
-
-        $clone.querySelector( '[name*="[json]"]' ).value = box_string;
-        $clone.querySelector( '[name*="[json]"] + a' ).innerText = box.nickname;
-
-        this.#data.boxes.push( box );
-        this.#data.domList.appendChild( $clone );
-
-        return box.id;
-
-    }
-
-
 
     /**------------------------------------------------------------------------------------------------ **/
 	/** :: Modals :: **/
@@ -87,68 +62,73 @@ export class CustomBoxes {
      */
     modals() {
 
-        const $modals = document.querySelectorAll( '[data-iqlrss-modal]' );
-        if( ! $modals ) return;
-
-        $modals.forEach( ( $btn ) => {
-
-            /**
-             * Setup Modal.
-             */
-            $btn.addEventListener( 'click', ( e ) => {
-
-                e.preventDefault();
-
-                util.loadModule( 'modal', e.target, {
-                    'modal': e.target.dataset.iqlrssModal,
-                } ).then( ( Modal ) => {
-                    $btn.modal = Modal;
-                } );
-
-            } );
+        const $modal = document.getElementById( 'customBoxesFormModal' );
+        if( ! $modal ) {
+            return;
+        }
 
 
-            /**
-             * Animate Modal opening.
-             */
-            $btn.addEventListener( 'modal-open', ( e ) => {
+        /**
+         * Dynamic open modal event.
+         */
+        this.#data.domRow.addEventListener( 'click', ( e ) => {
 
-                const Module    = e.detail.modal;
-                const $wpWrap   = document.querySelector( '.wrap' );
-
-                if( $wpWrap ) {
-                    const widthDiff = ( document.body.getBoundingClientRect().width - $wpWrap.querySelector( 'form' ).getBoundingClientRect().width );
-                    Module.domModal().style.left  = ( widthDiff - 20 ) + 'px';
-                }
-
-                Module.domModal().animate( {
-                    opacity: [ 0, 1 ],
-                    transform: [ 'scale(0.85)', 'scale(1.05)', 'scale(1)' ],
-                }, {
-                    duration: 300,
-                    easing: 'ease-in-out',
-                } ).onfinish = () => Module.domModal().querySelector( 'input' ).focus();
-
-            } );
-
-
-            /**
-             * Prevent closing the modal...
-             * IF the user may have modified the modal in some way (typing, changing, etc.).
-             * AND the user clicks outside the modal. This does not apply to clicking the [x].
-             */
-            $btn.addEventListener( 'modal-close', ( e ) => {
-
-                const Module = e.detail.modal;
-                if( ! Module.wasModified() ) return;
-
-                /* Prevent close on confirm cancel. */
-                if( 'click-outer' == e.detail.context && ! window.confirm( iqlrss.text.confirm_modal_closure ) ) e.preventDefault();
-
-            } );
+            if( ! ( 'iqlrssModal' in e.target.dataset ) ) return;
+            e.preventDefault();
+            util.loadModule( 'modal', e.target, { 'modal': e.target.dataset.iqlrssModal } );
 
         } );
 
+
+        /**
+         * Animate Modal opening.
+         */
+        $modal.addEventListener( 'modal-open', ( e ) => {
+
+            const Module    = e.detail.modal;
+            const $wpWrap   = document.querySelector( '.wrap' );
+
+            if( $wpWrap ) {
+                const widthDiff = ( document.body.getBoundingClientRect().width - $wpWrap.querySelector( 'form' ).getBoundingClientRect().width );
+                Module.domModal().style.left  = ( widthDiff - 20 ) + 'px';
+            }
+
+            Module.domModal().animate( {
+                opacity: [ 0, 1 ],
+                transform: [ 'scale(0.85)', 'scale(1.05)', 'scale(1)' ],
+            }, {
+                duration: 300,
+                easing: 'ease-in-out',
+            } ).onfinish = () => Module.domModal().querySelector( 'input' ).focus();
+
+        } );
+
+
+        /**
+         * Prevent closing the modal...
+         * IF the user may have modified the modal in some way (typing, changing, etc.).
+         * AND the user clicks outside the modal. This does not apply to clicking the [x].
+         */
+        $modal.addEventListener( 'modal-close', ( e ) => {
+
+            const Module = e.detail.modal;
+            if( ! Module.wasModified() ) return;
+
+            /* Prevent close on confirm cancel. */
+            if( 'click-outer' == e.detail.context && ! window.confirm( iqlrss.text.confirm_modal_closure ) ) return e.preventDefault();
+
+        } );
+
+
+        /**
+         * Clear form elements whenever form closes / is reset.
+         */
+        $modal.addEventListener( 'modal-reset', ( e ) => this.modalReset() );
+
+
+        /**
+         * Setup the events for fields within the modal itself.
+         */
         this.setupModalFieldEvents();
 
     }
@@ -161,6 +141,7 @@ export class CustomBoxes {
     setupModalFieldEvents() {
 
         /**
+         * @func
          * Toggle Field Visiblity
          *
          * @param {DOMObject} $elm
@@ -177,7 +158,7 @@ export class CustomBoxes {
                 }, {
                     duration: 300,
                     easing: 'ease-in',
-                } ).onfinish = () => 'enabledby' in $elm.dataset && $elm.classList.add( 'enabled' );
+                } ).onfinish = () => ( ( 'enabledby' in $elm.dataset ) && $elm.classList.add( 'enabled' ) );
 
             } else {
 
@@ -230,6 +211,7 @@ export class CustomBoxes {
 
 
         /**
+         * @func
          * Add error description to element.
          *
          * @param {DOMObject} $wrap
@@ -265,7 +247,10 @@ export class CustomBoxes {
 
 
         /**
+         * @func
          * Animate Modal border to denote error/success.
+         *
+         * @param {String} color
          */
         const modalLighting = ( color ) => {
 
@@ -278,16 +263,54 @@ export class CustomBoxes {
 
         }
 
+
+        /**
+         * @func
+         * Add a Custom Box to the list.
+         *
+         * @param {Object} box
+         *
+         * @return {Integer}
+         */
+        const addCustomBox = ( box ) => {
+
+            box.id = ( 'id' in box ) ? box.id : -1;
+            if( -1 == box.id ) {
+                box.id = ( this.#data.boxes.length ) ? Math.max( ...this.#data.boxes.map( obj => obj.id ) ) + 1 : 1;
+            }
+
+            const box_string = JSON.stringify( box );
+            let $clone = this.#data.domItemClone.cloneNode( true );
+                $clone.classList.remove( 'clone' );
+                $clone.innerHTML = $clone.innerHTML.replaceAll( '[-1]', `[${box.id}]` );
+
+            $clone.querySelector( '[name*="[json]"]' ).value = box_string;
+            $clone.querySelector( '[name*="[json]"] + a' ).innerText = box.nickname;
+
+            this.#data.boxes.push( box );
+            this.#data.domList.appendChild( $clone );
+            this.#data.domRow.dataset.count = this.#data.domList.children.length - 1; // Minus the clone.
+
+            return box.id;
+
+        }
+
+
         /* Clear any toasts */
         $modal.querySelectorAll( '.modal-toast' ).forEach( ( $t ) => this.modalToastRemove( $t ) );
 
         /* Validate Required Fields */
         $modal.querySelectorAll( '.iqlrss-field' ).forEach( ( $fieldWrap ) => {
 
-            let $input = $fieldWrap.querySelector( 'input' );
+            let $field = null;
+
+            const $input = $fieldWrap.querySelector( 'input' );
+            const $select = $fieldWrap.querySelector( 'select' );
+
+            $field = ( $input ) ? $input : $select;
 
             /* Skip fields that are not active. */
-            if( 'enabledby' in $fieldWrap.dataset && ! $fieldWrap.classList.contains( 'enabled' ) ) return;
+            if( ( 'enabledby' in $fieldWrap.dataset ) && ! $fieldWrap.classList.contains( 'enabled' ) ) return;
 
             if( $fieldWrap.classList.contains( '--required' ) && util.isEmpty( $input.value ) ) {
                 return invalidateField( $fieldWrap );
@@ -313,10 +336,36 @@ export class CustomBoxes {
             return this.modalToast( 'error', iqlrss.text.error_custombox_json );
         }
 
-        if( ! ( 'id' in jsonBox ) && this.addCustomBox( jsonBox ) ) {
+        if( ! ( 'id' in jsonBox ) && addCustomBox( jsonBox ) ) {
             modalLighting( successColor );
+            this.modalReset();
             return this.modalToast( 'success', iqlrss.text.success_custombox_added );
         }
+
+    }
+
+
+    /**
+     * Reset the modal fields to their default states.
+     */
+    modalReset( e ) {
+
+        const $modal = document.getElementById( 'customBoxesFormModal' );
+        $modal.querySelectorAll( '.iqlrss-field' ).forEach( ( $fieldWrap ) => {
+
+            let $field      = null;
+            const $input    = $fieldWrap.querySelector( 'input' );
+            const $select   = $fieldWrap.querySelector( 'select' );
+            $field          = ( $input ) ? $input : $select;
+
+            $field.value = '';
+            $field.dispatchEvent( new Event( 'input' ) );
+            $field.dispatchEvent( new Event( 'change' ) );
+
+        } );
+
+        /* Clear any toasts */
+        $modal.querySelectorAll( '.modal-toast' ).forEach( ( $t ) => this.modalToastRemove( $t ) );
 
     }
 

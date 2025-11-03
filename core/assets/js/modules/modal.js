@@ -25,13 +25,13 @@ export class modal {
 	 */
     constructor( $btn, args ) {
 
-        if( args && 'modal' in args && document.getElementById( args.modal ) ) {
+        if( args && ( 'modal' in args ) && document.getElementById( args.modal ) ) {
 
             this.#data.id = args.modal;
             this.#data.domModal = document.getElementById( args.modal );
             this.#data.domBtnClose = this.#data.domModal.querySelector( ':scope > button' );
 
-        } else if( 'modal' in $btn.dataset && document.getElementById( $btn.dataset.modal ) ) {
+        } else if( ( 'modal' in $btn.dataset ) && document.getElementById( $btn.dataset.modal ) ) {
 
             this.#data.id = $btn.dataset.modal;
             this.#data.domModal = document.getElementById( $btn.dataset.modal );
@@ -51,44 +51,6 @@ export class modal {
 
 
     /**
-     * Open the Modal.
-     */
-    open() {
-
-        if( this.#data.domModal.open ) return;
-
-        const EventResults = this.dispatch( 'modal-open' );
-        if( ! EventResults.defaultPrevented ) {
-            this.#data.domModal.showModal();
-        }
-
-    }
-
-
-    /**
-     * Close the Modal.
-     *
-     * @param {Object} detail
-     */
-    close( detail ) {
-
-        if( ! this.#data.domModal.open ) return;
-
-        detail = detail || {};
-        const EventResults = this.dispatch( 'modal-close', {
-            ...{ 'context': 'click-close' },
-            ...detail
-        } );
-
-        if( ! EventResults.defaultPrevented ) {
-            this.#data.modified = false;
-            this.#data.domModal.close();
-        }
-
-    }
-
-
-    /**
      * Setup modal events.
      *
      * @link https://stackoverflow.com/a/26984690/800452
@@ -103,8 +65,14 @@ export class modal {
         const contentClass      = ( $contentClassElm ) ? [ ...$contentClassElm.classList ].filter( ( cn ) => cn.includes( '-modal-content' ) ) : '';
 
         /* Track if the modal was "changed" to try and prevent accidental closures */
-        this.#data.domModal.addEventListener( 'change',  () => this.#data.modified = true );
-        this.#data.domModal.addEventListener( 'input',   () => this.#data.modified = true );
+        this.#data.domModal.addEventListener( 'change', () => {
+            if( ! this.#data.domModal.open ) return;
+            this.#data.modified = true;
+        } );
+        this.#data.domModal.addEventListener( 'input', () => {
+            if( ! this.#data.domModal.open ) return;
+            this.#data.modified = true
+        } );
 
         /* Close when [x] is clicked. */
         this.#data.domBtnClose.addEventListener( 'click', () => this.close() );
@@ -140,6 +108,43 @@ export class modal {
 
 
     /**
+     * Open the Modal.
+     */
+    open() {
+
+        if( this.#data.domModal.open ) return;
+
+        const EventResults = this.dispatch( 'modal-open' );
+        if( ! EventResults.defaultPrevented ) {
+            this.#data.domModal.showModal();
+        }
+
+    }
+
+
+    /**
+     * Close the Modal.
+     *
+     * @param {Object} detail
+     */
+    close( detail ) {
+
+        if( ! this.#data.domModal.open ) return;
+
+        detail = detail || {};
+        const EventResults = this.dispatch( 'modal-close', {
+            ...{ 'context': 'click-close' },
+            ...detail
+        } );
+
+        if( ! EventResults.defaultPrevented ) {
+            this.#data.domModal.close();
+        }
+
+    }
+
+
+    /**
 	 * Dispatch an event.
 	 *
 	 * @param {String} event
@@ -163,7 +168,7 @@ export class modal {
         } };
 
         const Event = new CustomEvent( e, options );
-		this.#data.domBtn.dispatchEvent( Event );
+		this.#data.domModal.dispatchEvent( Event );
         return Event;
 
 	}

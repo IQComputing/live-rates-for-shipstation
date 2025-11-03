@@ -2,6 +2,8 @@
 * :: Utility
 * :: Modules
 * :: Specific
+* :: Integration Settings
+* :: Shipping Zones
 **/
 /**
  * :: Utility
@@ -9,6 +11,7 @@
 /* Flexbox */
 .iqlrss-flex                {display: flex;}
 .iqlrss-flex.--flexwrap     {flex-wrap: wrap;}
+.iqlrss-flex.--valign-center{align-items: center;}
 .iqlrss-flex > .--w50,
 .iqlrss-flex.--cols2 > *    {width: calc( 50% - 20px );}
 .iqlrss-flex > .--w33,
@@ -26,19 +29,20 @@
 .iqlrss-field .description              {margin-top: 0; letter-spacing: 0.01em; font-style: italic; font-size: 13px;}
 
 .iqlrss-field.--required > label:first-child::after    {content: '*'; display: inline-block; transform: translate( 1px, 0 );}
+.iqlrss-field.iqlrss-flex.--complex > label:first-child{margin-right: 20px;}
 
 .iqlrss-field-switch            {position: relative; display: inline-block; margin-top: 4px; cursor: pointer; font-size: 13px;}
 .iqlrss-field-switch input      {display: block; width: 0; height: 0; border: 0; overflow: hidden;}
 .iqlrss-field-switch > span     {position: relative; display: flex; width: 60px; border: 1px solid; border-radius: 20px; overflow: hidden;}
-.iqlrss-field-switch > span > span              {display: block; border-radius: 20px; transition: all 0.3s; overflow: hidden;}
-.iqlrss-field-switch > span > .text-active      {text-align: left;}
-.iqlrss-field-switch > span > .text-inactive    {text-align: right;}
-.iqlrss-field-switch > span > :last-child       {position: absolute; width: 100%;}
-.iqlrss-field-switch > span > :last-child:after {content: ''; display: block; width: 11px; aspect-ratio: 1; border-radius: 100%; transition: all 0.3s;}
+.iqlrss-field-switch > span > span                  {display: block; border-radius: 20px; transition: all 0.3s; overflow: hidden;}
+.iqlrss-field-switch > span > .text-active          {text-align: left;}
+.iqlrss-field-switch > span > .text-inactive        {text-align: right;}
+.iqlrss-field-switch > span > :last-child           {position: absolute; width: 100%;}
+.iqlrss-field-switch > span > :last-child:after     {content: ''; display: block; width: 10px; aspect-ratio: 1; border-radius: 100%; transition: all 0.3s;}
 .iqlrss-field-switch input + span > .text-active    {width: 0%; margin: 0 0 0 -14px;}
-.iqlrss-field-switch input + span > .text-inactive  {width: 100%; margin: 0 -2px 0 0; padding: 6px 12px;}
+.iqlrss-field-switch input + span > .text-inactive  {width: 100%; margin: 0 -2px 0 0; padding: 4px 12px;}
 .iqlrss-field-switch input + span > :last-child     {transform: translate( 8px, 75% );}
-.iqlrss-field-switch input:checked + span > .text-active    {width: 100%; margin: 0 0 0 -2px; padding: 6px 12px;}
+.iqlrss-field-switch input:checked + span > .text-active    {width: 100%; margin: 0 0 0 -2px; padding: 4px 12px;}
 .iqlrss-field-switch input:checked + span > .text-inactive  {width: 0%; margin: 0 -28px 0 0;}
 .iqlrss-field-switch input:checked + span > :last-child     {transform: translate( calc( 100% - 18px ), 75% );}
 .iqlrss-field-switch input:focus        {outline: none; box-shadow: none;}
@@ -87,7 +91,7 @@ table.nottoofat th,
 table.nottoofat td	{padding: 9px 7px;}
 th.no-padleft		{padding-left: 0;}
 
-.modal-toast    {position: relative; width: calc( 100% + 28px ); margin: -14px 0 0 -14px; padding: 2px 20px 3px 14px; box-sizing: border-box; border-radius: 6px 0 0 0; font-size: 13px; color: #fff;}
+.modal-toast    {position: relative; width: calc( 100% + 28px ); margin: -14px 0 0 -14px; padding: 4px 20px 5px 14px; box-sizing: border-box; border-radius: 6px 0 0 0; letter-spacing: 0.2px; font-style: italic; font-size: 13px; color: #fff;}
 .modal-timer    {position: absolute; bottom: 0; left: 0; width: 0; height: 2px;}
 
 .modal-toast.toast-error    {background: #d63638;}
@@ -96,37 +100,27 @@ th.no-padleft		{padding-left: 0;}
 .modal-toast.toast-success  {background: #248A3D;}
 .toast-success .modal-timer {background: #145523;}
 
-#carrierServices input[type=text]	{width: 100%;}
 
-#customBoxes tbody label				{display: flex; align-items: center;}
-#customBoxes tbody input[type=text]		{width: 75px; margin-right: 4px;}
-#customBoxes tbody input[type=checkbox]	{margin-left: 8px;}
-#customBoxes tfoot th				{vertical-align: middle;}
-#customBoxes tfoot p				{margin-bottom: 0; font-size: 90%;}
-#customBoxes .boxactions			{display: flex;}
-#customBoxes .boxactions button		{line-height: 1; font-size: 90%;}
-#customBoxes .boxactions button:first-child	{margin-right: 12px;}
-#customBoxes tr.mimic				{display: none !important;}
 
-#customBoxes input::-webkit-outer-spin-button,
-#customBoxes input::-webkit-inner-spin-button	{-webkit-appearance: none; margin: 0;}
-#customBoxes input[type=text]					{-moz-appearance: textfield;}
-
-.iqrlssimple-flex-2       {display: flex;}
-.iqrlssimple-flex-2 > *   {flex: 1 1 calc( 50% - 8px );}
-.iqrlssimple-flex-2 > :first-child    {flex-basis: fit-content; padding-right: 4px;}
-.iqrlssimple-flex-2 > :last-child     {padding-left: 4px;}
-
+/**
+ * :: Inegration Settings
+**/
 .iqlrss-api-row fieldset						{position: relative; display: block; width: fit-content;}
 .iqlrss-api-row .button-primary				    {position: relative; margin-top: -1px; margin-left: 8px;}
-.iqlrss-api-row .button-primary:after			{content: ''; position: absolute; top: 3px; right: -24px; display: block; width: 20px; aspect-ratio: 1; background: url( 'images/spinner.gif' ) no-repeat center/contain; opacity: 0; transition: opacity 0.3s;}
+.iqlrss-api-row .button-primary:after			{content: ''; position: absolute; top: 3px; right: -24px; display: block; width: 20px; aspect-ratio: 1; background: url( '../images/spinner.gif' ) no-repeat center/contain; opacity: 0; transition: opacity 0.3s;}
 .iqlrss-api-row .button-primary.active:after	{opacity: 1;}
-.iqlrss-api-row fieldset .iqlrss-success		{position: relative; top: 5px; margin-left: 4px; border-radius: 100%; color: green;}
+.iqlrss-api-row fieldset .iqlrss-success		{position: relative; top: 5px; margin-left: 4px; border-radius: 100%; color: #248A3D;}
 
 .iqlrss-api-row #iqlrssClearCacheButton:after			{content: ''; display: inline-block; position: relative; top: 4px; margin-left: 4px;}
-.iqlrss-api-row #iqlrssClearCacheButton.working:after	{background: url( 'images/spinner.gif' ) no-repeat center/contain;}
+.iqlrss-api-row #iqlrssClearCacheButton.working:after	{background: url( '../images/spinner.gif' ) no-repeat center/contain;}
 .iqlrss-api-row #iqlrssClearCacheButton.complete:after	{content: "\f12a"; top: 3px; font-size: 16px; line-height: 1; font-family: dashicons; font-weight: 400; font-style: normal;}
 
+
+
+/**
+ * :: Shipping Zones
+**/
+/* Custom Boxes */
 #customBoxActions button        {min-height: 0; padding: 2px 8px 3px; line-height: normal; font-size: 12px; transition: background 0.3s;}
 #customBoxRemove                {opacity: 1; transition: opacity 0.3s;}
 
@@ -139,11 +133,29 @@ th.no-padleft		{padding-left: 0;}
 #customBoxSearchWrap > button:focus,
 #customBoxSearchWrap > button:active    {border-color: #0a4b78; color: #0a4b78; background: #f0f0f1;}
 
-#customBoxesRow[data-count="0"] #customBoxSearchWrap    {opacity: 0; visibility: hidden;}
+#customBoxesRow[data-count="0"] #customBoxSearchWrap    {opacity: 0; max-height: 0; visibility: hidden;}
 #customBoxesRow[data-count="0"] #customBoxRemove        {opacity: 0; visibility: hidden;}
+#iqlrssCustomBoxes          {width: 100%; max-width: fit-content; min-width: 404px;}
 #iqlrssCustomBoxes li.clone {display: none;}
+#iqlrssCustomBoxes li       {align-items: center; width: 100%; margin: 0; padding: 8px 0; border-bottom: 1px solid #8c8f94; transition: all 0.3s;}
+#iqlrssCustomBoxes li > *   {padding: 0 8px;}
+#iqlrssCustomBoxes li > :first-child    {padding-left: 4px;}
+#iqlrssCustomBoxes li > :last-child     {margin-left: auto; padding-right: 0; margin-right: 4px;}
+#iqlrssCustomBoxes li:hover {background: #e0e1e3;}
+#iqlrssCustomBoxes .iqlrss-field-switch > span  {width: 80px; font-size: 12px;}
+#iqlrssCustomBoxes .iqlrss-field-switch > span > :last-child:after  {width: 8px;}
+#iqlrssCustomBoxes .iqlrss-field-switch input + span > .text-inactive,
+#iqlrssCustomBoxes .iqlrss-field-switch input:checked + span > .text-active    {padding: 2px 12px;}
 
 #customBoxesFormModal   {border-color: var( --wp-admin-theme-color );}
 #customBoxesFormModal .--w22            {width: calc( 22.22% - 20px );}
 #customBoxesFormModal .description      {margin-top: 0; letter-spacing: 0.01em; font-style: italic; font-size: 13px;}
 #customBoxesFormModal #saveCustomBox    {display: block; margin-top: 4px; margin-right: 0; margin-left: auto;}
+
+/* Services */
+.iqrlsserviceprice-flex       {display: flex;}
+.iqrlsserviceprice-flex > *   {flex: 1 1 calc( 50% - 8px );}
+.iqrlsserviceprice-flex > :first-child    {flex-basis: fit-content; padding-right: 4px;}
+.iqrlsserviceprice-flex > :last-child     {padding-left: 4px;}
+
+#carrierServices input[type=text]	{width: 100%;}
