@@ -12,6 +12,14 @@ if( ! defined( 'ABSPATH' ) ) {
 Class Settings_Shipstation {
 
 	/**
+	 * ShipStation API
+	 *
+	 * @var Array
+	 */
+	protected $api;
+
+
+	/**
 	 * Initialize controller
 	 *
 	 * @return void
@@ -22,6 +30,17 @@ Class Settings_Shipstation {
 		$class->action_hooks();
 		$class->filter_hooks();
 
+	}
+
+
+	/**
+	 * Setup properties
+	 */
+	protected function __construct() {
+		$this->api = array(
+			'v1' => new Api\Shipstationv1(),
+			'v2' => new Api\Shipstation(),
+		);
 	}
 
 
@@ -290,8 +309,7 @@ Class Settings_Shipstation {
 							\IQLRSS\Driver::set_ss_opt( 'apiv1_secret', $keydata['new']['secret'] );
 
 							// Ping the stores so that it sets the currently connected store ID.
-							$shipStationAPI = new Api\Shipstationv1();
-							$request = $shipStationAPI->get_stores();
+							$request = $this->api['v1']->get_stores();
 
 							// Error - Something went wrong, the API should let us know.
 							if( is_wp_error( $request ) || empty( $request ) ) {
@@ -318,8 +336,7 @@ Class Settings_Shipstation {
 							\IQLRSS\Driver::set_ss_opt( 'api_key', $keydata['new']['key'] );
 
 							// Ping the carriers so that they are cached.
-							$shipStationAPI = new Api\Shipstation();
-							$request = $shipStationAPI->get_carriers();
+							$request = $this->api['v2']->get_carriers();
 
 							// Error - Something went wrong, the API should let us know.
 							if( is_wp_error( $request ) || empty( $request ) ) {
@@ -523,8 +540,7 @@ Class Settings_Shipstation {
 		if( ! empty( \IQLRSS\Driver::get_ss_opt( 'api_key' ) ) ) {
 
 			$carrier_desc = esc_html__( 'Select which ShipStation carriers you would like to see live shipping rates from.', 'live-rates-for-shipstation' );
-			$shipStationAPI = new Api\Shipstation();
-			$response = $shipStationAPI->get_carriers();
+			$response = $this->api['v2']->get_carriers();
 
 			if( is_a( $response, 'WP_Error' ) ) {
 				$carriers[''] = $response->get_error_message();
