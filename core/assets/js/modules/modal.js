@@ -114,7 +114,10 @@ export class modal {
 
         if( this.#data.domModal.open ) return;
 
-        const EventResults = this.dispatch( 'modal-open' );
+        const EventResults = this.dispatch( 'modal-open', {
+            'targetClicked': this.#data.domBtn,
+        } );
+
         if( ! EventResults.defaultPrevented ) {
             this.#data.domModal.showModal();
         }
@@ -175,22 +178,15 @@ export class modal {
 
 
     /**
-     * Return the DOMModal
-     *
-     * @return {DOMObject} this.#data.domModal
-     */
-    domModal() {
-        return this.#data.domModal;
-    }
-
-
-    /**
      * Return a boolean to denote if the modal was probably modified.
+     *
+     * @param {Boolean} was - modified?
      *
      * @return {Boolean} this.#data.modified
      */
-    wasModified() {
-        return this.#data.modified;
+    wasModified( was ) {
+        if( 'undefined' == typeof was ) return this.#data.modified;
+        this.#data.modified = Boolean( was );
     }
 
 }

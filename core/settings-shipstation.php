@@ -36,11 +36,13 @@ Class Settings_Shipstation {
 	/**
 	 * Setup properties
 	 */
-	protected function __construct() {
+	public function __construct() {
+
 		$this->api = array(
 			'v1' => new Api\Shipstationv1(),
 			'v2' => new Api\Shipstation(),
 		);
+
 	}
 
 
@@ -113,6 +115,9 @@ Class Settings_Shipstation {
 			'api_verified'	=> \IQLRSS\Driver::get_ss_opt( 'api_key_valid', false ),
 			'apiv1_verified'=> \IQLRSS\Driver::get_ss_opt( 'apiv1_key_valid', false ),
 			'global_adjustment_type' => \IQLRSS\Driver::get_ss_opt( 'global_adjustment_type', '' ),
+			'store' => array(
+				'currency_symbol' => get_woocommerce_currency_symbol( get_woocommerce_currency() ),
+			),
 			'rest' => array(
 				'nonce'		=> wp_create_nonce( 'wp_rest' ),
 				'apiactions'=> get_rest_url( null, sprintf( '/%s/v1/apiactions',

@@ -2,6 +2,7 @@ import * as util from '../modules/utility.js';
 
 /**
  * Manage the custom boxes functionality on Shipping Zones.
+ * :: Custom Box Management
  * :: Modals
  *
  * @global {Object} iqlrss - Localized object of saved values.
@@ -13,6 +14,7 @@ export class CustomBoxes {
      */
     #data = {
         boxes: [],
+        modal: null,
         domRow: null,
         domList: null,
     }
@@ -24,7 +26,8 @@ export class CustomBoxes {
     constructor() {
 
         this.setupCustomBoxes();
-        this.modals();
+        this.setupModalEvents();
+        this.setupModalFieldEvents();
 
     }
 
@@ -60,7 +63,7 @@ export class CustomBoxes {
     /**
      * Manage custom box modals.
      */
-    modals() {
+    setupModalEvents() {
 
         const $modal = document.getElementById( 'customBoxesFormModal' );
         if( ! $modal ) {
@@ -85,21 +88,44 @@ export class CustomBoxes {
          */
         $modal.addEventListener( 'modal-open', ( e ) => {
 
-            const Module    = e.detail.modal;
-            const $wpWrap   = document.querySelector( '.wrap' );
+            /* Set modal every time it opens. */
+            this.#data.modal = e.detail.modal;
 
-            if( $wpWrap ) {
-                const widthDiff = ( document.body.getBoundingClientRect().width - $wpWrap.querySelector( 'form' ).getBoundingClientRect().width );
-                Module.domModal().style.left  = ( widthDiff - 20 ) + 'px';
+            let data = {};
+            if( null !== e.detail.targetClicked.previousElementSibling && 'INPUT' == e.detail.targetClicked.previousElementSibling.tagName ) {
+                data = JSON.parse( e.detail.targetClicked.previousElementSibling.value );
             }
 
-            Module.domModal().animate( {
+            /**
+             * Set required fields and maybe data as well.
+             */
+            $modal.querySelectorAll( '.iqlrss-field' ).forEach( ( $fieldWrap ) => {
+
+                const $input = $fieldWrap.querySelector( 'input' );
+                if( $fieldWrap.classList.contains( '--required' ) ) {
+                    $input.setAttribute( 'required', '' );
+                }
+
+                if( ! util.isEmpty( data ) && $input.name in data ) {
+                    $input.value = data[ $input.name ];
+                }
+
+            } );
+
+            const $wpWrap = document.querySelector( '.wrap' );
+            if( $wpWrap ) {
+                const widthDiff = ( document.body.getBoundingClientRect().width - $wpWrap.querySelector( 'form' ).getBoundingClientRect().width );
+                $modal.style.left  = ( widthDiff - 20 ) + 'px';
+            }
+
+            /* Animate the opening */
+            $modal.animate( {
                 opacity: [ 0, 1 ],
                 transform: [ 'scale(0.85)', 'scale(1.05)', 'scale(1)' ],
             }, {
                 duration: 300,
                 easing: 'ease-in-out',
-            } ).onfinish = () => Module.domModal().querySelector( 'input' ).focus();
+            } ).onfinish = () => $modal.querySelector( 'input' ).focus();
 
         } );
 
@@ -111,25 +137,20 @@ export class CustomBoxes {
          */
         $modal.addEventListener( 'modal-close', ( e ) => {
 
+            /* Set required fields. */
+            $modal.querySelectorAll( '.iqlrss-field.--required' ).forEach( ( $fieldWrap ) => {
+                $fieldWrap.querySelector( 'input' ).removeAttribute( 'required', '' );
+            } );
+
             const Module = e.detail.modal;
             if( ! Module.wasModified() ) return;
 
             /* Prevent close on confirm cancel. */
             if( 'click-outer' == e.detail.context && ! window.confirm( iqlrss.text.confirm_modal_closure ) ) return e.preventDefault();
 
+            this.modalReset( e );
+
         } );
-
-
-        /**
-         * Clear form elements whenever form closes / is reset.
-         */
-        $modal.addEventListener( 'modal-reset', ( e ) => this.modalReset() );
-
-
-        /**
-         * Setup the events for fields within the modal itself.
-         */
-        this.setupModalFieldEvents();
 
     }
 
@@ -197,10 +218,8 @@ export class CustomBoxes {
      * Save the modal data.
      * This may create a Custom Box or save the data to an existing
      * depending on the context ofc.
-     *
-     * @param {Event} e
      */
-    processModalSave( e ) {
+    processModalSave() {
 
         let data     = new FormData();
         const $modal = document.getElementById( 'customBoxesFormModal' );
@@ -287,9 +306,32 @@ export class CustomBoxes {
             $clone.querySelector( '[name*="[json]"]' ).value = box_string;
             $clone.querySelector( '[name*="[json]"] + a' ).innerText = box.nickname;
 
+            /* Dimensions */
+            $clone.querySelector( '[data-assoc="box_dimensions"]' ).innerText = [
+                box.box_length ?? 0,
+                box.box_width ?? 0,
+                box.box_height ?? 0,
+            ].join( 'x' );
+
+            /* Inner Dimensions */
+            if( box.box_inner_length ) {
+                $clone.querySelector( '[data-assoc="box_dimensions"]' ).innerText += ' (' + [
+                    box.box_inner_length ?? 0,
+                    box.box_width ?? 0,
+                    box.box_height ?? 0,
+                ].join( 'x' ) + ')';
+            }
+
+            /* Price */
+            if( box.box_price ) {
+                $clone.querySelector( '[data-assoc="box_price"]' ).innerHTML = iqlrss.store.currency_symbol + Number( box.box_price ).toFixed( 2 );
+            }
+
+            $clone.querySelector( '[name="box_active"]' ).checked = true;
+
             this.#data.boxes.push( box );
             this.#data.domList.appendChild( $clone );
-            this.#data.domRow.dataset.count = this.#data.domList.children.length - 1; // Minus the clone.
+            this.#data.domRow.dataset.count = this.#data.domList.children.length - 1; /* Minus the clone. */
 
             return box.id;
 
@@ -302,12 +344,7 @@ export class CustomBoxes {
         /* Validate Required Fields */
         $modal.querySelectorAll( '.iqlrss-field' ).forEach( ( $fieldWrap ) => {
 
-            let $field = null;
-
             const $input = $fieldWrap.querySelector( 'input' );
-            const $select = $fieldWrap.querySelector( 'select' );
-
-            $field = ( $input ) ? $input : $select;
 
             /* Skip fields that are not active. */
             if( ( 'enabledby' in $fieldWrap.dataset ) && ! $fieldWrap.classList.contains( 'enabled' ) ) return;
@@ -339,6 +376,7 @@ export class CustomBoxes {
         if( ! ( 'id' in jsonBox ) && addCustomBox( jsonBox ) ) {
             modalLighting( successColor );
             this.modalReset();
+            $modal.querySelector( 'input' ).focus();
             return this.modalToast( 'success', iqlrss.text.success_custombox_added );
         }
 
@@ -348,7 +386,7 @@ export class CustomBoxes {
     /**
      * Reset the modal fields to their default states.
      */
-    modalReset( e ) {
+    modalReset() {
 
         const $modal = document.getElementById( 'customBoxesFormModal' );
         $modal.querySelectorAll( '.iqlrss-field' ).forEach( ( $fieldWrap ) => {
@@ -366,6 +404,11 @@ export class CustomBoxes {
 
         /* Clear any toasts */
         $modal.querySelectorAll( '.modal-toast' ).forEach( ( $t ) => this.modalToastRemove( $t ) );
+
+        /* Reset Modal State */
+        if( null !== this.#data.modal ) {
+            this.#data.modal.wasModified( false );
+        }
 
     }
 

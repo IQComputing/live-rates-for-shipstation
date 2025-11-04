@@ -52,7 +52,7 @@ function iqlrssPrintCustomBoxItem( $data ) {
 		$item_html .= '<div>';
 			$item_html .= sprintf( '<input type="hidden" name="custombox[%d][json]" value="%s">',
 				$data['index'],
-				esc_attr( ( $box_arr['json'] ) ? wp_json_encode( $box_arr['json'] ) : '' )
+				esc_attr( isset( $box_arr['json'] ) ? wp_json_encode( $box_arr['json'] ) : '' )
 			);
 			$item_html .= sprintf( '<a href="#" data-iqlrss-modal="customBoxesFormModal" data-assoc="nickname">%s</a>',
 				$box_arr['nickname'],
@@ -122,35 +122,38 @@ function iqlrssPrintCustomBoxItem( $data ) {
 				<div class="iqlrss-flex --flexwrap --cols3">
 					<div class="iqlrss-field --required">
 						<label for="boxNickname"><?php esc_html_e( 'Nickname', 'live-rates-for-shipstation' ); ?></label>
-						<input type="text" name="nickname" id="boxNickname" required>
+						<input type="text" name="nickname" id="boxNickname">
 						<p class="description"><?php esc_html_e( 'The nickname is for your identification only.', 'live-rates-for-shipstation' ); ?></p>
 					</div>
 
 					<div class="iqlrss-field">
 						<label for="boxWeight"><?php esc_html_e( 'Box Weight', 'live-rates-for-shipstation' ); ?></label>
 						<input type="text" name="box_weight" id="boxWeight" inputmode="decimal" class="iqlrss-numbers-only">
-						<p class="description"><?php esc_html_e( 'The weight of the empty box.', 'live-rates-for-shipstation' ); ?></p>
+						<p class="description"><?php esc_html_e( 'The weight of the empty box in lbs.', 'live-rates-for-shipstation' ); ?></p>
 					</div>
 
 					<div class="iqlrss-field">
 						<label for="boxMaxWeight"><?php esc_html_e( 'Max Packing Weight', 'live-rates-for-shipstation' ); ?></label>
 						<input type="text" name="box_maxweight" id="boxMaxWeight" inputmode="decimal" class="iqlrss-numbers-only">
-						<p class="description"><?php esc_html_e( 'Max weight the box can hold.', 'live-rates-for-shipstation' ); ?></p>
+						<p class="description"><?php esc_html_e( 'Max weight the box can hold in lbs.', 'live-rates-for-shipstation' ); ?></p>
 					</div>
 
 					<div class="iqlrss-field --required">
 						<label for="boxLength"><?php esc_html_e( 'Box Length', 'live-rates-for-shipstation' ); ?></label>
-						<input type="text" name="box_length" id="boxLength" inputmode="decimal" class="iqlrss-numbers-only" required>
+						<input type="text" name="box_length" id="boxLength" inputmode="decimal" class="iqlrss-numbers-only">
+						<p class="description"><?php esc_html_e( 'The length of the box in inches.', 'live-rates-for-shipstation' ); ?></p>
 					</div>
 
 					<div class="iqlrss-field --required">
 						<label for="boxWidth"><?php esc_html_e( 'Box Width', 'live-rates-for-shipstation' ); ?></label>
-						<input type="text" name="box_width" id="boxWidth" inputmode="decimal" class="iqlrss-numbers-only" required>
+						<input type="text" name="box_width" id="boxWidth" inputmode="decimal" class="iqlrss-numbers-only">
+						<p class="description"><?php esc_html_e( 'The width of the box in inches.', 'live-rates-for-shipstation' ); ?></p>
 					</div>
 
 					<div class="iqlrss-field --required">
 						<label for="boxHeight"><?php esc_html_e( 'Box Height', 'live-rates-for-shipstation' ); ?></label>
-						<input type="text" name="box_height" id="boxHeight" inputmode="decimal" class="iqlrss-numbers-only" required>
+						<input type="text" name="box_height" id="boxHeight" inputmode="decimal" class="iqlrss-numbers-only">
+						<p class="description"><?php esc_html_e( 'The height of the box in inches.', 'live-rates-for-shipstation' ); ?></p>
 					</div>
 
 					<div class="iqlrss-field --complex iqlrss-flex --flexwrap --valign-center">
@@ -168,16 +171,19 @@ function iqlrssPrintCustomBoxItem( $data ) {
 					<div class="iqlrss-field --required --w22" data-enabledby="boxInnerToggle">
 						<label for="boxInnerLength"><?php esc_html_e( 'Box Inner Length', 'live-rates-for-shipstation' ); ?></label>
 						<input type="text" name="box_length_inner" id="boxInnerLength" inputmode="decimal" class="iqlrss-numbers-only">
+						<p class="description"><?php esc_html_e( 'The box\'s inner length in inches.', 'live-rates-for-shipstation' ); ?></p>
 					</div>
 
 					<div class="iqlrss-field --required --w22" data-enabledby="boxInnerToggle">
 						<label for="boxInnerWidth"><?php esc_html_e( 'Box Inner Width', 'live-rates-for-shipstation' ); ?></label>
 						<input type="text" name="box_width_inner" id="boxInnerWidth" inputmode="decimal" class="iqlrss-numbers-only">
+						<p class="description"><?php esc_html_e( 'The box\'s inner width in inches.', 'live-rates-for-shipstation' ); ?></p>
 					</div>
 
 					<div class="iqlrss-field --required --w22" data-enabledby="boxInnerToggle">
 						<label for="boxInnerHeight"><?php esc_html_e( 'Box Inner Height', 'live-rates-for-shipstation' ); ?></label>
 						<input type="text" name="box_height_inner" id="boxInnerHeight" inputmode="decimal" class="iqlrss-numbers-only">
+						<p class="description"><?php esc_html_e( 'The box\'s inner height in inches.', 'live-rates-for-shipstation' ); ?></p>
 					</div>
 
 					<div class="iqlrss-field">
