@@ -62,6 +62,9 @@ export class CustomBoxes {
 	/**------------------------------------------------------------------------------------------------ **/
     /**
      * Manage custom box modals.
+     *
+     * Opens the modal and slots the data into it's related fields.
+     * Closes the modal on [x] click or background click.
      */
     setupModalEvents() {
 
@@ -101,13 +104,28 @@ export class CustomBoxes {
              */
             $modal.querySelectorAll( '.iqlrss-field' ).forEach( ( $fieldWrap ) => {
 
+                /* Set required attribute */
                 const $input = $fieldWrap.querySelector( 'input' );
                 if( $fieldWrap.classList.contains( '--required' ) ) {
                     $input.setAttribute( 'required', '' );
                 }
 
-                if( ! util.isEmpty( data ) && $input.name in data ) {
-                    $input.value = data[ $input.name ];
+                /* Associate data. */
+                if( ! util.isEmpty( data ) ) {
+
+                    const data_key = $input.name.replace( 'box_', '' );
+                    if( data_key in data ) {
+                        $input.value = data[ data_key ];
+                    } else if( data_key.includes( 'inner' ) || [ 'length', 'width', 'height' ].includes( data_key ) ) {
+
+                        if( data_key.includes( 'toggle' ) ) {
+                            $input.checked = ( ! util.isEmpty( data.inner.length ) );
+                            $input.dispatchEvent( new Event( 'change' ) );
+                        } else {
+                            $input.value = data[ ( data_key.includes( 'inner' ) ) ? 'inner' : 'outer' ][ ( data_key.includes( 'inner' ) ) ? data_key.replace( '_inner', '' ) : data_key ];
+                        }
+
+                    }
                 }
 
             } );
@@ -137,18 +155,19 @@ export class CustomBoxes {
          */
         $modal.addEventListener( 'modal-close', ( e ) => {
 
+            const Module = e.detail.modal;
+
             /* Set required fields. */
             $modal.querySelectorAll( '.iqlrss-field.--required' ).forEach( ( $fieldWrap ) => {
                 $fieldWrap.querySelector( 'input' ).removeAttribute( 'required', '' );
             } );
 
-            const Module = e.detail.modal;
-            if( ! Module.wasModified() ) return;
-
             /* Prevent close on confirm cancel. */
-            if( 'click-outer' == e.detail.context && ! window.confirm( iqlrss.text.confirm_modal_closure ) ) return e.preventDefault();
+            if( Module.wasModified() && 'click-outer' == e.detail.context && ! window.confirm( iqlrss.text.confirm_modal_closure ) ) {
+                return e.preventDefault();
+            }
 
-            this.modalReset( e );
+            this.modalReset();
 
         } );
 
@@ -157,7 +176,9 @@ export class CustomBoxes {
 
     /**
      * Setup Modal Field Events
-     * Specifically toggle displays.
+     *
+     * Handles field visiblity toggles.
+     * Sets up the data save.
      */
     setupModalFieldEvents() {
 
@@ -216,8 +237,9 @@ export class CustomBoxes {
 
     /**
      * Save the modal data.
-     * This may create a Custom Box or save the data to an existing
-     * depending on the context ofc.
+     *
+     * Invalidate fields.
+     * Add / Update Custom Box line items.
      */
     processModalSave() {
 
@@ -394,9 +416,15 @@ export class CustomBoxes {
             let $field      = null;
             const $input    = $fieldWrap.querySelector( 'input' );
             const $select   = $fieldWrap.querySelector( 'select' );
-            $field          = ( $input ) ? $input : $select;
 
-            $field.value = '';
+            $field          = ( $input ) ? $input : $select;
+            $field.value    = '';
+            $field.checked  = false;
+
+            if( $fieldWrap.classList.contains( 'enabled' ) ) {
+                util.css( $fieldWrap, { display: 'none' } );
+            }
+
             $field.dispatchEvent( new Event( 'input' ) );
             $field.dispatchEvent( new Event( 'change' ) );
 

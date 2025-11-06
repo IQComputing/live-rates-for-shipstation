@@ -614,6 +614,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				$has_inner_dim = ( $json['box_inner_toggle'] && isset( $json['box_length_inner'] ) );
 
 				$boxes[] = array(
+					'active' => 1,
 					'nickname' => sanitize_text_field( $json['nickname'] ),
 					'outer' => array(
 						'length'	=> floatval( $json['box_length'] ),
@@ -653,6 +654,12 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			);
 
 		}
+
+		usort( $boxes, function( $arrA, $arrB ) {
+			if( isset( $arrA['nickname'] ) && $arrB['nickname'] ) {
+				return strcasecmp( $arrA['nickname'], $arrB['nickname'] );
+			}
+		} );
 
 		return $boxes;
 
