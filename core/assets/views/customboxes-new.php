@@ -200,7 +200,7 @@ function iqlrssPrintCustomBoxItem( $box, $data ) {
 					<div class="iqlrss-field">
 						<label for="boxPrice"><?php esc_html_e( 'Box Price', 'live-rates-for-shipstation' ); ?></label>
 						<input type="text" name="box_price" id="boxPrice" inputmode="decimal" class="iqlrss-numbers-only">
-						<p class="description"><?php esc_html_e( 'This price will be added ontop of the returned shipment rates.', 'live-rates-for-shipstation' ); ?></p>
+						<p class="description"><?php esc_html_e( 'This box unit price will be added to the returned shipment rates.', 'live-rates-for-shipstation' ); ?></p>
 					</div>
 				</div>
 
