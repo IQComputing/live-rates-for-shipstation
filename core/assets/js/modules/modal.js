@@ -78,14 +78,14 @@ export class modal {
         this.#data.domBtnClose.addEventListener( 'click', () => this.close() );
 
         /* Close when the user clicks outside the main modal window. */
-        this.#data.domModal.addEventListener( 'click', ( e ) => {
+        this.#data.domModal.addEventListener( 'pointerdown', ( e ) => {
 
             const rect = this.#data.domModal.getBoundingClientRect();
             const isInDialog = ( rect.top <= e.clientY && e.clientY <= rect.top + rect.height &&
-                rect.left <= e.clientX && e.clientX <= rect.left + rect.width);
+                rect.left <= e.clientX && e.clientX <= rect.left + rect.width );
 
-            /* Return Early - In Dialog */
-            if( isInDialog ) return;
+            /* Return Early - In Dialog or Right Click */
+            if( isInDialog || 2 == e.button ) return;
 
             /* Return Early - Might be close button click */
             if( e.target.closest( 'button' ) === this.#data.domBtnClose ) return;
