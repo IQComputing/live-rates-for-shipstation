@@ -94,14 +94,18 @@ export class CustomBoxes {
             /* Set modal every time it opens. */
             this.#data.modal = e.detail.modal;
 
-            let data = {};
+            let data  = {};
+            let index = -1;
+
             if( null !== e.detail.targetClicked.previousElementSibling && 'INPUT' == e.detail.targetClicked.previousElementSibling.tagName ) {
-                data = JSON.parse( e.detail.targetClicked.previousElementSibling.value );
+                data  = JSON.parse( e.detail.targetClicked.previousElementSibling.value );
+                index = [ ...e.detail.targetClicked.closest( 'ul' ).children ].indexOf( e.detail.targetClicked.closest( 'li' ) );
             }
 
             /**
              * Set required fields and maybe data as well.
              */
+            $modal.dataset.index = index;
             $modal.querySelectorAll( '.iqlrss-field' ).forEach( ( $fieldWrap ) => {
 
                 /* Set required attribute */
@@ -119,7 +123,7 @@ export class CustomBoxes {
                     } else if( data_key.includes( 'inner' ) || [ 'length', 'width', 'height' ].includes( data_key ) ) {
 
                         if( data_key.includes( 'toggle' ) ) {
-                            $input.checked = ( ! util.isEmpty( data.inner.length ) );
+                            $input.checked = ( ! util.isEmpty( data.inner ) );
                             $input.dispatchEvent( new Event( 'change' ) );
                         } else {
                             $input.value = data[ ( data_key.includes( 'inner' ) ) ? 'inner' : 'outer' ][ ( data_key.includes( 'inner' ) ) ? data_key.replace( '_inner', '' ) : data_key ];
@@ -243,12 +247,106 @@ export class CustomBoxes {
      */
     processModalSave() {
 
-        let data     = new FormData();
-        const $modal = document.getElementById( 'customBoxesFormModal' );
+        const $modal    = document.getElementById( 'customBoxesFormModal' );
+        const box_index = $modal.dataset.index;
+        const data      = ( box_index >= 0 ) ? this.#data.domList.querySelector( `li:nth-child(${box_index + 1}) [name*="[json]"]` ).value : new FormData();
+        const modalData = new FormData();
+
         if( ! $modal.open ) return;
 
         const errorColor    = '#d63638';
         const successColor  = '#248A3D';
+
+
+        /**
+         * @func
+         * Map fields to expected JSON format.
+         *
+         * @param {FormData} fd
+         */
+        const mapJson = ( fd ) => {
+
+            let mapped = {
+                active: ( data ) ? data.active : 1,
+                nickname: fd.get( 'nickname' ),
+                outer: {
+                    length: fd.get( 'box_length' ),
+                    width : fd.get( 'box_width' ),
+                    height: fd.get( 'box_height' ),
+                },
+                inner: {
+                    length: fd.get( 'box_length_inner' ),
+                    width : fd.get( 'box_width_inner' ),
+                    height: fd.get( 'box_height_inner' ),
+                },
+                weight: fd.get( 'box_weight' ),
+                price: fd.get( 'box_price' ),
+                weight_max: fd.get( 'box_maxweight' ),
+            };
+
+            if( fd.get( 'box_inner_toggle' ) ) {
+                delete mapped.inner;
+            }
+
+            return mapped;
+
+        }
+
+
+        /**
+         * @func
+         * Add a Custom Box to the list.
+         *
+         * @param {Object} box
+         *
+         * @return {Integer}
+         */
+        const addCustomBox = ( box ) => {
+
+            let $clone = this.#data.domItemClone.cloneNode( true );
+                $clone.classList.remove( 'clone' );
+
+            $clone.querySelector( '[name*="[json]"]' ).value = JSON.stringify( box );
+            $clone.querySelector( '[name*="[json]"] + a' ).innerText = box.nickname;
+
+            /* Dimensions */
+            $clone.querySelector( '[data-assoc="box_dimensions"]' ).innerText = [
+                box.outer.length ?? 0,
+                box.outer.width ?? 0,
+                box.outer.height ?? 0,
+            ].join( 'x' );
+
+            /* Inner Dimensions */
+            if( 'inner' in box ) {
+                $clone.querySelector( '[data-assoc="box_dimensions"]' ).innerText += ' (' + [
+                    box.inner.length ?? 0,
+                    box.inner.width ?? 0,
+                    box.inner.height ?? 0,
+                ].join( 'x' ) + ')';
+            }
+
+            /* Price */
+            if( box.price ) {
+                $clone.querySelector( '[data-assoc="box_price"]' ).innerHTML = iqlrss.store.currency_symbol + Number( box.price ).toFixed( 2 );
+            }
+
+            $clone.querySelector( '[name="box_active"]' ).checked = true;
+
+            // Update
+            if( box_index >= 0 ) {
+
+                this.#data.domList.children[ box_index ].innerHTML = $clone.innerHTML;
+
+            // Append
+            } else {
+
+                this.#data.boxes.push( box );
+                this.#data.domList.appendChild( $clone );
+                this.#data.domRow.dataset.count = this.#data.domList.children.length - 1; /* Minus the clone. */
+
+            }
+
+        }
 
 
         /**
@@ -305,61 +403,6 @@ export class CustomBoxes {
         }
 
 
-        /**
-         * @func
-         * Add a Custom Box to the list.
-         *
-         * @param {Object} box
-         *
-         * @return {Integer}
-         */
-        const addCustomBox = ( box ) => {
-
-            box.id = ( 'id' in box ) ? box.id : -1;
-            if( -1 == box.id ) {
-                box.id = ( this.#data.boxes.length ) ? Math.max( ...this.#data.boxes.map( obj => obj.id ) ) + 1 : 1;
-            }
-
-            const box_string = JSON.stringify( box );
-            let $clone = this.#data.domItemClone.cloneNode( true );
-                $clone.classList.remove( 'clone' );
-                $clone.innerHTML = $clone.innerHTML.replaceAll( '[-1]', `[${box.id}]` );
-
-            $clone.querySelector( '[name*="[json]"]' ).value = box_string;
-            $clone.querySelector( '[name*="[json]"] + a' ).innerText = box.nickname;
-
-            /* Dimensions */
-            $clone.querySelector( '[data-assoc="box_dimensions"]' ).innerText = [
-                box.box_length ?? 0,
-                box.box_width ?? 0,
-                box.box_height ?? 0,
-            ].join( 'x' );
-
-            /* Inner Dimensions */
-            if( box.box_inner_length ) {
-                $clone.querySelector( '[data-assoc="box_dimensions"]' ).innerText += ' (' + [
-                    box.box_inner_length ?? 0,
-                    box.box_width ?? 0,
-                    box.box_height ?? 0,
-                ].join( 'x' ) + ')';
-            }
-
-            /* Price */
-            if( box.box_price ) {
-                $clone.querySelector( '[data-assoc="box_price"]' ).innerHTML = iqlrss.store.currency_symbol + Number( box.box_price ).toFixed( 2 );
-            }
-
-            $clone.querySelector( '[name="box_active"]' ).checked = true;
-
-            this.#data.boxes.push( box );
-            this.#data.domList.appendChild( $clone );
-            this.#data.domRow.dataset.count = this.#data.domList.children.length - 1; /* Minus the clone. */
-
-            return box.id;
-
-        }
-
-
         /* Clear any toasts */
         $modal.querySelectorAll( '.modal-toast' ).forEach( ( $t ) => this.modalToastRemove( $t ) );
 
@@ -377,7 +420,7 @@ export class CustomBoxes {
                 $fieldWrap.querySelector( '.iqlrss-errortext' ).remove();
             }
 
-            data.append( $input.name, $input.value );
+            modalData.append( $input.name, $input.value );
 
         } );
 
@@ -386,8 +429,9 @@ export class CustomBoxes {
             return modalLighting( errorColor );
         }
 
-        let jsonBox     = util.formDataToJSON( data );
-        let box_string  = ( ! util.isEmpty( jsonBox ) ) ? JSON.stringify( jsonBox ) : '';
+        /* Map known JSON fields */
+        const jsonBox = mapJson( modalData );
+        const box_string = JSON.stringify( jsonBox );
 
         /* Error - Something went wrong, denote it to User */
         if( util.isEmpty( jsonBox ) || ! ( 'nickname' in jsonBox ) || ! box_string.length ) {
@@ -395,7 +439,7 @@ export class CustomBoxes {
             return this.modalToast( 'error', iqlrss.text.error_custombox_json );
         }
 
-        if( ! ( 'id' in jsonBox ) && addCustomBox( jsonBox ) ) {
+        if( box_index >= 0 && addCustomBox( jsonBox ) ) {
             modalLighting( successColor );
             this.modalReset();
             $modal.querySelector( 'input' ).focus();
