@@ -27,19 +27,6 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 
 	/**
-	 * Array of expected dimension keys (width, height, length, weight)
-	 *
-	 * @var Array
-	 */
-	protected $dimension_keys = array(
-		'width'		=> 'width',
-		'height'	=> 'height',
-		'length'	=> 'length',
-		'weight'	=> 'weight',
-	);
-
-
-	/**
 	 * Array of store specific settings.
 	 *
 	 * @var Array
@@ -395,6 +382,11 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				'default'		=> esc_html__( 'ShipStation Rates', 'live-rates-for-shipstation' ),
 				'desc_tip'		=> true,
 			),
+			'minweight' => array(
+				'title'			=> esc_html__( 'Product Weight Fallback', 'live-rates-for-shipstation' ),
+				'type'			=> 'text',
+				'description'	=> esc_html__( 'This value will be used if both weight and dimensions are missing from any given product. ShipStation at minimum needs a product weight to retrieve rates.', 'live-rates-for-shipstation' ),
+			),
 			'packing' => array(
 				'title'			=> esc_html__( 'Product Packing', 'live-rates-for-shipstation' ),
 				'type'			=> 'select',
@@ -402,6 +394,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				'options'		=> array(
 					'individual'	=> esc_html__( 'Pack items individually', 'live-rates-for-shipstation' ),
 					'wc-box-packer'	=> esc_html__( 'Pack items using Custom Packing Boxes', 'live-rates-for-shipstation' ),
+					'byweight'		=> esc_html__( 'Pack items into one package using weight exclusively', 'live-rates-for-shipstation' ),
 				),
 				'description'	=> esc_html__( 'Individually can be more costly. Custom packing boxes will automatically fit as many products in set dimensions lowering shipping costs.', 'live-rates-for-shipstation' ),
 			),
@@ -727,6 +720,9 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		if( 'individual' == $packing_type ) {
 			$item_requests = $this->get_individual_requests( $packages['contents'] );
 
+		} else if( 'byweight' == $packing_type ) {
+			$item_requests = $this->get_weightbased_requests( $packages['contents'] );
+
 		// WC Boxed Packaging
 		} else {
 			$item_requests = $this->get_custombox_requests( $packages['contents'] );
@@ -935,7 +931,9 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 */
 	protected function get_individual_requests( $items ) {
 
-		$item_requests = array();
+		$item_requests 	= array();
+		$default_weight = $this->get_option( 'minweight', '' );
+
 		foreach( $items as $item_id => $item ) {
 
 			// Continue - No shipping needed for product.
@@ -956,8 +954,12 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				'height'	=> $item['data']->get_height(),
 			) );
 
+			// No Dimensions, No Weight - Default and continue.
+			if( empty( $physicals ) && ! empty( $default_weight ) ) {
+				$physicals['weight'] = $default_weight;
+
 			// Return Early - Product missing one of the 4 key dimensions.
-			if( count( $physicals ) < 4 ) {
+			} else if( count( $physicals ) < 4 ) {
 				$this->log( sprintf(
 
 					/* translators: %1$d is the Product ID. %2$s is the Product Dimensions separated by a comma. */
@@ -982,18 +984,68 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			unset( $physicals['weight'] );
 			sort( $physicals );
 
-			$request['dimensions'] = array(
-				'length'	=> round( wc_get_dimension( $physicals[2], $this->store_data['dim_unit'] ), 2 ),
-				'width'		=> round( wc_get_dimension( $physicals[1], $this->store_data['dim_unit'] ), 2 ),
-				'height'	=> round( wc_get_dimension( $physicals[0], $this->store_data['dim_unit'] ), 2 ),
-				'unit'		=> $this->shipStationApi->convert_unit_term( $this->store_data['dim_unit'] ),
-			);
+			if( count( $physicals ) >= 3 ) {
+				$request['dimensions'] = array(
+					'length'	=> round( wc_get_dimension( $physicals[2], $this->store_data['dim_unit'] ), 2 ),
+					'width'		=> round( wc_get_dimension( $physicals[1], $this->store_data['dim_unit'] ), 2 ),
+					'height'	=> round( wc_get_dimension( $physicals[0], $this->store_data['dim_unit'] ), 2 ),
+					'unit'		=> $this->shipStationApi->convert_unit_term( $this->store_data['dim_unit'] ),
+				);
+			}
 
 			$item_requests[ $item_id ] = $request;
 
 		}
 
 		return $item_requests;
+
+	}
+
+
+	/**
+	 * One Big Box
+	 * Group all the products by weight and get rates by total weight.
+	 *
+	 * @param Array $items
+	 *
+	 * @return Array $requests
+	 */
+	protected function get_weightbased_requests( $items ) {
+
+		$running_weight = 0;
+		$default_weight = $this->get_option( 'minweight', 0 );
+
+		foreach( $items as $item_id => $item ) {
+
+			// Continue - No shipping needed for product.
+			if( ! $item['data']->needs_shipping() ) {
+				continue;
+			}
+
+			// Return Early - Product missing one of the 4 key dimensions.
+			$weight = ( $item['data']->get_weight() ) ? $item['data']->get_weight() : $default_weight;
+			if( empty( $weight ) ) {
+
+				$this->log( sprintf(
+
+					/* translators: %1$d is the Product ID. */
+					esc_html__( 'Product ID #%1$d missing product weight. Shipping Zone weight fallback could not be used. Shipping calculations terminated.', 'live-rates-for-shipstation' ),
+					$item['product_id']
+				) );
+
+				return array();
+			}
+
+			$running_weight += ( floatval( $weight ) * $item['quantity'] );
+
+		}
+
+		return array( array(
+			'weight' => array(
+				'value' => (float)round( wc_get_weight( $running_weight, $this->store_data['weight_unit'] ), 2 ),
+				'unit'	=> $this->shipStationApi->convert_unit_term( $this->store_data['weight_unit'] ),
+			),
+		) );
 
 	}
 
@@ -1012,9 +1064,9 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			include_once 'wc-box-packer/class-wc-boxpack.php';
 		}
 
-		$item_requests = array();
-		$wc_boxpack = new WC_Box_Packer\WC_Boxpack();
-		$boxes = $this->get_option( 'customboxes', array() );
+		$item_requests 	= array();
+		$wc_boxpack 	= new WC_Box_Packer\WC_Boxpack();
+		$boxes 			= $this->get_option( 'customboxes', array() );
 
 		if( empty( $boxes ) ) {
 			$this->log( esc_html__( 'Custom Boxes selected, but no boxes found. Items packed individually', 'live-rates-for-shipstation' ), 'warning' );
