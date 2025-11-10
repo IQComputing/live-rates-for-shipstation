@@ -38,4 +38,25 @@ Class Stallation {
 
 	}
 
+
+	/**
+	 * Transition the old plugin version to the current plugin verison.
+	 * This may trigger additional actions.
+	 *
+	 * @param String $version
+	 *
+	 * @return void
+	 */
+	public static function transversion( $version ) {
+
+		$found_version = \IQLRSS\Driver::get_opt( 'version', '1.0.0' );
+		if( 0 == version_compare( $version, $found_version ) ) {
+			return;
+		}
+
+		\IQLRSS\Driver::set_opt( 'version', $version );
+		flush_rewrite_rules();
+
+	}
+
 }

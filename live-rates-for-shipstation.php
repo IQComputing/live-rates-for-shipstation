@@ -79,7 +79,7 @@ class Driver {
 	 * @param String $key
 	 * @param Mixed $value
 	 *
-	 * @return Mixed
+	 * @return void
 	 */
 	public static function set_ss_opt( $key, $value ) {
 
@@ -93,6 +93,45 @@ class Driver {
 		}
 
 		update_option( 'woocommerce_shipstation_settings', $settings );
+
+	}
+
+
+	/**
+	 * Return a ShipStation Plugin Option Value
+	 *
+	 * @param String $key
+	 * @param Mixed $default
+	 * @param Boolean $skip_prefix - Skip Plugin Prefix and return a core ShipStation setting value.
+	 *
+	 * @return Mixed
+	 */
+	public static function get_opt( $key, $default = '' ) {
+		$settings = get_option( static::plugin_prefix( 'plugin' ) );
+		return ( isset( $settings[ $key ] ) && '' !== $settings[ $key ] ) ? maybe_unserialize( $settings[ $key ] ) : $default;
+	}
+
+
+	/**
+	 * Set a plugin option.
+	 *
+	 * @param String $key
+	 * @param Mixed $value
+	 *
+	 * @return void
+	 */
+	public static function set_opt( $key, $value ) {
+
+		$option 	= static::plugin_prefix( 'plugin' );
+		$settings 	= get_option( $option, array() );
+
+		if( is_bool( $value ) ) {
+			$settings[ $key ] = boolval( $value );
+		} else if( is_string( $value ) || is_numeric( $value ) ) {
+			$settings[ $key ] = sanitize_text_field( $value );
+		}
+
+		update_option( $option, $settings );
 
 	}
 
@@ -168,6 +207,11 @@ class Driver {
 	 * @return void
 	 */
 	public static function drive() {
+
+		// Run any version transition actions.
+		Stallation::transversion( static::$version );
+
+		// Load core controllers.
 		Core\Rest_Router::initialize();
 		Core\Settings_Shipstation::initialize();
 	}
