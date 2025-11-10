@@ -98,7 +98,7 @@ Class Settings_Shipstation {
 			),
 			'rest' => array(
 				'nonce'		=> wp_create_nonce( 'wp_rest' ),
-				'apiactions'=> get_rest_url( null, sprintf( '/%s/v1/settings',
+				'settings'=> get_rest_url( null, sprintf( '/%s/v1/settings',
 					\IQLRSS\Driver::get( 'slug' )
 				) ),
 			),
@@ -366,7 +366,9 @@ Class Settings_Shipstation {
 	 */
 	public function append_shipstation_integration_settings( $fields ) {
 
-		$carriers = array();
+		$carriers = array(
+			'' => esc_html__( 'ShipStation carriers may still be loading...', 'live-rates-for-shipstation' ),
+		);
 		$appended_fields = array();
 
 		if( ! empty( \IQLRSS\Driver::get_ss_opt( 'api_key' ) ) ) {

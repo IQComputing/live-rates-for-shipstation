@@ -47,7 +47,7 @@ export class shipStationSettings {
 			$button.classList.remove( 'complete' );
 			$button.classList.add( 'working' );
 
-			fetch( iqlrss.rest.apiactions, {
+			fetch( iqlrss.rest.settings, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
@@ -274,7 +274,7 @@ class apiVerificationButton {
 			body.secret = document.querySelector( '[name*=iqlrss_apiv1_secret]' ).value;
 		}
 
-		return await fetch( iqlrss.rest.apiactions, {
+		return await fetch( iqlrss.rest.settings, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -298,15 +298,52 @@ class apiVerificationButton {
 				if( ! $row || 'none' != $row.style.display ) return;
 
 				/* Skip the Return Lowest Label if related isn't checked */
-				if( -1 != $elm.name.indexOf( 'global_adjustment' ) && '' == document.querySelector( 'select[name*=global_adjustment_type]' ).value ) {
+				if( $elm.name.includes( 'global_adjustment' ) && '' == document.querySelector( 'select[name*=global_adjustment_type]' ).value ) {
 					return;
 				}
 
 				/* Skip the Return Lowest Label if related isn't checked */
-				if( -1 != $elm.name.indexOf( 'return_lowest_label' ) && ! document.querySelector( '[type=checkbox][name*=return_lowest]' ).checked ) {
+				if( $elm.name.includes( 'return_lowest_label' ) && ! document.querySelector( '[type=checkbox][name*=return_lowest]' ).checked ) {
 					return;
 				}
 
+				/**
+				 * @jquery
+				 * Reinitialize selectWoo with carriers pulled async.
+				 */
+				if( $elm.name.includes( 'carriers' ) && ! $elm.querySelector( 'option:not([value=""])' ) && 'undefined' !== typeof jQuery ) {
+
+					const selectwoo_args = jQuery( $elm ).data( 'select2' ).options.options || {};
+					if( 'undefined' !== typeof jQuery.fn.selectWoo ) {
+						fetch( iqlrss.rest.settings, {
+							method: 'POST',
+							headers: {
+								'Content-Type'	: 'application/json',
+								'X-WP-Nonce'	: iqlrss.rest.nonce,
+							},
+							body: JSON.stringify( {
+								'action': 'get_carriers'
+							} )
+						} ).then( response => response.json() )
+						.then( ( json ) => {
+
+							if( ! json.success || ! 'carriers' in json.data ) return;
+
+							$elm.innerHTML = '';
+							Object.entries( json.data.carriers ).forEach( ( [k, v] ) => {
+								let $option = document.createElement( 'option' );
+								$option.value = k;
+								$option.innerText = v;
+								$elm.appendChild( $option );
+							} );
+							jQuery( $elm ).selectWoo( 'destroy' );
+							jQuery( $elm ).selectWoo( selectwoo_args );
+						} );
+					}
+
+				}
+
+				console.log( 'visible' );
 				rowMakeVisible( $row, true );
 			} );
 

@@ -87,6 +87,26 @@ Class Rest_Router {
 
 
             /**
+             * Return an array of ShipStation Carriers.
+             * This is specifically for the Shipping Carriers selectWoo
+             */
+            case 'get_carriers':
+
+                $carriers = array();
+                $response = ( new Api\Shipstation() )->get_carriers();
+
+                if( is_wp_error( $response ) || empty( $response ) ) {
+                    wp_send_json_success( array( 'carriers' => $carriers ) ); // Don't error, just empty.
+                }
+
+                foreach( $response as $carrier ) {
+                    $carriers[ $carrier['carrier_id'] ] = $carrier['name'];
+                }
+                wp_send_json_success( array( 'carriers' => $carriers ) );
+            break;
+
+
+            /**
              * Verify the API Key.
              */
             case 'verify':
