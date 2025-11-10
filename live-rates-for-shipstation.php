@@ -12,12 +12,6 @@
  * Text Domain: live-rates-for-shipstation
  * Requires Plugins: woocommerce, woocommerce-shipstation-integration
  *
- * @notes ShipStation does not make it easy or obvious how to update / create a Shipment for an Order.
- * 		The shipment create endpoint keeps coming back successful, but nothing on the ShipStation side
- * 		appears to change.
- * 		The v1 API update Order endpoint also doesn't seem to allow Shipment updates, but is required
- * 		to get the OrderID, required for any kind of create/update endpoints.
- *
  * @todo Add warehosue locations to Shipping Zone packages.
  * @todo Look into updating warehouses through Edit Order > Order Items.
  */
@@ -104,6 +98,34 @@ class Driver {
 
 
 	/**
+	 * Clear the Plugin API cache.
+	 *
+	 * @return void
+	 */
+	public static function clear_cache() {
+
+		global $wpdb;
+
+		/**
+		 * The API Class creates various transients to cache carrier services.
+		 * These transients are not tracked but generated based on the responses carrier codes.
+		 * All these transients are prefixed with our plugins unique string slug.
+		 * The first WHERE ensures only `_transient_` and the 2nd ensures only our plugins transients.
+		 */
+		$wpdb->query( $wpdb->prepare( "DELETE FROM %i WHERE option_name LIKE %s AND option_name LIKE %s",
+			$wpdb->options,
+			$wpdb->esc_like( '_transient_' ) . '%',
+			'%' . $wpdb->esc_like( '_' . static::get( 'slug' ) . '_' ) . '%'
+		) );
+
+		// Set transient to clear any WC_Session caches if they are found.
+		$expires = absint( apply_filters( 'wc_session_expiration', DAY_IN_SECONDS * 2 ) );
+		set_transient( static::plugin_prefix( 'wcs_timeout' ), time(), $expires );
+
+	}
+
+
+	/**
 	 * Prefix a string with the plugin slug.
 	 *
 	 * @param String $str
@@ -146,6 +168,7 @@ class Driver {
 	 * @return void
 	 */
 	public static function drive() {
+		Core\Rest_Router::initialize();
 		Core\Settings_Shipstation::initialize();
 	}
 

@@ -14,10 +14,7 @@ Class Stallation {
 	 * Deactivate Plugin
 	 */
 	public static function deactivate() {
-
-		$settings = new Core\Settings_Shipstation();
-		$settings->clear_cache();
-
+		\IQLRSS\Driver::clear_cache();
 	}
 
 
@@ -26,9 +23,7 @@ Class Stallation {
 	 */
 	public static function uninstall() {
 
-		$settings = new Core\Settings_Shipstation();
-		$settings->clear_cache();
-
+		// Normalize ShipStation Settings by removing our keys.
 		$settings = get_option( 'woocommerce_shipstation_settings' );
 		foreach( $settings as $key => $val ) {
 			if( is_numeric( $key ) ) continue;
@@ -37,6 +32,9 @@ Class Stallation {
 			}
 		}
 		update_option( 'woocommerce_shipstation_settings', $settings );
+
+		// Clear Cache
+		\IQLRSS\Driver::clear_cache();
 
 	}
 
