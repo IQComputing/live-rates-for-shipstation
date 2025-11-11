@@ -2,8 +2,6 @@ import * as util from '../modules/utility.js';
 
 /**
  * Manage the custom boxes functionality on Shipping Zones.
- * :: Custom Box Management
- * :: Modals
  *
  * @global {Object} iqlrss - Localized object of saved values.
  */
@@ -13,7 +11,6 @@ export class CustomBoxes {
      * Custom boxes and DOM elements.
      */
     #data = {
-        boxes: [],
         modal: null,
         domRow: null,
         domList: null,
@@ -25,41 +22,16 @@ export class CustomBoxes {
      */
     constructor() {
 
-        this.setupCustomBoxes();
+        this.#data.domRow = document.getElementById( 'customBoxesRow' );
+        this.#data.domList = document.querySelector( '#iqlrssCustomBoxes tbody' );
+        this.#data.domItemClone = this.#data.domList.querySelector( '.clone' );
+
         this.setupModalEvents();
         this.setupModalFieldEvents();
 
     }
 
 
-
-    /**------------------------------------------------------------------------------------------------ **/
-	/** :: Custom Box Management :: **/
-	/**------------------------------------------------------------------------------------------------ **/
-    /**
-     * Make note of the current set of Custom Boxes.
-     */
-    setupCustomBoxes() {
-
-        this.#data.domRow = document.getElementById( 'customBoxesRow' );
-        this.#data.domList = document.querySelector( '#iqlrssCustomBoxes tbody' );
-        this.#data.domItemClone = this.#data.domList.querySelector( '.clone' );
-
-        if( this.#data.domList.children ) {
-            [...this.#data.domList.children].forEach( ( $boxItem ) => {
-                const json = $boxItem.querySelector( '[type="hidden"]' ).value;
-                if( ! json ) return;
-                this.#data.boxes.push( json );
-            } );
-        }
-
-    }
-
-
-
-    /**------------------------------------------------------------------------------------------------ **/
-	/** :: Modals :: **/
-	/**------------------------------------------------------------------------------------------------ **/
     /**
      * Manage custom box modals.
      *
@@ -249,7 +221,7 @@ export class CustomBoxes {
 
         const $modal    = document.getElementById( 'customBoxesFormModal' );
         const box_index = $modal.dataset.index;
-        const data      = ( box_index >= 0 ) ? this.#data.domList.querySelector( `tr:nth-child(${box_index + 1}) [name*="[json]"]` ).value : new FormData();
+        const data      = ( box_index >= 0 ) ? this.#data.domList.querySelector( `tr:nth-child(${box_index}) [name*="[json]"]` ).value : new FormData();
         const modalData = new FormData();
 
         if( ! $modal.open ) return;
@@ -295,13 +267,13 @@ export class CustomBoxes {
 
         /**
          * @func
-         * Add a Custom Box to the list.
+         * Add/Update a Custom Box to/in the.
          *
          * @param {Object} box
          *
          * @return {Integer}
          */
-        const addCustomBox = ( box ) => {
+        const manageCustomBox = ( box ) => {
 
             let $clone = this.#data.domItemClone.cloneNode( true );
                 $clone.classList.remove( 'clone' );
@@ -334,17 +306,13 @@ export class CustomBoxes {
 
             // Update
             if( box_index >= 0 ) {
-
                 this.#data.domList.children[ box_index ].innerHTML = $clone.innerHTML;
-
-            // Append
-            } else {
-
-                this.#data.boxes.push( box );
-                this.#data.domList.appendChild( $clone );
-                this.#data.domRow.dataset.count = this.#data.domList.children.length - 1; /* Minus the clone. */
-
+                return box_index;
             }
+
+            // Prepend
+            this.#data.domList.prepend( $clone );
+            this.#data.domRow.dataset.count = this.#data.domList.children.length - 1; /* Minus the clone. */
 
         }
 
@@ -439,12 +407,26 @@ export class CustomBoxes {
             return this.modalToast( 'error', iqlrss.text.error_custombox_json );
         }
 
-        if( box_index >= 0 && addCustomBox( jsonBox ) ) {
-            modalLighting( successColor );
-            this.modalReset();
+        /* Success! */
+        manageCustomBox( jsonBox );
+        modalLighting( successColor );
+        this.modalReset();
+
+        /* Box added successfully! */
+        if( -1 == box_index ) {
             $modal.querySelector( 'input' ).focus();
             return this.modalToast( 'success', iqlrss.text.success_custombox_added );
         }
+
+        this.modalReset();
+        $modal.close();
+
+        this.#data.domList.children[ box_index ].animate( { backgroundColor: [ successColor + '40' ], }, {
+            duration: 600,
+            easing: 'ease-in-out',
+            direction: 'alternate',
+            iterations: 2
+        } );
 
     }
 

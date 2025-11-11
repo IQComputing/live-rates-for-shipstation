@@ -26,12 +26,6 @@ function iqlrssPrintCustomBoxItem( $box ) {
 
 	static $boxNum = 1;
 
-	// Denote a clone item.
-	$data = array( 'classes' => array() );
-	if( empty( $box ) ) {
-		$data['classes'][] = 'clone';
-	}
-
 	/**
 	 * The following are fallbacks for previous versions that had different a Custom Box implementation.
 	 */
@@ -45,7 +39,7 @@ function iqlrssPrintCustomBoxItem( $box ) {
 		'active'	=> 1,
 	), (array)$box );
 
-	$item_html = sprintf( '<tr class="%s">', esc_attr( implode( ' ', $data['classes']  ) ) );
+	$item_html = sprintf( '<tr>' );
 
 		// Removal Checkbox
 		$item_html .= '<td>';
@@ -106,11 +100,6 @@ function iqlrssPrintCustomBoxItem( $box ) {
 		<div id="customBoxActions">
 			<button type="button" class="button-primary" data-iqlrss-modal="customBoxesFormModal"><?php esc_html_e( 'Add New Custom Box', 'live-rates-for-shipstation' ); ?></button>
 			<button type="button" id="customBoxRemove" class="button-secondary"><?php esc_html_e( 'Remove Selected Boxes', 'live-rates-for-shipstation' ); ?></button>
-		</div>
-		<div id="customBoxSearchWrap">
-			<p><?php esc_html_e( 'The search field below will automatically filter results as you type.', 'live-rates-for-shipstation' ); ?></p>
-        	<input type="search" id="customBoxesSearch" placeholder="<?php esc_attr_e( 'Search Custom Boxes ...', 'live-rates-for-shipstation' ); ?>">
-			<button type="button"><?php esc_html_e( 'Clear Search', 'live-rates-for-shipstation' ); ?></button>
 		</div>
 		<table id="iqlrssCustomBoxes"><tbody><?php
 
