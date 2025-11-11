@@ -14,6 +14,7 @@ export class CustomBoxes {
         modal: null,
         domRow: null,
         domList: null,
+        editBox: -1,
     }
 
 
@@ -23,8 +24,8 @@ export class CustomBoxes {
     constructor() {
 
         this.#data.domRow = document.getElementById( 'customBoxesRow' );
-        this.#data.domList = document.querySelector( '#iqlrssCustomBoxes tbody' );
-        this.#data.domItemClone = this.#data.domList.querySelector( '.clone' );
+        this.#data.domList = this.#data.domRow.querySelector( 'tbody' );
+        this.#data.domItemClone = this.#data.domList.lastElementChild;
 
         this.setupModalEvents();
         this.setupModalFieldEvents();
@@ -77,7 +78,7 @@ export class CustomBoxes {
             /**
              * Set required fields and maybe data as well.
              */
-            $modal.dataset.index = index;
+            this.#data.editBox = index;
             $modal.querySelectorAll( '.iqlrss-field' ).forEach( ( $fieldWrap ) => {
 
                 /* Set required attribute */
@@ -95,10 +96,11 @@ export class CustomBoxes {
                     } else if( data_key.includes( 'inner' ) || [ 'length', 'width', 'height' ].includes( data_key ) ) {
 
                         if( data_key.includes( 'toggle' ) ) {
-                            $input.checked = ( ! util.isEmpty( data.inner ) );
+                            $input.checked = ( ! Object.values( data.inner ).every( v => 0 == v ) );
                             $input.dispatchEvent( new Event( 'change' ) );
                         } else {
                             $input.value = data[ ( data_key.includes( 'inner' ) ) ? 'inner' : 'outer' ][ ( data_key.includes( 'inner' ) ) ? data_key.replace( '_inner', '' ) : data_key ];
+                            $input.value = ( '0' == $input.value ) ? '' : $input.value;
                         }
 
                     }
@@ -144,6 +146,7 @@ export class CustomBoxes {
             }
 
             this.modalReset();
+            this.#data.editBox = -1;
 
         } );
 
@@ -220,14 +223,13 @@ export class CustomBoxes {
     processModalSave() {
 
         const $modal    = document.getElementById( 'customBoxesFormModal' );
-        const box_index = $modal.dataset.index;
-        const data      = ( box_index >= 0 ) ? this.#data.domList.querySelector( `tr:nth-child(${box_index}) [name*="[json]"]` ).value : new FormData();
+        const box_index = this.#data.editBox;
+        const data      = ( box_index >= 0 ) ? this.#data.domList.querySelector( `tr:nth-child(${box_index + 1}) [name*="[json]"]` ).value : new FormData();
         const modalData = new FormData();
-
-        if( ! $modal.open ) return;
-
         const errorColor    = '#d63638';
         const successColor  = '#248A3D';
+
+        if( ! $modal.open ) return;
 
 
         /**
@@ -237,9 +239,7 @@ export class CustomBoxes {
          * @param {FormData} fd
          */
         const mapJson = ( fd ) => {
-
-            let mapped = {
-                active: ( data ) ? data.active : 1,
+            return {
                 nickname: fd.get( 'nickname' ),
                 outer: {
                     length: fd.get( 'box_length' ),
@@ -247,21 +247,14 @@ export class CustomBoxes {
                     height: fd.get( 'box_height' ),
                 },
                 inner: {
-                    length: fd.get( 'box_length_inner' ),
-                    width : fd.get( 'box_width_inner' ),
-                    height: fd.get( 'box_height_inner' ),
+                    length: ( ! ['0','false'].includes( fd.get( 'box_inner_toggle' ) ) ) ? fd.get( 'box_length_inner' ) : '0',
+                    width : ( ! ['0','false'].includes( fd.get( 'box_inner_toggle' ) ) ) ? fd.get( 'box_width_inner' )  : '0',
+                    height: ( ! ['0','false'].includes( fd.get( 'box_inner_toggle' ) ) ) ? fd.get( 'box_height_inner' ) : '0',
                 },
                 weight: fd.get( 'box_weight' ),
                 price: fd.get( 'box_price' ),
-                weight_max: fd.get( 'box_maxweight' ),
+                weight_max: fd.get( 'box_weight_max' ),
             };
-
-            if( fd.get( 'box_inner_toggle' ) ) {
-                delete mapped.inner;
-            }
-
-            return mapped;
-
         }
 
 
@@ -283,17 +276,17 @@ export class CustomBoxes {
 
             /* Dimensions */
             $clone.querySelector( '[data-assoc="box_dimensions"]' ).innerText = [
-                box.outer.length ?? 0,
-                box.outer.width ?? 0,
-                box.outer.height ?? 0,
+                box.outer.length,
+                box.outer.width,
+                box.outer.height,
             ].join( 'x' );
 
             /* Inner Dimensions */
-            if( 'inner' in box ) {
+            if( 'inner' in box && ! Object.values( box.inner ).every( v => 0 == v ) ) {
                 $clone.querySelector( '[data-assoc="box_dimensions"]' ).innerText += ' (' + [
-                    box.inner.length ?? 0,
-                    box.inner.width ?? 0,
-                    box.inner.height ?? 0,
+                    box.inner.length,
+                    box.inner.width,
+                    box.inner.height,
                 ].join( 'x' ) + ')';
             }
 

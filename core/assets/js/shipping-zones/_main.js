@@ -1,3 +1,5 @@
+import {CustomBoxes} from './custom-boxes.js';
+
 /**
  * WooCommerce Shipping Zone Settings
  *
@@ -14,10 +16,6 @@ export class shippingZoneSettings {
 	constructor() {
 
 		this.customBoxesVisibility();
-		this.customBoxesSelectAll();
-		this.customBoxesAdd();
-		this.customBoxesRemove();
-
 		this.setupPriceAdjustments()
 		this.inputsNumbersOnly();
 		this.wooAccommodations();
@@ -32,99 +30,23 @@ export class shippingZoneSettings {
 	customBoxesVisibility() {
 
 		document.querySelector( '.custom-boxes-control' ).addEventListener( 'change', function() {
+
+			/* Display Custom Boxes */
 			if( 'wc-box-packer' == this.value ) {
 
-				/**
-				 * Setup the Custom Boxes Module.
-				 * @import CustomBoxes
-				 */
-				document.getElementById( 'customBoxesRow' ).style.display = 'table-row';
-				if( ! document.getElementById( 'customBoxesRow' ).classList.contains( 'ready' ) ) {
-					import( './custom-boxes.js' ).then( ( Module ) => {
-						new Module.CustomBoxes();
-						document.getElementById( 'customBoxesRow' ).classList.add( 'ready' );
-					} );
-				}
-
-				document.getElementById( 'customBoxes' ).style.display = 'table-row';
-				if( document.querySelectorAll( '#customBoxes tbody tr' ).length < 2 ) {
-					document.querySelector( '#customBoxes button[name=add]' ).click();
-				}
-
-			} else {
-
-				document.querySelectorAll( '#customBoxes [name]' ).forEach( ( $elm ) => {
-					if( 'text' == $elm.type ) $elm.removeAttribute( 'required' );
+				import( './custom-boxes.js' ).then( ( Module ) => {
+					new Module.CustomBoxes();
+					document.getElementById( 'customBoxesRow' ).classList.add( 'ready' );
 				} );
-				document.getElementById( 'customBoxes' ).style.display = 'none';
-				document.getElementById( 'customBoxesRow' ).style.display = 'none';
+				document.getElementById( 'customBoxesRow' ).style.display = 'table-row';
 
+			/* Don't */
+			} else {
+				document.getElementById( 'customBoxesRow' ).style.display = 'none';
 			}
+
 		} );
 		document.querySelector( '.custom-boxes-control' ).dispatchEvent( new Event( 'change' ) );
-
-	}
-
-
-	/**
-	 * Custom Boxes
-	 * Select all boxes checkbox.
-	 */
-	customBoxesSelectAll() {
-
-		document.querySelector( '#customBoxes [name=customboxes_removeall]' ).addEventListener( 'input', function() {
-			document.querySelectorAll( '#customBoxes tbody tr:not(.mimic) [type=checkbox]' ).forEach( ( $elm ) => {
-				$elm.checked = this.checked;
-			} );
-		} );
-
-	}
-
-
-	/**
-	 * Custom Boxes
-	 * Add new row.
-	 */
-	customBoxesAdd() {
-
-		document.querySelector( '#customBoxes button[name=add]' ).addEventListener( 'click', () => {
-
-			const count  = document.querySelectorAll( '#customBoxes tbody tr' ).length - 1;
-			const $clone = document.querySelector( '#customBoxes tr.mimic' ).cloneNode( true );
-
-			$clone.classList.remove( 'mimic' );
-			$clone.querySelectorAll( '[name]' ).forEach( ( $elm ) => {
-				$elm.name = $elm.name.replace( 'mimic', count );
-				if( 'text' == $elm.type && ! $elm.name.includes( '[wm]' ) ) $elm.required = true;
-			} );
-
-			document.querySelector( '#customBoxes tbody' ).appendChild( $clone );
-
-		} );
-
-	}
-
-
-	/**
-	 * Custom Boxes
-	 * Remove row(s).
-	 */
-	customBoxesRemove() {
-
-		document.querySelector( '#customBoxes button[name=remove]' ).addEventListener( 'click', () => {
-
-			const $checkedBoxes = document.querySelectorAll( '#customBoxes tbody tr:not(.mimic) [type=checkbox]:is(:checked)' );
-
-			if( ! $checkedBoxes.length ) return;
-			if( window.confirm( iqlrss.text.confirm_box_removal.replace( '(x)', `(${$checkedBoxes.length})` ) ) ) {
-				document.querySelectorAll( '#customBoxes tbody tr:not(.mimic) [type=checkbox]:is(:checked)' ).forEach( $elm => {
-					$elm.closest( 'tr' ).remove();
-				} );
-			}
-
-			document.querySelectorAll( '#customBoxes [type=checkbox]:is(:checked)' ).forEach( $elm => $elm.checked = false );
-
-		} );
 
 	}
 

@@ -398,9 +398,6 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				),
 				'description'	=> esc_html__( 'Individually can be more costly. Custom packing boxes will automatically fit as many products in set dimensions lowering shipping costs.', 'live-rates-for-shipstation' ),
 			),
-			'customboxes_new' => array(
-				'type' => 'customboxes_new', // See self::generate_customboxes_html()
-			),
 			'customboxes' => array(
 				'type' => 'customboxes', // See self::generate_customboxes_html()
 			),
@@ -408,6 +405,107 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				'type' => 'services', // See self::generate_services_html()
 			),
 		);
+
+	}
+
+
+	/**
+	 * Automatic dynamic method inherited from parent.
+	 * Generate HTML for custom boxes fields.
+	 *
+	 * @return String - HTML
+	 */
+	public function generate_customboxes_html() {
+
+		$prefix 		= $this->plugin_prefix;
+		$show_custom 	= ( 'wc-box-packer' == $this->get_option( 'packing', 'individual' ) );
+		$saved_boxes 	= $this->get_option( 'customboxes', array() );
+
+		ob_start();
+			include 'assets/views/customboxes-table.php';
+		return ob_get_clean();
+
+	}
+
+
+	/**
+	 * Validate customboxes.
+	 *
+	 * @return Array $boxes
+	 */
+	public function validate_customboxes_field() {
+
+		if( ! isset( $_POST['_wpnonce'] ) ) {
+			return;
+		}
+
+		$nonce = sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) );
+		if( ! wp_verify_nonce( $nonce, 'woocommerce-settings' ) ) {
+			return;
+		} else if( ! isset( $_POST['custombox'] ) || ! is_array( $_POST['custombox'] ) ) {
+			return;
+		}
+
+		// Input sanitized during processing.
+		$posted_boxes = wp_unslash( $_POST['custombox'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+
+		$boxes = array();
+		foreach( $posted_boxes as $idx => $box_arr ) {
+
+			if( $idx >= 1 && isset( $box_arr['json'] ) ) {
+
+				$json = json_decode( $box_arr['json'], true );
+				$has_inner_dim = ( $json['box_inner_toggle'] && isset( $json['box_length_inner'] ) );
+
+				$boxes[] = array(
+					'active' => 1,
+					'nickname' => sanitize_text_field( $json['nickname'] ),
+					'outer' => array(
+						'length'	=> floatval( $json['box_length'] ),
+						'width'		=> floatval( $json['box_width'] ),
+						'height'	=> floatval( $json['box_height'] ),
+					),
+					'inner' => array(
+						'length'	=> ( $has_inner_dim) ? floatval( $json['box_length_inner'] ) : 0,
+						'width'		=> ( $has_inner_dim) ? floatval( $json['box_width_inner'] )  : 0,
+						'height'	=> ( $has_inner_dim) ? floatval( $json['box_height_inner'] ) : 0,
+					),
+					'weight'	=> floatval( $json['box_weight'] ),
+					'weight_max'=> floatval( $json['box_maxweight'] ),
+					'price'		=> floatval( $json['box_price'] ),
+				);
+
+				// Next!
+				continue;
+			}
+
+			$vals = array_filter( $box_arr, 'is_numeric' );
+			if( count( $vals ) < 7 ) continue;
+
+			$boxes[] = array(
+				'outer' => array(
+					'length'	=> floatval( $box_arr['ol'] ),
+					'width'		=> floatval( $box_arr['ow'] ),
+					'height'	=> floatval( $box_arr['oh'] ),
+				),
+				'inner' => array(
+					'length'	=> floatval( $box_arr['il'] ),
+					'width'		=> floatval( $box_arr['iw'] ),
+					'height'	=> floatval( $box_arr['ih'] ),
+				),
+				'weight'	=> floatval( $box_arr['w'] ),
+				'weight_max'=> floatval( $box_arr['wm'] ),
+			);
+
+		}
+
+		usort( $boxes, function( $arrA, $arrB ) {
+			if( isset( $arrA['nickname'] ) && $arrB['nickname'] ) {
+				return strcasecmp( $arrA['nickname'], $arrB['nickname'] );
+			}
+		} );
+
+		return $boxes;
 
 	}
 
@@ -455,44 +553,6 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 		ob_start();
 			include 'assets/views/services-table.php';
-		return ob_get_clean();
-
-	}
-
-
-	/**
-	 * Automatic dynamic method inherited from parent.
-	 * Generate HTML for custom boxes fields.
-	 *
-	 * @return String - HTML
-	 */
-	public function generate_customboxes_new_html() {
-
-		$prefix 		= $this->plugin_prefix;
-		$show_custom 	= ( 'wc-box-packer' == $this->get_option( 'packing', 'individual' ) );
-		$saved_boxes 	= $this->get_option( 'customboxes', array() );
-
-		ob_start();
-			include 'assets/views/customboxes-new.php';
-		return ob_get_clean();
-
-	}
-
-
-	/**
-	 * Automatic dynamic method inherited from parent.
-	 * Generate HTML for custom boxes fields.
-	 *
-	 * @return String - HTML
-	 */
-	public function generate_customboxes_html() {
-
-		$prefix 		= $this->plugin_prefix;
-		$show_custom 	= ( 'wc-box-packer' == $this->get_option( 'packing', 'individual' ) );
-		$saved_boxes 	= $this->get_option( 'customboxes', array() );
-
-		ob_start();
-			include 'assets/views/customboxes-table.php';
 		return ob_get_clean();
 
 	}
@@ -573,88 +633,6 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		}
 
 		return $services;
-
-	}
-
-
-	/**
-	 * Validate customboxes field.
-	 *
-	 * @return Array $boxes
-	 */
-	public function validate_customboxes_field() {
-
-		if( ! isset( $_POST['_wpnonce'] ) ) {
-			return;
-		}
-
-		$nonce = sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) );
-		if( ! wp_verify_nonce( $nonce, 'woocommerce-settings' ) ) {
-			return;
-		} else if( ! isset( $_POST['custombox'] ) || ! is_array( $_POST['custombox'] ) ) {
-			return;
-		}
-
-		// Input sanitized during processing.
-		$posted_boxes = wp_unslash( $_POST['custombox'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-
-		$boxes = array();
-		foreach( $posted_boxes as $idx => $box_arr ) {
-
-			if( $idx >= 1 && isset( $box_arr['json'] ) ) {
-
-				$json = json_decode( $box_arr['json'], true );
-				$has_inner_dim = ( $json['box_inner_toggle'] && isset( $json['box_length_inner'] ) );
-
-				$boxes[] = array(
-					'active' => 1,
-					'nickname' => sanitize_text_field( $json['nickname'] ),
-					'outer' => array(
-						'length'	=> floatval( $json['box_length'] ),
-						'width'		=> floatval( $json['box_width'] ),
-						'height'	=> floatval( $json['box_height'] ),
-					),
-					'inner' => array(
-						'length'	=> ( $has_inner_dim) ? floatval( $json['box_length_inner'] ) : 0,
-						'width'		=> ( $has_inner_dim) ? floatval( $json['box_width_inner'] )  : 0,
-						'height'	=> ( $has_inner_dim) ? floatval( $json['box_height_inner'] ) : 0,
-					),
-					'weight'	=> floatval( $json['box_weight'] ),
-					'weight_max'=> floatval( $json['box_maxweight'] ),
-					'price'		=> floatval( $json['box_price'] ),
-				);
-
-				// Next!
-				continue;
-			}
-
-			$vals = array_filter( $box_arr, 'is_numeric' );
-			if( count( $vals ) < 7 ) continue;
-
-			$boxes[] = array(
-				'outer' => array(
-					'length'	=> floatval( $box_arr['ol'] ),
-					'width'		=> floatval( $box_arr['ow'] ),
-					'height'	=> floatval( $box_arr['oh'] ),
-				),
-				'inner' => array(
-					'length'	=> floatval( $box_arr['il'] ),
-					'width'		=> floatval( $box_arr['iw'] ),
-					'height'	=> floatval( $box_arr['ih'] ),
-				),
-				'weight'	=> floatval( $box_arr['w'] ),
-				'weight_max'=> floatval( $box_arr['wm'] ),
-			);
-
-		}
-
-		usort( $boxes, function( $arrA, $arrB ) {
-			if( isset( $arrA['nickname'] ) && $arrB['nickname'] ) {
-				return strcasecmp( $arrA['nickname'], $arrB['nickname'] );
-			}
-		} );
-
-		return $boxes;
 
 	}
 

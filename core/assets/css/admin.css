@@ -128,8 +128,8 @@ th.no-padleft		{padding-left: 0;}
 #iqlrssCustomBoxes                  {width: 100%; max-width: fit-content; min-width: 404px; max-width: 415px; margin-top: 8px; border-collapse: collapse;}
 #iqlrssCustomBoxes tr:last-child    {display: none;}
 #iqlrssCustomBoxes td               {border-bottom: 1px solid #8c8f94; padding: 8px; max-width: 300px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; transition: all 0.3s;}
-#iqlrssCustomBoxes td:first-child   {padding-left: 0; text-align: right;}
-#iqlrssCustomBoxes td:last-child    {padding-right: 0; text-align: right;}
+#iqlrssCustomBoxes td:first-child   {padding-left: 4px; text-align: center;}
+#iqlrssCustomBoxes td:last-child    {padding-right: 4px; text-align: right;}
 #iqlrssCustomBoxes tr:hover td      {background: #e0e1e3;}
 #iqlrssCustomBoxes .iqlrss-field-switch > span  {width: 80px; font-size: 12px;}
 #iqlrssCustomBoxes .iqlrss-field-switch > span > :last-child:after  {width: 8px;}
