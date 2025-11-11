@@ -27,7 +27,7 @@ function iqlrssPrintCustomBoxItem( $box ) {
 	static $boxNum = 1;
 
 	// Denote a clone item.
-	$data = array( 'classes' => array( 'iqlrss-flex' ) );
+	$data = array( 'classes' => array() );
 	if( empty( $box ) ) {
 		$data['classes'][] = 'clone';
 	}
@@ -45,41 +45,39 @@ function iqlrssPrintCustomBoxItem( $box ) {
 		'active'	=> 1,
 	), (array)$box );
 
-	$item_html = sprintf( '<li class="%s">', esc_attr( implode( ' ', $data['classes']  ) ) );
+	$item_html = sprintf( '<tr class="%s">', esc_attr( implode( ' ', $data['classes']  ) ) );
 
 		// Removal Checkbox
-		$item_html .= '<div>';
+		$item_html .= '<td>';
 			$item_html .= sprintf( '<label><input type="checkbox"><span class="screen-reader-text">%s</span></label>',
 				esc_html__( 'Marks custom box for removal.', 'live-rates-for-shipstation' )
 			);
-		$item_html .= '</div>';
+		$item_html .= '</td>';
 
 		// Friendly Name + JSON Data
-		$item_html .= '<div>';
+		$item_html .= '<td>';
 			$item_html .= sprintf( '<input type="hidden" name="custombox[][json]" value="%s">',
 				( ! isset( $data['clone'] ) ) ? esc_attr( wp_json_encode( $box_arr ) ) : ''
 			);
 			$item_html .= sprintf( '<a href="#" data-iqlrss-modal="customBoxesFormModal" data-assoc="nickname">%s</a>',
 				$box_arr['nickname'],
 			);
-		$item_html .= '</div>';
+		$item_html .= '</td>';
 
 		// Package / Dimensions
-		$item_html .= sprintf( '<div><div data-assoc="box_dimensions">%s%s</div></div>',
+		$item_html .= sprintf( '<td data-assoc="box_dimensions">%s%s</td>',
 			( is_array( $box_arr['outer'] ) ) ? implode( 'x', $box_arr['outer'] ) : '',
 			( is_array( $box_arr['inner'] ) && ! empty( array_filter( $box_arr['inner'] ) ) ) ? ' (' . implode( 'x', $box_arr['inner'] ) . ')' : ''
 		);
 
 		// Price
-		if( in_array( 'clone', $data['classes'] ) || ! empty( $box_arr['price'] ) ) {
-			$item_html .= sprintf( '<div><div data-assoc="box_price">%s</div></div>', wc_price( $box_arr['price'] ) );
-		}
+		$item_html .= sprintf( '<td data-assoc="box_price">%s</td>', wc_price( $box_arr['price'] ) );
 
 		// Warehouse?
-		$item_html .= '<div><div data-assoc="box_warehouse"></div></div>';
+		$item_html .= sprintf( '<td data-assoc="box_warehouse">%s</td>', ( isset( $box_arr['warehouse'] ) ) ? $box_arr['warehouse'] : '' );
 
 		// Enabler Switch
-		$item_html .= '<div>';
+		$item_html .= '<td>';
 			$item_html .= '<label class="iqlrss-field-switch">';
 				$item_html .= sprintf( '<input type="checkbox" name="box_active" value="1" aria-label="%s"%s>',
 					esc_attr__( 'Toggle Custom Box Active State', 'live-rates-for-shipstation' ),
@@ -91,9 +89,9 @@ function iqlrssPrintCustomBoxItem( $box ) {
 						$item_html .= '<span></span>';
 					$item_html .= '</span>';
 				$item_html .= '</label>';
-		$item_html .= '</div>';
+		$item_html .= '</td>';
 
-	$item_html .= '</li>';
+	$item_html .= '</tr>';
 	print( $item_html );
 
 	++$boxNum;
@@ -114,7 +112,7 @@ function iqlrssPrintCustomBoxItem( $box ) {
         	<input type="search" id="customBoxesSearch" placeholder="<?php esc_attr_e( 'Search Custom Boxes ...', 'live-rates-for-shipstation' ); ?>">
 			<button type="button"><?php esc_html_e( 'Clear Search', 'live-rates-for-shipstation' ); ?></button>
 		</div>
-		<ul id="iqlrssCustomBoxes"><?php
+		<table id="iqlrssCustomBoxes"><tbody><?php
 
 			// The Real Ones.
 			foreach( $saved_boxes as $idx => $box_arr ) {
@@ -124,7 +122,7 @@ function iqlrssPrintCustomBoxItem( $box ) {
 			// The Clone.
 			iqlrssPrintCustomBoxItem( array() );
 
-		?></ul>
+		?><tbody></table>
 		<dialog id="customBoxesFormModal" class="iqlrss-modal" data-index="-1">
 			<h3 class="iqlrss-modal-title --tab"><?php esc_html_e( 'Custom Box', 'live-rates-for-shipstation' ); ?></h3>
 			<button type="button"><span class="screen-reader-text"><?php esc_html_e( 'Close Custom Box Modal', 'live-rates-for-shipstation' ); ?></span><i class="dashicons dashicons-no"></i></button>

@@ -42,7 +42,7 @@ export class CustomBoxes {
     setupCustomBoxes() {
 
         this.#data.domRow = document.getElementById( 'customBoxesRow' );
-        this.#data.domList = document.getElementById( 'iqlrssCustomBoxes' );
+        this.#data.domList = document.querySelector( '#iqlrssCustomBoxes tbody' );
         this.#data.domItemClone = this.#data.domList.querySelector( '.clone' );
 
         if( this.#data.domList.children ) {
@@ -99,7 +99,7 @@ export class CustomBoxes {
 
             if( null !== e.detail.targetClicked.previousElementSibling && 'INPUT' == e.detail.targetClicked.previousElementSibling.tagName ) {
                 data  = JSON.parse( e.detail.targetClicked.previousElementSibling.value );
-                index = [ ...e.detail.targetClicked.closest( 'ul' ).children ].indexOf( e.detail.targetClicked.closest( 'li' ) );
+                index = [ ...e.detail.targetClicked.closest( 'tbody' ).children ].indexOf( e.detail.targetClicked.closest( 'tr' ) );
             }
 
             /**
@@ -249,7 +249,7 @@ export class CustomBoxes {
 
         const $modal    = document.getElementById( 'customBoxesFormModal' );
         const box_index = $modal.dataset.index;
-        const data      = ( box_index >= 0 ) ? this.#data.domList.querySelector( `li:nth-child(${box_index + 1}) [name*="[json]"]` ).value : new FormData();
+        const data      = ( box_index >= 0 ) ? this.#data.domList.querySelector( `tr:nth-child(${box_index + 1}) [name*="[json]"]` ).value : new FormData();
         const modalData = new FormData();
 
         if( ! $modal.open ) return;

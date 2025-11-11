@@ -95,7 +95,7 @@ export class shippingZoneSettings {
 			$clone.classList.remove( 'mimic' );
 			$clone.querySelectorAll( '[name]' ).forEach( ( $elm ) => {
 				$elm.name = $elm.name.replace( 'mimic', count );
-				if( 'text' == $elm.type && -1 == $elm.name.indexOf( '[wm]' ) ) $elm.required = true;
+				if( 'text' == $elm.type && ! $elm.name.includes( '[wm]' ) ) $elm.required = true;
 			} );
 
 			document.querySelector( '#customBoxes tbody' ).appendChild( $clone );
@@ -142,7 +142,7 @@ export class shippingZoneSettings {
 		document.addEventListener( 'change', ( e ) => {
 
 			if( 'SELECT' != e.target.tagName ) return;
-			if( -1 == e.target.name.indexOf( 'adjustment_type' ) ) return;
+			if( ! e.target.name.includes( 'adjustment_type' ) ) return;
 
 			const $adjustmentSelect = e.target;
 			const $adjustmentInput  = $adjustmentSelect.closest( 'td' ).querySelector( 'input' );
@@ -191,7 +191,7 @@ export class shippingZoneSettings {
 		 */
 		document.addEventListener( 'input', ( e ) => {
 			if( 'INPUT' !== e.target.tagName ) return;
-			if( -1 != e.target.name.indexOf( 'custombox' ) || e.target.classList.contains( 'iqlrss-numbers-only' ) ) {
+			if( e.target.name.includes( 'custombox' ) || e.target.classList.contains( 'iqlrss-numbers-only' ) ) {
 				e.target.value = e.target.value.replace( /(\..*?)\./g, '$1' ).replace( /[^0-9.]/g, '' );
 			}
 		} );

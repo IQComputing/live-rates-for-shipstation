@@ -135,13 +135,12 @@ th.no-padleft		{padding-left: 0;}
 
 #customBoxesRow[data-count="0"] #customBoxSearchWrap    {opacity: 0; max-height: 0; visibility: hidden;}
 #customBoxesRow[data-count="0"] #customBoxRemove        {opacity: 0; visibility: hidden;}
-#iqlrssCustomBoxes          {width: 100%; max-width: fit-content; min-width: 404px;}
-#iqlrssCustomBoxes li.clone {display: none;}
-#iqlrssCustomBoxes li       {align-items: center; width: 100%; margin: 0; padding: 8px 0; border-bottom: 1px solid #8c8f94; transition: all 0.3s;}
-#iqlrssCustomBoxes li > *   {padding: 0 8px;}
-#iqlrssCustomBoxes li > :first-child    {padding-left: 4px;}
-#iqlrssCustomBoxes li > :last-child     {margin-left: auto; padding-right: 0; margin-right: 4px;}
-#iqlrssCustomBoxes li:hover {background: #e0e1e3;}
+#iqlrssCustomBoxes          {width: 100%; max-width: fit-content; min-width: 404px; max-width: 415px; border-collapse: collapse;}
+#iqlrssCustomBoxes tr.clone {display: none;}
+#iqlrssCustomBoxes td       {border-bottom: 1px solid #8c8f94; padding: 4px 8px; max-width: 300px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; transition: all 0.3s;}
+#iqlrssCustomBoxes td:first-child   {padding-left: 0; text-align: right;}
+#iqlrssCustomBoxes td:last-child    {padding-right: 0; text-align: right;}
+#iqlrssCustomBoxes tr:hover td      {background: #e0e1e3;}
 #iqlrssCustomBoxes .iqlrss-field-switch > span  {width: 80px; font-size: 12px;}
 #iqlrssCustomBoxes .iqlrss-field-switch > span > :last-child:after  {width: 8px;}
 #iqlrssCustomBoxes .iqlrss-field-switch input + span > .text-inactive,
