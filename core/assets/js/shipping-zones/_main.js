@@ -1,5 +1,3 @@
-import {CustomBoxes} from './custom-boxes.js';
-
 /**
  * WooCommerce Shipping Zone Settings
  *

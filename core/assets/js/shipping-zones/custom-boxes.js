@@ -29,6 +29,7 @@ export class CustomBoxes {
 
         this.setupModalEvents();
         this.setupModalFieldEvents();
+        this.removeCustomBoxes();
 
     }
 
@@ -138,6 +139,7 @@ export class CustomBoxes {
             /* Set required fields. */
             $modal.querySelectorAll( '.iqlrss-field.--required' ).forEach( ( $fieldWrap ) => {
                 $fieldWrap.querySelector( 'input' ).removeAttribute( 'required', '' );
+                if( $fieldWrap.querySelector( '.iqlrss-errortext' ) ) $fieldWrap.querySelector( '.iqlrss-errortext' ).remove();
             } );
 
             /* Prevent close on confirm cancel. */
@@ -215,6 +217,27 @@ export class CustomBoxes {
 
 
     /**
+     * Remove selected items from DOM so they do not get saved.
+     */
+    removeCustomBoxes() {
+
+        document.getElementById( 'customBoxRemove' ).addEventListener( 'click', () => {
+
+            const $checkedBoxes = this.#data.domList.querySelectorAll( 'tr td:first-child input:checked' );
+            if( ! $checkedBoxes.length ) return;
+
+            const confirm = iqlrss.text.confirm_box_removal.replace( '(x)', `(${$checkedBoxes.length})` );
+            if( window.confirm( confirm ) ) {
+                $checkedBoxes.forEach( ( $input ) => {
+                    $input.closest( 'tr' ).remove();
+                } );
+            }
+        } );
+
+    }
+
+
+    /**
      * Save the modal data.
      *
      * Invalidate fields.
@@ -222,10 +245,9 @@ export class CustomBoxes {
      */
     processModalSave() {
 
-        const $modal    = document.getElementById( 'customBoxesFormModal' );
-        const box_index = this.#data.editBox;
-        const data      = ( box_index >= 0 ) ? this.#data.domList.querySelector( `tr:nth-child(${box_index + 1}) [name*="[json]"]` ).value : new FormData();
-        const modalData = new FormData();
+        const $modal        = document.getElementById( 'customBoxesFormModal' );
+        const box_index     = this.#data.editBox;
+        const modalData     = new FormData();
         const errorColor    = '#d63638';
         const successColor  = '#248A3D';
 
@@ -372,15 +394,19 @@ export class CustomBoxes {
 
             const $input = $fieldWrap.querySelector( 'input' );
 
-            /* Skip fields that are not active. */
-            if( ( 'enabledby' in $fieldWrap.dataset ) && ! $fieldWrap.classList.contains( 'enabled' ) ) return;
+            console.log( $input.name, $fieldWrap.querySelector( '.iqlrss-errortext' ) );
 
-            if( $fieldWrap.classList.contains( '--required' ) && util.isEmpty( $input.value ) ) {
+            /* Skip - Field not active, clear their error texts. */
+            if( ( 'enabledby' in $fieldWrap.dataset ) && ! $fieldWrap.classList.contains( 'enabled' ) ) {
+                if( $fieldWrap.querySelector( '.iqlrss-errortext' ) ) $fieldWrap.querySelector( '.iqlrss-errortext' ).remove();
+                return;
+
+            /* Error - Required but empty. */
+            } else if( $fieldWrap.classList.contains( '--required' ) && util.isEmpty( $input.value ) ) {
                 return invalidateField( $fieldWrap );
-            } else if( $fieldWrap.querySelector( '.iqlrss-errortext' ) ) {
-                $fieldWrap.querySelector( '.iqlrss-errortext' ).remove();
             }
 
+            if( $fieldWrap.querySelector( '.iqlrss-errortext' ) ) $fieldWrap.querySelector( '.iqlrss-errortext' ).remove();
             modalData.append( $input.name, $input.value );
 
         } );
