@@ -376,6 +376,7 @@ Class Settings_Shipstation {
 			$carrier_desc = esc_html__( 'Select which ShipStation carriers you would like to see live shipping rates from.', 'live-rates-for-shipstation' );
 			$response = ( new Api\Shipstation() )->get_carriers();
 
+			$carriers = array();
 			if( is_a( $response, 'WP_Error' ) ) {
 				$carriers[''] = $response->get_error_message();
 			} else if( is_array( $response ) ) {
