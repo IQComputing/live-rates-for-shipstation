@@ -343,7 +343,6 @@ class apiVerificationButton {
 
 				}
 
-				console.log( 'visible' );
 				rowMakeVisible( $row, true );
 			} );
 

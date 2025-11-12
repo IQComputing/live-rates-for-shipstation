@@ -27,9 +27,46 @@ export class CustomBoxes {
         this.#data.domList = this.#data.domRow.querySelector( 'tbody' );
         this.#data.domItemClone = this.#data.domList.lastElementChild;
 
+        this.setupListEvents();
         this.setupModalEvents();
         this.setupModalFieldEvents();
-        this.removeCustomBoxes();
+
+    }
+
+
+    /**
+     * Setup listeners for removing custom boxes and
+     * setting box active status.
+     */
+    setupListEvents() {
+
+        /* Remove Custom Boxes */
+        document.getElementById( 'customBoxRemove' ).addEventListener( 'click', () => {
+
+            const $checkedBoxes = this.#data.domList.querySelectorAll( 'tr td:first-child input:checked' );
+            if( ! $checkedBoxes.length ) return;
+
+            const confirm = iqlrss.text.confirm_box_removal.replace( '(x)', `(${$checkedBoxes.length})` );
+            if( window.confirm( confirm ) ) {
+                $checkedBoxes.forEach( ( $input ) => {
+                    $input.closest( 'tr' ).remove();
+                } );
+            }
+        } );
+
+        /* Manage custom box active status. */
+        this.#data.domList.addEventListener( 'change', ( e ) => {
+            if( ! e.target.matches( 'input[name="box_active"]' ) ) return;
+
+            const $jsonElm   = e.target.closest( 'tr' ).querySelector( 'input[name*="[json]"]' );
+            const jsonString = $jsonElm.value;
+            if( util.isEmpty( jsonString ) ) return;
+
+            let json = JSON.parse( jsonString );
+            if( ! util.isEmpty( json ) ) json.active = e.target.checked;
+            $jsonElm.value = JSON.stringify( json );
+
+        } );
 
     }
 
@@ -152,6 +189,14 @@ export class CustomBoxes {
 
         } );
 
+
+        /**
+         * Ensure modal required fields do not prevent main form from saving.
+         */
+        document.querySelector( 'button[name="save"]' ).addEventListener( 'click', function() {
+            $modal.querySelectorAll( '[required]' ).forEach( $elm => $elm.setAttribute( 'disabled', 'disabled' ) );
+        } );
+
     }
 
 
@@ -204,7 +249,7 @@ export class CustomBoxes {
 
         document.querySelectorAll( '#customBoxesFormModal [class*="field-switch"] [type="checkbox"]' ).forEach( ( $checkbox ) => {
             $checkbox.addEventListener( 'change', ( e ) => {
-                e.target.value = e.target.checked;
+                e.target.value = e.target.checked; /* Necessary for "easier" JSON mapping */
                 document.querySelectorAll( `#customBoxesFormModal [data-enabledby="${e.target.id}"]` ).forEach( ( $field ) => {
                     toggleFieldVisibility( $field, e.target.checked )
                 } );
@@ -212,27 +257,6 @@ export class CustomBoxes {
         } );
 
         document.getElementById( 'saveCustomBox' ).addEventListener( 'click', ( e ) => this.processModalSave( e ) );
-
-    }
-
-
-    /**
-     * Remove selected items from DOM so they do not get saved.
-     */
-    removeCustomBoxes() {
-
-        document.getElementById( 'customBoxRemove' ).addEventListener( 'click', () => {
-
-            const $checkedBoxes = this.#data.domList.querySelectorAll( 'tr td:first-child input:checked' );
-            if( ! $checkedBoxes.length ) return;
-
-            const confirm = iqlrss.text.confirm_box_removal.replace( '(x)', `(${$checkedBoxes.length})` );
-            if( window.confirm( confirm ) ) {
-                $checkedBoxes.forEach( ( $input ) => {
-                    $input.closest( 'tr' ).remove();
-                } );
-            }
-        } );
 
     }
 
@@ -276,6 +300,7 @@ export class CustomBoxes {
                 weight: fd.get( 'box_weight' ),
                 price: fd.get( 'box_price' ),
                 weight_max: fd.get( 'box_weight_max' ),
+                active: ( box_index >= 0 ) ? this.#data.domList.querySelector( `tr:nth-child(${box_index + 1}) td:last-child input` ).checked : 1
             };
         }
 
@@ -317,11 +342,12 @@ export class CustomBoxes {
                 $clone.querySelector( '[data-assoc="box_price"]' ).innerHTML = iqlrss.store.currency_symbol + Number( box.price ).toFixed( 2 );
             }
 
-            $clone.querySelector( '[name="box_active"]' ).checked = true;
+            /* Keep checkbox state */
+            $clone.querySelector( '[name="box_active"]' ).checked = box.active;
 
             // Update
             if( box_index >= 0 ) {
-                this.#data.domList.children[ box_index ].innerHTML = $clone.innerHTML;
+                this.#data.domList.replaceChild( $clone, this.#data.domList.children[ box_index ] );
                 return box_index;
             }
 
@@ -393,8 +419,6 @@ export class CustomBoxes {
         $modal.querySelectorAll( '.iqlrss-field' ).forEach( ( $fieldWrap ) => {
 
             const $input = $fieldWrap.querySelector( 'input' );
-
-            console.log( $input.name, $fieldWrap.querySelector( '.iqlrss-errortext' ) );
 
             /* Skip - Field not active, clear their error texts. */
             if( ( 'enabledby' in $fieldWrap.dataset ) && ! $fieldWrap.classList.contains( 'enabled' ) ) {

@@ -450,29 +450,29 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		$posted_boxes = wp_unslash( $_POST['custombox'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 
 		$boxes = array();
-		foreach( $posted_boxes as $idx => $box_arr ) {
+		foreach( $posted_boxes as $box_arr ) {
 
-			if( $idx >= 1 && isset( $box_arr['json'] ) ) {
+			if( isset( $box_arr['json'] ) ) {
 
 				$json = json_decode( $box_arr['json'], true );
-				$has_inner_dim = ( $json['box_inner_toggle'] && isset( $json['box_length_inner'] ) );
+				if( empty( $json['outer'] ) ) continue;
 
 				$boxes[] = array(
-					'active' => 1,
+					'active' => absint( $json['active'] ),
 					'nickname' => sanitize_text_field( $json['nickname'] ),
 					'outer' => array(
-						'length'	=> floatval( $json['box_length'] ),
-						'width'		=> floatval( $json['box_width'] ),
-						'height'	=> floatval( $json['box_height'] ),
+						'length'	=> floatval( $json['outer']['length'] ),
+						'width'		=> floatval( $json['outer']['width'] ),
+						'height'	=> floatval( $json['outer']['height'] ),
 					),
 					'inner' => array(
-						'length'	=> ( $has_inner_dim) ? floatval( $json['box_length_inner'] ) : 0,
-						'width'		=> ( $has_inner_dim) ? floatval( $json['box_width_inner'] )  : 0,
-						'height'	=> ( $has_inner_dim) ? floatval( $json['box_height_inner'] ) : 0,
+						'length'	=> floatval( $json['inner']['length'] ),
+						'width'		=> floatval( $json['inner']['width'] ),
+						'height'	=> floatval( $json['inner']['height'] ),
 					),
-					'weight'	=> floatval( $json['box_weight'] ),
-					'weight_max'=> floatval( $json['box_maxweight'] ),
-					'price'		=> floatval( $json['box_price'] ),
+					'weight'	=> floatval( $json['weight'] ),
+					'weight_max'=> floatval( $json['weight_max'] ),
+					'price'		=> floatval( $json['price'] ),
 				);
 
 				// Next!
