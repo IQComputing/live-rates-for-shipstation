@@ -15,15 +15,15 @@ Pulls live shipping rates from your favorite carriers connected to 3rd party pro
 
 This plugin connects to the ShipStation API using an authentication key to display shipping rates from various common carriers supported by ShipStation. This allows store owners to group all their shipping carriers under one umbrella which makes management easier and allows customers to choose the best shipping method for them which leads to happier customers.
 
-In order to use the Live Rates for ShipStation plugin, you must have a [premium ShipStation account](https://www.dpbolvw.net/click-101532691-11646582), and purchased the [ShipStation for WooCommerce](https://woocommerce.com/products/shipstation-integration/) plugin. This plugin **will not work** without access to the ShipStation API which is tied to your premium ShipStation account.
+In order to use the Live Rates for ShipStation plugin, you must have a [premium ShipStation account](https://www.kqzyfj.com/click-101532691-15733876), and purchased the [ShipStation for WooCommerce](https://woocommerce.com/products/shipstation-integration/) plugin. This plugin **will not work** without access to the ShipStation API which is tied to your premium ShipStation account.
 
 Please review [ShipStations Terms of Service](https://www.shipstation.com/terms-of-service/) and [ShipStations Privacy Policy](https://auctane.com/legal/privacy-policy/) for more information about how your data is managed.
 
-Don't have a ShipStation account? [Open a ShipStation account today!](https://www.dpbolvw.net/click-101532691-11646582)
+Don't have a ShipStation account? [Open a ShipStation account today!](https://www.kqzyfj.com/click-101532691-15733876)
 
 == Plugin Requirements ==
 
-1. [A Premium ShipStation Account](https://www.dpbolvw.net/click-101532691-11646582)
+1. [A Premium ShipStation Account](https://www.kqzyfj.com/click-101532691-15733876)
 1. [The WooCommerce Plugin](https://wordpress.org/plugins/woocommerce/)
 1. [The ShipStation for WooCommerce Plugin](https://woocommerce.com/products/shipstation-integration/)
 1. The Live Rates for ShipStation Plugin
