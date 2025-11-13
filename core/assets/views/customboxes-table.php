@@ -49,7 +49,7 @@ function iqlrssPrintCustomBoxItem( $box ) {
 		$item_html .= '</td>';
 
 		// Friendly Name + JSON Data
-		$item_html .= '<td>';
+		$item_html .= sprintf( '<td data-label="%s">', esc_attr__( 'Nickname', 'live-rates-for-shipstation' ) );
 			$item_html .= sprintf( '<input type="hidden" name="custombox[][json]" value="%s">',
 				( ! isset( $data['clone'] ) ) ? esc_attr( wp_json_encode( $box_arr ) ) : ''
 			);
@@ -59,16 +59,23 @@ function iqlrssPrintCustomBoxItem( $box ) {
 		$item_html .= '</td>';
 
 		// Package / Dimensions
-		$item_html .= sprintf( '<td data-assoc="box_dimensions">%s%s</td>',
+		$item_html .= sprintf( '<td data-assoc="box_dimensions" data-label="%s">%s%s</td>',
+			esc_attr__( 'Box Dimensions', 'live-rates-for-shipstation' ),
 			( is_array( $box_arr['outer'] ) ) ? implode( 'x', $box_arr['outer'] ) : '',
 			( is_array( $box_arr['inner'] ) && ! empty( array_filter( $box_arr['inner'] ) ) ) ? ' (' . implode( 'x', $box_arr['inner'] ) . ')' : ''
 		);
 
 		// Price
-		$item_html .= sprintf( '<td data-assoc="box_price">%s</td>', wc_price( $box_arr['price'] ) );
+		$item_html .= sprintf( '<td data-assoc="box_price" data-label="%s">%s</td>',
+			esc_attr__( 'Box Price', 'live-rates-for-shipstation' ),
+			wc_price( $box_arr['price'] )
+		);
 
 		// Warehouse?
-		$item_html .= sprintf( '<td data-assoc="box_warehouse">%s</td>', ( isset( $box_arr['warehouse'] ) ) ? $box_arr['warehouse'] : '' );
+		$item_html .= sprintf( '<td data-assoc="box_warehouse" data-label="%s">%s</td>',
+			esc_attr__( 'Location', 'live-rates-for-shipstation' ),
+			( isset( $box_arr['warehouse'] ) ) ? $box_arr['warehouse'] : ''
+		);
 
 		// Enabler Switch
 		$item_html .= '<td>';

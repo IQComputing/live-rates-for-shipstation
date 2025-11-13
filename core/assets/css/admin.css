@@ -4,6 +4,7 @@
 * :: Specific
 * :: Integration Settings
 * :: Shipping Zones
+* :: Media Queries
 **/
 /**
  * :: Utility
@@ -136,10 +137,11 @@ th.no-padleft		{padding-left: 0;}
 #iqlrssCustomBoxes .iqlrss-field-switch input + span > .text-inactive,
 #iqlrssCustomBoxes .iqlrss-field-switch input:checked + span > .text-active    {padding: 2px 12px;}
 
-#customBoxesFormModal   {border-color: var( --wp-admin-theme-color );}
+#customBoxesFormModal       {border-color: var( --wp-admin-theme-color ); overflow-y: auto;}
 #customBoxesFormModal .--w22            {width: calc( 22.22% - 20px );}
 #customBoxesFormModal .description      {margin-top: 0; letter-spacing: 0.01em; font-style: italic; font-size: 13px;}
 #customBoxesFormModal #saveCustomBox    {display: block; margin-top: 4px; margin-right: 0; margin-left: auto;}
+html:has( #customBoxesFormModal:modal ) {overflow: hidden;}
 
 /* Services */
 .iqrlsserviceprice-flex       {display: flex;}
@@ -148,3 +150,46 @@ th.no-padleft		{padding-left: 0;}
 .iqrlsserviceprice-flex > :last-child     {padding-left: 4px;}
 
 #carrierServices input[type=text]	{width: 100%;}
+
+
+/**
+ * :: Media Queries
+**/
+/**
+ * Max Width 728px
+**/
+@media( max-width: 782px ) {
+
+    /**
+    * :: Utility
+    **/
+    .iqlrss-flex > .--w33,
+    .iqlrss-flex.--cols3 > *,
+    .iqlrss-flex > .--w20,
+    .iqlrss-flex.--cols4 > *,
+    .iqlrss-flex > .--w25,
+    .iqlrss-flex.--cols5 > *    {width: calc( 50% - 20px );}
+
+
+    /**
+    * :: Shipping Zones
+    **/
+    /* Custom Boxes */
+    #iqlrssCustomBoxes      {max-width: none;}
+    #iqlrssCustomBoxes tr   {display: block; margin-bottom: 20px;}
+    #iqlrssCustomBoxes td   {max-width: none;}
+    #iqlrssCustomBoxes td[data-label]:before{content: attr( data-label ) ':'; display: inline-block; margin-right: 4px; font-weight: 700;}
+    #iqlrssCustomBoxes td:empty             {display: none;}
+    #iqlrssCustomBoxes td:last-child,
+    #iqlrssCustomBoxes td:first-child       {text-align: left;}
+
+    #customBoxesFormModal .--w22 {width: calc( 50% - 20px );}
+
+    /* Services */
+    #carrierServices thead          {display: none;}
+    #carrierServices tbody tr       {display: block; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid;}
+    #carrierServices tbody tr:last-child    {border-bottom: 0;}
+    #carrierServices tbody td[data-label]:before{content: attr( data-label ) ':'; display: inline-block; margin-right: 4px; font-weight: 700;}
+    #carrierServices tbody td:empty {display: none;}
+
+}
