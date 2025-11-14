@@ -1013,11 +1013,6 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			$request = array(
 				'weight' => ( ! empty( $item['data']->get_weight() ) ) ? $item['data']->get_weight() : $default_weight,
 			);
-			$physicals = array_filter( array(
-				'length'	=> $item['data']->get_length(),
-				'width'		=> $item['data']->get_width(),
-				'height'	=> $item['data']->get_height(),
-			) );
 
 			// Return Early - Missing minimum requirement: weight.
 			if( empty( $request['weight'] ) ) {
@@ -1030,20 +1025,6 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				) );
 
 				return array();
-
-			} else if( 'weightonly' != $subtype && count( $physicals ) < 3 ) {
-
-				$this->log( sprintf(
-
-					/* translators: %1$d is the Product ID. %2$s is the Product Dimensions separated by a comma. */
-					esc_html__( 'Product ID #%1$d missing (%2$s) dimensions. Shipping calculations terminated.', 'live-rates-for-shipstation' ),
-					$item['product_id'],
-					implode( ', ', array_diff_key( array(
-						'length'	=> 'length',
-						'width'		=> 'width',
-						'height'	=> 'height',
-					), $physicals ) )
-				) );
 
 			}
 
@@ -1070,21 +1051,47 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 		}
 
+		$physicals = array_filter( array(
+			'length'	=> $dimensions['largest']['length'],
+			'width'		=> $dimensions['largest']['width'],
+			'height'	=> $dimensions['running']['height'],
+			'weight'	=> $dimensions['running']['weight'],
+		) );
+
+		// Return Early - Error - Missing dimensions to work with.
+		if( $physicals < 4 ) {
+
+			$this->log( sprintf(
+
+				/* translators: %1$d is the Product ID. %2$s is the Product Dimensions separated by a comma. */
+				esc_html__( 'OneBox rate requestion missing dimensions (%1$s). Weight is a minimum requirement. Shipping calculations terminated.', 'live-rates-for-shipstation' ),
+				implode( ', ', array_diff_key( array(
+					'length'	=> 'length',
+					'width'		=> 'width',
+					'height'	=> 'height',
+					'weight'	=> 'weight',
+				), $physicals ) )
+			) );
+
+			return array();
+
+		}
+
 		// Default - Stacked Verticially
 		return array( array(
 			'weight' => array(
-				'value' => (float)round( wc_get_weight( $dimensions['running']['weight'], $this->store_data['weight_unit'] ), 2 ),
 				'unit'	=> $this->shipStationApi->convert_unit_term( $this->store_data['weight_unit'] ),
+				'value' => (float)round( wc_get_weight( $physicals['weight'], $this->store_data['weight_unit'] ), 2 ),
 			),
 			'dimensions' => array(
 				'unit'		=> $this->shipStationApi->convert_unit_term( $this->store_data['dim_unit'] ),
 
 				// Largest
-				'length'	=> round( wc_get_dimension( $dimensions['largest']['length'], $this->store_data['dim_unit'] ), 2 ),
-				'width'		=> round( wc_get_dimension( $dimensions['largest']['width'], $this->store_data['dim_unit'] ), 2 ),
+				'length'	=> round( wc_get_dimension( $physicals['length'], $this->store_data['dim_unit'] ), 2 ),
+				'width'		=> round( wc_get_dimension( $physicals['width'], $this->store_data['dim_unit'] ), 2 ),
 
 				// Running
-				'height'	=> round( wc_get_dimension( $dimensions['running']['height'], $this->store_data['dim_unit'] ), 2 ),
+				'height'	=> round( wc_get_dimension( $physicals['height'], $this->store_data['dim_unit'] ), 2 ),
 			),
 		) );
 
