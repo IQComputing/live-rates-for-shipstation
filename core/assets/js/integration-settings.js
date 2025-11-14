@@ -4,8 +4,6 @@
  * Not really meant to be used as an object but more for
  * encapsulation and organization.
  *
- * @todo Populate (or recreate) Carriers Select2 whenever API is verified.
- *
  * @global {Object} iqlrss - Localized object of saved values.
  */
 export class shipStationSettings {

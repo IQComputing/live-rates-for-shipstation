@@ -11,9 +11,6 @@
  * License URI: https://www.gnu.org/licenses/gpl-3.0.html
  * Text Domain: live-rates-for-shipstation
  * Requires Plugins: woocommerce, woocommerce-shipstation-integration
- *
- * @todo Add warehosue locations to Shipping Zone packages.
- * @todo Look into updating warehouses through Edit Order > Order Items.
  */
 namespace IQLRSS;
 

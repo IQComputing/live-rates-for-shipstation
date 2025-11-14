@@ -665,8 +665,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 		// Try to pull from cache. This may set $this->rates
 		// Return Early - We have cached rates to work with!
-		// @todo - Re-enable
-		// $packages_hash = $this->check_packages_rate_cache( $packages );
+		$packages_hash = $this->check_packages_rate_cache( $packages );
 		if( ! empty( $this->rates ) ) {
 			return;
 
@@ -898,12 +897,11 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		}
 
 		// Add a cache key to check against.
-		// @todo - Re-enable
-		// WC()->session->set( $this->plugin_prefix, array_merge(
-		// 	WC()->session->get( $this->plugin_prefix, array() ),
-		// 	array( 'method_hash' => $packages_hash ),
-		// 	array( 'method_cache_time' => time() ),
-		// ) );
+		WC()->session->set( $this->plugin_prefix, array_merge(
+			WC()->session->get( $this->plugin_prefix, array() ),
+			array( 'method_hash' => $packages_hash ),
+			array( 'method_cache_time' => time() ),
+		) );
 
 	}
 
