@@ -1,8 +1,7 @@
 <?php
 /**
  * Box Packing class found in woocommerce-shipping-ups
- * Updated by IQComputing because many of these methods
- * have the wrong return documentation.
+ * Updated by IQComputing
  *
  * @version 2.0.1
  * @author WooThemes / Mike Jolley
