@@ -394,9 +394,17 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				'options'		=> array(
 					'individual'	=> esc_html__( 'Pack items individually', 'live-rates-for-shipstation' ),
 					'wc-box-packer'	=> esc_html__( 'Pack items using Custom Packing Boxes', 'live-rates-for-shipstation' ),
-					'byweight'		=> esc_html__( 'Pack items into one package using weight exclusively', 'live-rates-for-shipstation' ),
+					'onebox'		=> esc_html__( 'Pack items into one package derived from products', 'live-rates-for-shipstation' ),
 				),
 				'description'	=> esc_html__( 'Individually can be more costly. Custom packing boxes will automatically fit as many products in set dimensions lowering shipping costs.', 'live-rates-for-shipstation' ),
+			),
+			'packing_sub' => array(
+				'title'			=> esc_html__( 'Package Dimensions', 'live-rates-for-shipstation' ),
+				'type'			=> 'select',
+				'options'		=> array(
+					'weightonly'	=> esc_html__( 'Total weight', 'live-rates-for-shipstation' ),
+					'stacked'		=> esc_html__( 'Stacked vertically', 'live-rates-for-shipstation' ),
+				),
 			),
 			'customboxes' => array(
 				'type' => 'customboxes', // See self::generate_customboxes_html()
@@ -694,26 +702,16 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			'address_residential_indicator' => 'unknown',
 		);
 
-		// Individual Packaging
-		if( 'individual' == $packing_type ) {
-			$item_requests = $this->get_individual_requests( $packages['contents'] );
-
-		} else if( 'byweight' == $packing_type ) {
-			$item_requests = $this->get_weightbased_requests( $packages['contents'] );
-
-		// WC Boxed Packaging
-		} else {
-			$item_requests = $this->get_custombox_requests( $packages['contents'] );
-		}
-
-		// Rates groups shipping estimates by service ID.
-		$rates = array();
+		// Pack items
+		$item_requests = call_user_func( array( $this, sprintf( 'group_requestsby_%s', str_replace( '-', '_', $packing_type ) ) ), $packages['contents'] );
 
 		/**
 		 * This has to be done per package as the other rates endpoint
 		 * requires the customers address1 for verification and really
 		 * it's not much faster.
+		 * Group rates.
 		 */
+		$rates = array();
 		foreach( $item_requests as $item_id => $req ) {
 
 			// Create the API request combining the package (weight, dimensions), general request data, and the carrier info.
@@ -907,7 +905,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 *
 	 * @return Array $requests
 	 */
-	protected function get_individual_requests( $items ) {
+	protected function group_requestsby_individual( $items ) {
 
 		$item_requests 	= array();
 		$default_weight = $this->get_option( 'minweight', '' );
@@ -988,7 +986,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 *
 	 * @return Array $requests
 	 */
-	protected function get_weightbased_requests( $items ) {
+	protected function group_requestsby_onebox( $items ) {
 
 		$running_weight = 0;
 		$default_weight = $this->get_option( 'minweight', 0 );
@@ -1036,7 +1034,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 *
 	 * @return Array $requests
 	 */
-	protected function get_custombox_requests( $items ) {
+	protected function group_requestsby_wc_box_packer( $items ) {
 
 		if( ! class_exists( '\IQRLSS\WC_Box_Packer\WC_Boxpack' ) ) {
 			include_once 'wc-box-packer/class-wc-boxpack.php';
@@ -1067,37 +1065,33 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				continue;
 			}
 
-			$data = array();
+			$weight	= ( ! empty( $item['data']->get_weight() ) ) ? $item['data']->get_weight() : $default_weight;
+			$data	= array(
+				'weight' => (float)round( wc_get_weight( $weight, $this->store_data['weight_unit'] ), 2 ),
+			);
 			$physicals = array_filter( array(
-				'weight'	=> $item['data']->get_weight(),
 				'length'	=> $item['data']->get_length(),
 				'width'		=> $item['data']->get_width(),
 				'height'	=> $item['data']->get_height(),
 			) );
 
 			// Return Early - Product missing one of the 4 key dimensions.
-			if( count( $physicals ) < 4 ) {
+			if( count( $physicals ) < 3 && empty( $data['weight'] ) ) {
 				$this->log( sprintf(
 
 					/* translators: %1$d is the Product ID. %2$s is the Product Dimensions separated by a comma. */
-					esc_html__( 'Product ID #%1$d missing (%2$s) dimensions. Shipping calculations terminated.', 'live-rates-for-shipstation' ),
+					esc_html__( 'Product ID #%1$d missing (%2$s) dimensions and no weight found. Shipping calculations terminated.', 'live-rates-for-shipstation' ),
 					$item['product_id'],
 					implode( ', ', array_diff_key( array(
 						'width'		=> 'width',
 						'height'	=> 'height',
 						'length'	=> 'length',
-						'weight'	=> 'weight',
 					), $physicals ) )
 				) );
 				return array();
 			}
 
-			$data['weight'] = (float)round( wc_get_weight( $physicals['weight'], $this->store_data['weight_unit'] ), 2 );
-
-			// Unset weight to exclude it from sort
-			unset( $physicals['weight'] );
 			sort( $physicals );
-
 			$data = array(
 				'length'	=> round( wc_get_dimension( $physicals[2], $this->store_data['dim_unit'] ), 2 ),
 				'width'		=> round( wc_get_dimension( $physicals[1], $this->store_data['dim_unit'] ), 2 ),

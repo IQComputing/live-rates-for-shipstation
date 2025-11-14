@@ -27,7 +27,10 @@ export class shippingZoneSettings {
 	 */
 	customBoxesVisibility() {
 
-		document.querySelector( '.custom-boxes-control' ).addEventListener( 'change', function() {
+		document.querySelector( '.custom-boxes-control' ).addEventListener( 'change', function( e ) {
+
+			e.target.closest( 'tr' ).nextSibling.style.display = 'none';
+			document.getElementById( 'customBoxesRow' ).style.display = 'none';
 
 			/* Display Custom Boxes */
 			if( 'wc-box-packer' == this.value ) {
@@ -38,9 +41,9 @@ export class shippingZoneSettings {
 				} );
 				document.getElementById( 'customBoxesRow' ).style.display = 'table-row';
 
-			/* Don't */
-			} else {
-				document.getElementById( 'customBoxesRow' ).style.display = 'none';
+			/* Display Sub Type */
+			} else if( 'onebox' == this.value ) {
+				e.target.closest( 'tr' ).nextSibling.style.display = 'table-row';
 			}
 
 		} );
