@@ -29,7 +29,7 @@ export class shippingZoneSettings {
 
 		document.querySelector( '.custom-boxes-control' ).addEventListener( 'change', function( e ) {
 
-			e.target.closest( 'tr' ).nextSibling.style.display = 'none';
+			e.target.closest( 'tr' ).nextElementSibling.style.display = 'none';
 			document.getElementById( 'customBoxesRow' ).style.display = 'none';
 
 			/* Display Custom Boxes */
@@ -43,7 +43,7 @@ export class shippingZoneSettings {
 
 			/* Display Sub Type */
 			} else if( 'onebox' == this.value ) {
-				e.target.closest( 'tr' ).nextSibling.style.display = 'table-row';
+				e.target.closest( 'tr' ).nextElementSibling.style.display = 'table-row';
 			}
 
 		} );
