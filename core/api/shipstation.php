@@ -2,6 +2,9 @@
 /**
  * ShipStation API Helper
  *
+ * Carrier ID	: se-*
+ * Carrier Code	: ups
+ *
  * :: API Requests
  * :: Helper Methods
  */

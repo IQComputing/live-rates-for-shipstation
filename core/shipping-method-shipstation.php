@@ -2,6 +2,12 @@
 /**
  * ShipStation Live Shipping Rates Method
  *
+ * @todo Consider moving Shipping Calculations into it's own class.
+ *
+ * @link https://www.fedex.com/en-us/shipping/one-rate.html
+ * @link https://www.usps.com/ship/priority-mail.htm#flatrate
+ * @link https://www.ups.com/worldshiphelp/WSA/ENG/AppHelp/mergedProjects/CORE/Codes/Package_Type_Codes.htm
+ *
  * :: Action Hooks
  * :: Filter Hooks
  * :: Shipping Zone
@@ -429,6 +435,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		$prefix 		= $this->plugin_prefix;
 		$show_custom 	= ( 'wc-box-packer' == $this->get_option( 'packing', 'individual' ) );
 		$saved_boxes 	= $this->get_option( 'customboxes', array() );
+		$packages		= $this->get_package_options();
 
 		ob_start();
 			include 'assets/views/customboxes-table.php';
@@ -1318,6 +1325,54 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	/** :: Helper Methods :: **/
 	/**------------------------------------------------------------------------------------------------ **/
 	/**
+	 * Map known packages.
+	 * @see assets/json
+	 *
+	 * @param String $key
+	 *
+	 * @return String
+	 */
+	public function get_package_label( $key ) {
+
+		$labels = array(
+			// UPS
+			'flat_rate_envelope'	=> esc_html__( 'Flat Rate Envelope', 'live-rates-for-shipstation' ),
+			'flat_rate_legal_envelope'	=> esc_html__( 'Flat Rate Legal Envelope', 'live-rates-for-shipstation' ),
+			'flat_rate_padded_envelope'	=> esc_html__( 'Flat Rate Padded Envelope', 'live-rates-for-shipstation' ),
+			'large_envelope_or_flat'=> esc_html__( 'Large Envelope or Flat', 'live-rates-for-shipstation' ),
+			'large_flat_rate_box'	=> esc_html__( 'Large Flat Rate Box', 'live-rates-for-shipstation' ),
+			'medium_flat_rate_box'	=> esc_html__( 'Medium Flat Rate Box', 'live-rates-for-shipstation' ),
+			'small_flat_rate_box'	=> esc_html__( 'Small Flat Rate Box', 'live-rates-for-shipstation' ),
+			'regional_rate_box_a'	=> esc_html__( 'Regional Rate Box A', 'live-rates-for-shipstation' ),
+			'regional_rate_box_b'	=> esc_html__( 'Regional Rate Box B', 'live-rates-for-shipstation' ),
+
+			// USPS
+			'ups_10_kg_box'			=> esc_html__( 'UPS 10kg(22lbs) Box', 'live-rates-for-shipstation' ),
+			'ups_25_kg_box'			=> esc_html__( 'UPS 25kg (55lbs) Box', 'live-rates-for-shipstation' ),
+			'ups__express_box_large'=> esc_html__( 'UPS Express Box - Large', 'live-rates-for-shipstation' ),
+			'ups_express_box_medium'=> esc_html__( 'UPS Express Box - Medium', 'live-rates-for-shipstation' ),
+			'ups_express_box_small'	=> esc_html__( 'UPS Express Box - Small', 'live-rates-for-shipstation' ),
+			'ups_tube'				=> esc_html__( 'UPS Tube', 'live-rates-for-shipstation' ),
+			'ups_express_pak'		=> esc_html__( 'UPS Express Pak', 'live-rates-for-shipstation' ),
+			'ups_letter'			=> esc_html__( 'UPS Letter', 'live-rates-for-shipstation' ),
+
+			// FedEx
+			'fedex_10kg_box'	=> esc_html__( 'FedEx 10kg (22lbs) Box', 'live-rates-for-shipstation' ),
+			'fedex_25kg_box'	=> esc_html__( 'FedEx 25kg (55lbs) Box', 'live-rates-for-shipstation' ),
+			'fedex_extra_large_box' => esc_html__( 'FedEx Extra Large Box', 'live-rates-for-shipstation' ),
+			'fedex_large_box'	=> esc_html__( 'FedEx Large Box', 'live-rates-for-shipstation' ),
+			'fedex_medium_box'	=> esc_html__( 'FedEx Medium Box', 'live-rates-for-shipstation' ),
+			'fedex_small_box'	=> esc_html__( 'FedEx Small Box', 'live-rates-for-shipstation' ),
+			'fedex_tube'		=> esc_html__( 'FedEx Tube', 'live-rates-for-shipstation' ),
+			'fedex_envelope'	=> esc_html__( 'FedEx Envelope', 'live-rates-for-shipstation' ),
+		);
+
+		return ( isset( $labels [ $key ] ) ) ? $labels[ $key ] : esc_html__( 'Unknown Package', 'live-rates-for-shipstation' );
+
+	}
+
+
+	/**
 	 * Return an array of Price Adjustment Type options.
 	 *
 	 * @return Array
@@ -1360,6 +1415,14 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 
 	/**
+	 * Return an array of package options.
+	 *
+	 * @return Array
+	 */
+	protected function get_package_options() {}
+
+
+	/**
 	 * Format a stringified product name.
 	 * ex. 213|Shirt|optional|meta|data
 	 *
@@ -1369,7 +1432,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 *
 	 * @return String $name
 	 */
-	public function format_shipitem_name( $shipitem_name, $link = false, $context = 'edit' ) {
+	protected function format_shipitem_name( $shipitem_name, $link = false, $context = 'edit' ) {
 
 		$name = mb_strimwidth( $shipitem_name, 0, 47, '...' );
 		$name_arr = explode( '|', $shipitem_name );

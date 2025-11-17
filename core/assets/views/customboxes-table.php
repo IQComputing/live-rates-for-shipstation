@@ -131,6 +131,18 @@ function iqlrssPrintCustomBoxItem( $box ) {
 						<p class="description"><?php esc_html_e( 'The nickname is for your identification only.', 'live-rates-for-shipstation' ); ?></p>
 					</div>
 
+					<div class="iqlrss-field --required">
+						<label for="boxNickname"><?php esc_html_e( 'Nickname', 'live-rates-for-shipstation' ); ?></label>
+						<input type="text" name="nickname" id="boxNickname">
+						<p class="description"><?php esc_html_e( 'The nickname is for your identification only.', 'live-rates-for-shipstation' ); ?></p>
+					</div>
+
+					<div class="iqlrss-field">
+						<label for="boxPrice"><?php esc_html_e( 'Box Price', 'live-rates-for-shipstation' ); ?></label>
+						<input type="text" name="box_price" id="boxPrice" inputmode="decimal" class="iqlrss-numbers-only">
+						<p class="description"><?php esc_html_e( 'This box unit price will be added to the returned shipment rates.', 'live-rates-for-shipstation' ); ?></p>
+					</div>
+
 					<div class="iqlrss-field">
 						<label for="boxWeight"><?php esc_html_e( 'Box Weight', 'live-rates-for-shipstation' ); ?></label>
 						<input type="text" name="box_weight" id="boxWeight" inputmode="decimal" class="iqlrss-numbers-only">
@@ -189,12 +201,6 @@ function iqlrssPrintCustomBoxItem( $box ) {
 						<label for="boxInnerHeight"><?php esc_html_e( 'Box Inner Height', 'live-rates-for-shipstation' ); ?></label>
 						<input type="text" name="box_height_inner" id="boxInnerHeight" inputmode="decimal" class="iqlrss-numbers-only">
 						<p class="description"><?php esc_html_e( 'The box\'s inner height in inches.', 'live-rates-for-shipstation' ); ?></p>
-					</div>
-
-					<div class="iqlrss-field">
-						<label for="boxPrice"><?php esc_html_e( 'Box Price', 'live-rates-for-shipstation' ); ?></label>
-						<input type="text" name="box_price" id="boxPrice" inputmode="decimal" class="iqlrss-numbers-only">
-						<p class="description"><?php esc_html_e( 'This box unit price will be added to the returned shipment rates.', 'live-rates-for-shipstation' ); ?></p>
 					</div>
 				</div>
 
