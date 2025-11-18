@@ -181,16 +181,33 @@ class Driver {
 
 
 	/**
-	 * Return a URL to an asset (JS/CSS)
+	 * Return a URL to an asset (JS/CSS usually)
 	 *
 	 * @param String $asset
 	 *
-	 * @return String $url
+	 * @return String
 	 */
 	public static function get_asset_url( $asset ) {
 
 		return sprintf( '%s/core/assets/%s',
 			rtrim( plugin_dir_url( __FILE__ ), '\\/' ),
+			$asset
+		);
+
+	}
+
+
+	/**
+	 * Return a path to an asset.
+	 *
+	 * @param String $asset
+	 *
+	 * @return String
+	 */
+	public static function get_asset_path( $asset ) {
+
+		return sprintf( '%s/core/assets/%s',
+			rtrim( plugin_dir_path( __FILE__ ), '\\/' ),
 			$asset
 		);
 

@@ -119,19 +119,45 @@ function iqlrssPrintCustomBoxItem( $box ) {
 			iqlrssPrintCustomBoxItem( array() );
 
 		?><tbody></table>
-		<dialog id="customBoxesFormModal" class="iqlrss-modal" data-index="-1">
+		<dialog id="customBoxesFormModal" class="iqlrss-modal">
 			<h3 class="iqlrss-modal-title --tab"><?php esc_html_e( 'Custom Box', 'live-rates-for-shipstation' ); ?></h3>
 			<button type="button"><span class="screen-reader-text"><?php esc_html_e( 'Close Custom Box Modal', 'live-rates-for-shipstation' ); ?></span><i class="dashicons dashicons-no"></i></button>
 			<div class="iqlrss-modal-content">
 
 				<div class="iqlrss-flex --flexwrap --cols3">
-					<div class="iqlrss-field --required">
-						<label for="boxNickname"><?php esc_html_e( 'Nickname', 'live-rates-for-shipstation' ); ?></label>
-						<input type="text" name="nickname" id="boxNickname">
-						<p class="description"><?php esc_html_e( 'The nickname is for your identification only.', 'live-rates-for-shipstation' ); ?></p>
+					<div class="iqlrss-field">
+						<label for="boxPreset"><?php esc_html_e( 'Package Preset', 'live-rates-for-shipstation' ); ?></label>
+						<select name="box_preset" id="boxPreset"><?php
+
+							$currOptGroup = '';
+							foreach( $packages as $carrier_code => $parr ) {
+
+								// Categorized Optgroup
+								if( is_array( $parr ) && isset( $parr['label'] ) ) {
+
+									printf( '<optgroup label="%s">', esc_attr( $parr['label'] ) );
+										foreach( $parr['packages'] as $package ) {
+											printf( '<option value="%s" data-preset="%s">%s</option>',
+												esc_attr( $package['code'] ),
+												esc_attr( json_encode( $package ) ),
+												esc_html( $package['label'] )
+											);
+										}
+									print( '</optgroup>' );
+
+								// Regular Option
+								} else if( ! is_numeric( $carrier_code ) && is_string( $parr ) ) {
+									printf( '<option value="%s" data-preset="">%s</option>',
+										esc_attr( $carrier_code ),
+										esc_html( $parr )
+									);
+								}
+							}
+						?></select>
+						<p class="description"><?php esc_html_e( 'Some carriers give better rates when using their packages.', 'live-rates-for-shipstation' ); ?></p>
 					</div>
 
-					<div class="iqlrss-field --required">
+					<div class="iqlrss-field --required --w66">
 						<label for="boxNickname"><?php esc_html_e( 'Nickname', 'live-rates-for-shipstation' ); ?></label>
 						<input type="text" name="nickname" id="boxNickname">
 						<p class="description"><?php esc_html_e( 'The nickname is for your identification only.', 'live-rates-for-shipstation' ); ?></p>

@@ -125,7 +125,10 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 * @return void
 	 */
 	private function action_hooks() {
+
 		add_action( 'woocommerce_update_options_shipping_' . $this->id, array( $this, 'process_admin_options' ) );
+		add_action( 'admin_footer', array( $this, 'hide_zone_setting_fields' ) );
+
 	}
 
 
@@ -138,6 +141,28 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 		( new \IQLRSS\Core\Settings_Shipstation() )->clear_cache();
 		return parent::process_admin_options();
+
+	}
+
+
+	/**
+	 * Hide Shipping Zone setting fields
+	 * 1). Since they're row options we rarely have markup control over.
+	 * 2). Since modules load JS a bit later.
+	 *
+	 * @return void
+	 */
+	public function hide_zone_setting_fields() {
+
+		?><script type="text/javascript">
+
+			/* Hide onebox when not set */
+			if( document.getElementById( 'woocommerce_iqlrss_shipstation_packing' ) ) { ( function() {
+				if( 'onebox' != document.getElementById( 'woocommerce_iqlrss_shipstation_packing' ).value ) {
+					document.getElementById( 'woocommerce_iqlrss_shipstation_packing' ).closest( 'tr' ).nextElementSibling.style.display = 'none';
+				}
+			} )(); }
+		</script><?php
 
 	}
 
@@ -475,6 +500,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 				$boxes[] = array(
 					'active' => absint( $json['active'] ),
+					'preset' => sanitize_text_field( $json['preset'] ),
 					'nickname' => sanitize_text_field( $json['nickname'] ),
 					'outer' => array(
 						'length'	=> floatval( $json['outer']['length'] ),
@@ -491,34 +517,11 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					'price'		=> floatval( $json['price'] ),
 				);
 
-				// Next!
-				continue;
 			}
-
-			$vals = array_filter( $box_arr, 'is_numeric' );
-			if( count( $vals ) < 7 ) continue;
-
-			$boxes[] = array(
-				'outer' => array(
-					'length'	=> floatval( $box_arr['ol'] ),
-					'width'		=> floatval( $box_arr['ow'] ),
-					'height'	=> floatval( $box_arr['oh'] ),
-				),
-				'inner' => array(
-					'length'	=> floatval( $box_arr['il'] ),
-					'width'		=> floatval( $box_arr['iw'] ),
-					'height'	=> floatval( $box_arr['ih'] ),
-				),
-				'weight'	=> floatval( $box_arr['w'] ),
-				'weight_max'=> floatval( $box_arr['wm'] ),
-			);
-
 		}
 
 		usort( $boxes, function( $arrA, $arrB ) {
-			if( isset( $arrA['nickname'] ) && $arrB['nickname'] ) {
-				return strcasecmp( $arrA['nickname'], $arrB['nickname'] );
-			}
+			return strcasecmp( $arrA['nickname'], $arrB['nickname'] );
 		} );
 
 		return $boxes;
@@ -1336,20 +1339,20 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 		$labels = array(
 			// UPS
-			'flat_rate_envelope'	=> esc_html__( 'Flat Rate Envelope', 'live-rates-for-shipstation' ),
-			'flat_rate_legal_envelope'	=> esc_html__( 'Flat Rate Legal Envelope', 'live-rates-for-shipstation' ),
-			'flat_rate_padded_envelope'	=> esc_html__( 'Flat Rate Padded Envelope', 'live-rates-for-shipstation' ),
-			'large_envelope_or_flat'=> esc_html__( 'Large Envelope or Flat', 'live-rates-for-shipstation' ),
-			'large_flat_rate_box'	=> esc_html__( 'Large Flat Rate Box', 'live-rates-for-shipstation' ),
-			'medium_flat_rate_box'	=> esc_html__( 'Medium Flat Rate Box', 'live-rates-for-shipstation' ),
-			'small_flat_rate_box'	=> esc_html__( 'Small Flat Rate Box', 'live-rates-for-shipstation' ),
-			'regional_rate_box_a'	=> esc_html__( 'Regional Rate Box A', 'live-rates-for-shipstation' ),
-			'regional_rate_box_b'	=> esc_html__( 'Regional Rate Box B', 'live-rates-for-shipstation' ),
+			'flat_rate_envelope'	=> esc_html__( 'USPS Flat Rate Envelope', 'live-rates-for-shipstation' ),
+			'flat_rate_legal_envelope'	=> esc_html__( 'USPS Flat Rate Legal Envelope', 'live-rates-for-shipstation' ),
+			'flat_rate_padded_envelope'	=> esc_html__( 'USPS Flat Rate Padded Envelope', 'live-rates-for-shipstation' ),
+			'large_envelope_or_flat'=> esc_html__( 'USPS Large Envelope or Flat', 'live-rates-for-shipstation' ),
+			'large_flat_rate_box'	=> esc_html__( 'USPS Large Flat Rate Box', 'live-rates-for-shipstation' ),
+			'medium_flat_rate_box'	=> esc_html__( 'USPS Medium Flat Rate Box', 'live-rates-for-shipstation' ),
+			'small_flat_rate_box'	=> esc_html__( 'USPS Small Flat Rate Box', 'live-rates-for-shipstation' ),
+			'regional_rate_box_a'	=> esc_html__( 'USPS Regional Rate Box A', 'live-rates-for-shipstation' ),
+			'regional_rate_box_b'	=> esc_html__( 'USPS Regional Rate Box B', 'live-rates-for-shipstation' ),
 
 			// USPS
-			'ups_10_kg_box'			=> esc_html__( 'UPS 10kg(22lbs) Box', 'live-rates-for-shipstation' ),
+			'ups_10_kg_box'			=> esc_html__( 'UPS 10kg (22lbs) Box', 'live-rates-for-shipstation' ),
 			'ups_25_kg_box'			=> esc_html__( 'UPS 25kg (55lbs) Box', 'live-rates-for-shipstation' ),
-			'ups__express_box_large'=> esc_html__( 'UPS Express Box - Large', 'live-rates-for-shipstation' ),
+			'ups__express_box_large'=> esc_html__( 'UPS Express Box - Large', 'live-rates-for-shipstation' ), // Why does this have an extra underscore? Ask ShipStation.
 			'ups_express_box_medium'=> esc_html__( 'UPS Express Box - Medium', 'live-rates-for-shipstation' ),
 			'ups_express_box_small'	=> esc_html__( 'UPS Express Box - Small', 'live-rates-for-shipstation' ),
 			'ups_tube'				=> esc_html__( 'UPS Tube', 'live-rates-for-shipstation' ),
@@ -1365,6 +1368,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			'fedex_small_box'	=> esc_html__( 'FedEx Small Box', 'live-rates-for-shipstation' ),
 			'fedex_tube'		=> esc_html__( 'FedEx Tube', 'live-rates-for-shipstation' ),
 			'fedex_envelope'	=> esc_html__( 'FedEx Envelope', 'live-rates-for-shipstation' ),
+			'fedex_pak'			=> esc_html__( 'FedEx Padded Pak', 'live-rates-for-shipstation' ),
 		);
 
 		return ( isset( $labels [ $key ] ) ) ? $labels[ $key ] : esc_html__( 'Unknown Package', 'live-rates-for-shipstation' );
@@ -1419,7 +1423,75 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 *
 	 * @return Array
 	 */
-	protected function get_package_options() {}
+	protected function get_package_options() {
+
+		$data = array(
+			'usps' => array(
+				'label'		=> esc_html__( 'USPS', 'live-rates-for-shipstation' ),
+				'packages'	=> json_decode( file_get_contents( \IQLRSS\Driver::get_asset_path( 'json/usps-packages.json' ) ), true ),
+			),
+			'ups'	=> array(
+				'label'		=> esc_html__( 'UPS', 'live-rates-for-shipstation' ),
+				'packages'	=> json_decode( file_get_contents( \IQLRSS\Driver::get_asset_path( 'json/ups-packages.json' ) ), true ),
+			),
+			'fedex' => array(
+				'label'		=> esc_html__( 'FedEx', 'live-rates-for-shipstation' ),
+				'packages'	=> json_decode( file_get_contents( \IQLRSS\Driver::get_asset_path( 'json/fedex-packages.json' ) ), true ),
+			),
+		);
+
+		// Append Translated Labels
+		foreach( $data as &$carriers ) {
+
+			$codes = wp_list_pluck( $carriers['packages'], 'code' );
+			$dupes = array_count_values( $codes );
+
+			foreach( $carriers['packages'] as &$package ) {
+
+				$package['label'] = $this->get_package_label( $package['code'] );
+				if( $dupes[ $package['code'] ] > 1 ) {
+					$package['label'] .= sprintf( ' (%s x %s x %s)', $package['length'], $package['width'], $package['height'] );
+				}
+			}
+
+			usort( $carriers['packages'], fn( $pa, $pb ) => strcmp( $pa['label'], $pb['label'] ) );
+
+		}
+
+		$data = array( '' => esc_html__( '-- Select Package Preset --', 'live-rates-for-shipstation' ) ) + $data;
+
+
+		/**
+		 * Allow hooking into Custom Package presets for management.
+		 *
+		 * @hook filter
+		 *
+		 * @param Array $data - Array( Array(
+		 * 		'label' => 'Optional Optgroup Name',
+		 * 		'packages' => Array(
+		 * 			'label'  => '',
+		 * 			'code'   => '',
+		 * 			'length' => 0,
+		 * 			'width'  => 0,
+		 * 			'height' => 0,
+		 * 			'weight_max' => 0,
+		 * 		)
+		 * ) )
+		 * @param \IQLRSS\Core\Shipping_Method_Shipstation $this
+		 *
+		 * @return Array $data
+		 */
+		$packages = apply_filters( 'iqlrss/zone/package_presets', $data, $this );
+
+		// Maybe reset if what we're given is not what we expect.
+		if( ! is_array( $packages ) ) $packages = $data;
+
+		// Maybe provide a default options / text when empty.
+		if( empty( $packages ) ) $packages = array( '' => esc_html__( 'No package presets.', 'live-rates-for-shipstation' ) );
+
+		return $packages;
+
+	}
 
 
 	/**

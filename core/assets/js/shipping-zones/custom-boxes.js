@@ -120,7 +120,9 @@ export class CustomBoxes {
             $modal.querySelectorAll( '.iqlrss-field' ).forEach( ( $fieldWrap ) => {
 
                 /* Set required attribute */
-                const $input = $fieldWrap.querySelector( 'input' );
+                const $input    = $fieldWrap.querySelector( 'input' );
+                const $select   = $fieldWrap.querySelector( 'select' );
+
                 if( $fieldWrap.classList.contains( '--required' ) ) {
                     $input.setAttribute( 'required', '' );
                 }
@@ -128,17 +130,19 @@ export class CustomBoxes {
                 /* Associate data. */
                 if( ! util.isEmpty( data ) ) {
 
-                    const data_key = $input.name.replace( 'box_', '' );
+                    const $field   = $input ?? $select;
+                    const data_key = $field.name.replace( 'box_', '' );
+
                     if( data_key in data ) {
-                        $input.value = data[ data_key ];
+                        $field.value = data[ data_key ];
                     } else if( data_key.includes( 'inner' ) || [ 'length', 'width', 'height' ].includes( data_key ) ) {
 
                         if( data_key.includes( 'toggle' ) ) {
-                            $input.checked = ( ! Object.values( data.inner ).every( v => 0 == v ) );
-                            $input.dispatchEvent( new Event( 'change' ) );
+                            $field.checked = ( ! Object.values( data.inner ).every( v => 0 == v ) );
+                            $field.dispatchEvent( new Event( 'change' ) );
                         } else {
-                            $input.value = data[ ( data_key.includes( 'inner' ) ) ? 'inner' : 'outer' ][ ( data_key.includes( 'inner' ) ) ? data_key.replace( '_inner', '' ) : data_key ];
-                            $input.value = ( '0' == $input.value ) ? '' : $input.value;
+                            $field.value = data[ ( data_key.includes( 'inner' ) ) ? 'inner' : 'outer' ][ ( data_key.includes( 'inner' ) ) ? data_key.replace( '_inner', '' ) : data_key ];
+                            $field.value = ( '0' == $field.value ) ? '' : $field.value;
                         }
 
                     }
@@ -247,6 +251,8 @@ export class CustomBoxes {
 
         }
 
+
+        /* Inner Dimensions Toggle */
         document.querySelectorAll( '#customBoxesFormModal [class*="field-switch"] [type="checkbox"]' ).forEach( ( $checkbox ) => {
             $checkbox.addEventListener( 'change', ( e ) => {
                 e.target.value = e.target.checked; /* Necessary for "easier" JSON mapping */
@@ -256,6 +262,28 @@ export class CustomBoxes {
             } );
         } );
 
+        /* Preset Select */
+        document.getElementById( 'boxPreset' ).addEventListener( 'change', ( e ) => {
+
+            const $modal    = document.getElementById( 'customBoxesFormModal' );
+            const selection = e.target.selectedOptions[0];
+
+            this.modalReset( false );
+
+            if( ! selection.value ) {
+                return e.target.value = selection.value;
+            }
+
+            const json = JSON.parse( selection.dataset.preset );
+            $modal.querySelector( '[name="nickname"]' ).value   = selection.innerText;
+            $modal.querySelector( '[name="box_length"]' ).value = json['length'];
+            $modal.querySelector( '[name="box_width"]' ).value  = json['width'];
+            $modal.querySelector( '[name="box_height"]' ).value = json['height'];
+            $modal.querySelector( '[name="box_weight_max"]' ).value = json['weight_max'];
+
+        } );
+
+        /* Submit */
         document.getElementById( 'saveCustomBox' ).addEventListener( 'click', ( e ) => this.processModalSave( e ) );
 
     }
@@ -286,6 +314,7 @@ export class CustomBoxes {
          */
         const mapJson = ( fd ) => {
             return {
+                preset: fd.get( 'box_preset' ),
                 nickname: fd.get( 'nickname' ),
                 outer: {
                     length: fd.get( 'box_length' ),
@@ -418,7 +447,9 @@ export class CustomBoxes {
         /* Validate Required Fields */
         $modal.querySelectorAll( '.iqlrss-field' ).forEach( ( $fieldWrap ) => {
 
-            const $input = $fieldWrap.querySelector( 'input' );
+            const $input  = $fieldWrap.querySelector( 'input' );
+            const $select = $fieldWrap.querySelector( 'select' );
+            const $field  = $input ?? $select;
 
             /* Skip - Field not active, clear their error texts. */
             if( ( 'enabledby' in $fieldWrap.dataset ) && ! $fieldWrap.classList.contains( 'enabled' ) ) {
@@ -431,7 +462,7 @@ export class CustomBoxes {
             }
 
             if( $fieldWrap.querySelector( '.iqlrss-errortext' ) ) $fieldWrap.querySelector( '.iqlrss-errortext' ).remove();
-            modalData.append( $input.name, $input.value );
+            modalData.append( $field.name, $field.value );
 
         } );
 
@@ -476,9 +507,12 @@ export class CustomBoxes {
 
     /**
      * Reset the modal fields to their default states.
+     *
+     * @param {Boolean} dispatch - Wether to run change and input events.
      */
-    modalReset() {
+    modalReset( dispatch ) {
 
+        const dispatchEvents = dispatch ?? true;
         const $modal = document.getElementById( 'customBoxesFormModal' );
         $modal.querySelectorAll( '.iqlrss-field' ).forEach( ( $fieldWrap ) => {
 
@@ -494,8 +528,10 @@ export class CustomBoxes {
                 util.css( $fieldWrap, { display: 'none' } );
             }
 
-            $field.dispatchEvent( new Event( 'input' ) );
-            $field.dispatchEvent( new Event( 'change' ) );
+            if( dispatchEvents ) {
+                $field.dispatchEvent( new Event( 'input' ) );
+                $field.dispatchEvent( new Event( 'change' ) );
+            }
 
         } );
 

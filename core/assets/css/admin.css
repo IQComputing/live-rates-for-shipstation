@@ -25,7 +25,8 @@
 .iqlrss-flex[class*="--cols"] > *   {margin: 10px;}
 
 .iqlrss-field label[for]                {display: block; margin-bottom: 4px;}
-.iqlrss-field:not(.--complex) input     {width: 100%;}
+.iqlrss-field:not(.--complex) input,
+.iqlrss-field:not(.--complex) select    {width: 100%;}
 .iqlrss-field[data-enabledby]           {display: none;}
 .iqlrss-field .description              {margin-top: 0; letter-spacing: 0.01em; font-style: italic; font-size: 13px;}
 
@@ -134,10 +135,12 @@ th.no-padleft		{padding-left: 0;}
 #iqlrssCustomBoxes .iqlrss-field-switch input:checked + span > .text-active    {padding: 2px 12px;}
 
 #customBoxesFormModal       {border-color: var( --wp-admin-theme-color ); overflow-y: auto;}
+#customBoxesFormModal .--w66            {width: calc( 66.66% - 20px );}
 #customBoxesFormModal .--w22            {width: calc( 22.22% - 20px );}
 #customBoxesFormModal .description      {margin-top: 0; letter-spacing: 0.01em; font-style: italic; font-size: 13px;}
 #customBoxesFormModal #saveCustomBox    {display: block; margin-top: 4px; margin-right: 0; margin-left: auto;}
 html:has( #customBoxesFormModal:modal ) {overflow: hidden;}
+#customBoxesFormModal .iqlrss-field select  {width: 100%; max-width: none;}
 
 /* Services */
 .iqrlsserviceprice-flex       {display: flex;}
