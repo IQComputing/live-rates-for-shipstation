@@ -1213,6 +1213,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				),
 				'packed' => $packed_items,
 				'price'	 => ( ! empty( $package->data ) ) ? $package->data['price'] : 0,
+				'package_code' => ( ! empty( $package->data ) ) ? $package->data['preset'] : 'package',
 			);
 
 			$box_log[] = array(
