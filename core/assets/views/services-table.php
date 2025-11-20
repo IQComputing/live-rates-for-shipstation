@@ -6,6 +6,8 @@
  * Generate a table based on saved carriers and their rates.
  * Pull in new rates based on selected carriers.
  *
+ * phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+ *
  * @param \IQLRSS\Core\Shipping_Method_Shipstation $this
  * @param \IQLRSS\Core\Api\Shipstation $shipStationAPI
  * @param String $prefix - Plugin prefix
@@ -230,3 +232,10 @@ $global_adjustment_type = ( empty( $global_adjustment_type ) && ! empty( $global
 		</table>
 	</td>
 </tr>
+<?php
+/**
+ * PCP is not picking up that this is a method view.
+ * Disabled at the top, but needs reenabling as the system reads the files.
+ *
+ * phpcs:enable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+ */

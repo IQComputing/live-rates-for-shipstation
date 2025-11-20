@@ -4,7 +4,7 @@
  * Plugin URI: https://iqcomputing.com/contact/
  * Description: ShipStation shipping method with live rates.
  * Version: 1.0.8
- * Requries at least: 5.9
+ * Requries at least: 6.2
  * Author: IQComputing
  * Author URI: https://iqcomputing.com/
  * License: GPLv3 or later
@@ -148,14 +148,14 @@ class Driver {
 		 * All these transients are prefixed with our plugins unique string slug.
 		 * The first WHERE ensures only `_transient_` and the 2nd ensures only our plugins transients.
 		 */
-		$wpdb->query( $wpdb->prepare( "DELETE FROM %i WHERE option_name LIKE %s AND option_name LIKE %s",
+		$wpdb->query( $wpdb->prepare( "DELETE FROM %i WHERE option_name LIKE %s AND option_name LIKE %s", // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
 			$wpdb->options,
 			$wpdb->esc_like( '_transient_' ) . '%',
 			'%' . $wpdb->esc_like( '_' . static::get( 'slug' ) . '_' ) . '%'
 		) );
 
 		// Set transient to clear any WC_Session caches if they are found.
-		$expires = absint( apply_filters( 'wc_session_expiration', DAY_IN_SECONDS * 2 ) );
+		$expires = absint( apply_filters( 'wc_session_expiration', DAY_IN_SECONDS * 2 ) ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 		set_transient( static::plugin_prefix( 'wcs_timeout' ), time(), $expires );
 
 	}

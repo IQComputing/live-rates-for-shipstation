@@ -6,6 +6,8 @@
  * Generate a dynamic table where the user can create, update, and delete custom boxes
  * with dimensions and weights. These boxes will be used for automated product packing.
  *
+ * phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+ *
  * @param \IQLRSS\Core\Shipping_Method_Shipstation $this
  * @param String $prefix - Plugin prefix.
  * @param Boolean $show_custom - Whether to show the customBoxes table.
@@ -93,7 +95,7 @@ function iqlrssPrintCustomBoxItem( $box ) {
 		$item_html .= '</td>';
 
 	$item_html .= '</tr>';
-	print( $item_html );
+	print( $item_html ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 
 	++$boxNum;
 
@@ -235,3 +237,10 @@ function iqlrssPrintCustomBoxItem( $box ) {
 		</dialog>
     </td>
 </tr>
+<?php
+/**
+ * PCP is not picking up that this is a method view.
+ * Disabled at the top, but needs reenabling as the system reads the files.
+ *
+ * phpcs:enable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+ */
