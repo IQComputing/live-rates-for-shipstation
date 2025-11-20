@@ -138,7 +138,7 @@ export class CustomBoxes {
                     } else if( data_key.includes( 'inner' ) || [ 'length', 'width', 'height' ].includes( data_key ) ) {
 
                         if( data_key.includes( 'toggle' ) ) {
-                            $field.checked = ( ! Object.values( data.inner ).every( v => 0 == v ) );
+                            $field.checked = ( ! Object.values( data.inner ).every( v => ( null === v || 0 == v ) ) );
                             $field.dispatchEvent( new Event( 'change' ) );
                         } else {
                             $field.value = data[ ( data_key.includes( 'inner' ) ) ? 'inner' : 'outer' ][ ( data_key.includes( 'inner' ) ) ? data_key.replace( '_inner', '' ) : data_key ];
@@ -270,9 +270,8 @@ export class CustomBoxes {
 
             this.modalReset( false );
 
-            if( ! selection.value ) {
-                return e.target.value = selection.value;
-            }
+            e.target.value = selection.value;
+            if( ! selection.value ) return;
 
             const json = JSON.parse( selection.dataset.preset );
             $modal.querySelector( '[name="nickname"]' ).value   = selection.innerText;
@@ -355,15 +354,16 @@ export class CustomBoxes {
                 box.outer.length,
                 box.outer.width,
                 box.outer.height,
-            ].join( 'x' );
+            ].join( ' x ' );
 
             /* Inner Dimensions */
-            if( 'inner' in box && ! Object.values( box.inner ).every( v => 0 == v ) ) {
+            console.log( box );
+            if( 'inner' in box && ! Object.values( box.inner ).every( v => ( null === v || 0 == v ) ) ) {
                 $clone.querySelector( '[data-assoc="box_dimensions"]' ).innerText += ' (' + [
                     box.inner.length,
                     box.inner.width,
                     box.inner.height,
-                ].join( 'x' ) + ')';
+                ].join( ' x ' ) + ')';
             }
 
             /* Price */

@@ -61,8 +61,8 @@ function iqlrssPrintCustomBoxItem( $box ) {
 		// Package / Dimensions
 		$item_html .= sprintf( '<td data-assoc="box_dimensions" data-label="%s">%s%s</td>',
 			esc_attr__( 'Box Dimensions', 'live-rates-for-shipstation' ),
-			( is_array( $box_arr['outer'] ) ) ? implode( 'x', $box_arr['outer'] ) : '',
-			( is_array( $box_arr['inner'] ) && ! empty( array_filter( $box_arr['inner'] ) ) ) ? ' (' . implode( 'x', $box_arr['inner'] ) . ')' : ''
+			( is_array( $box_arr['outer'] ) ) ? implode( ' x ', $box_arr['outer'] ) : '',
+			( is_array( $box_arr['inner'] ) && ! empty( array_filter( $box_arr['inner'] ) ) ) ? ' (' . implode( ' x ', $box_arr['inner'] ) . ')' : ''
 		);
 
 		// Price
