@@ -285,7 +285,7 @@ class apiVerificationButton {
 			/* Error- slidedown */
 			if( ! json.success ) {
 				if( 'v1' == this.#type ){ iqlrss.apiv1_verified = false; } else { iqlrss.api_verified = false };
-				rowAddError( $apiRow, ( json.data.length && 'string' == typeof json.data ) ? json.data : iqlrss.text.error_rest_generic );
+				rowAddError( $apiRow, ( json.data.length && typeof json.data === 'string' ) ? json.data : iqlrss.text.error_rest_generic );
 				return false;
 			}
 
@@ -309,10 +309,10 @@ class apiVerificationButton {
 				 * @jquery
 				 * Reinitialize selectWoo with carriers pulled async.
 				 */
-				if( $elm.name.includes( 'carriers' ) && ! $elm.querySelector( 'option:not([value=""])' ) && 'undefined' !== typeof jQuery ) {
+				if( $elm.name.includes( 'carriers' ) && ! $elm.querySelector( 'option:not([value=""])' ) && typeof jQuery !== 'undefined' ) {
 
 					const selectwoo_args = jQuery( $elm ).data( 'select2' ).options.options || {};
-					if( 'undefined' !== typeof jQuery.fn.selectWoo ) {
+					if( typeof jQuery.fn.selectWoo !== 'undefined' ) {
 						fetch( iqlrss.rest.settings, {
 							method: 'POST',
 							headers: {

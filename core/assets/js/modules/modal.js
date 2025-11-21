@@ -185,7 +185,7 @@ export class modal {
      * @return {Boolean} this.#data.modified
      */
     wasModified( was ) {
-        if( 'undefined' == typeof was ) return this.#data.modified;
+        if( typeof was === 'undefined' ) return this.#data.modified;
         this.#data.modified = Boolean( was );
     }
 

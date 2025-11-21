@@ -68,8 +68,8 @@ export function getProp( obj, prop, ifnull ) {
  */
 export function isEmpty( val ) {
 
-	if( 'undefined' === typeof val || null === val ) return true;
-	if( 'object' === typeof val ) return ! Boolean( Object.keys( val ).length );
+	if( typeof val === 'undefined' || null === val ) return true;
+	if( typeof val === 'object' ) return ! Boolean( Object.keys( val ).length );
 
 	return ! Boolean( ( val ) );
 
