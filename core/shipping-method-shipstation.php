@@ -515,6 +515,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					'weight'	=> floatval( $json['weight'] ),
 					'weight_max'=> floatval( $json['weight_max'] ),
 					'price'		=> floatval( $json['price'] ),
+					'carrier_id'=> ( isset( $json['carrier'] ) ) ? sanitize_text_field( $json['carrier'] ) : '',
 				);
 
 			}
@@ -873,8 +874,8 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 				// WooCommerce skips serialized data when outputting order item meta, this is a workaround.
 				// See hooks above for formatting.
-				$rate_arr['meta_data']['rates'] = json_encode( $rate_arr['meta_data']['rates'] );
-				$rate_arr['meta_data']['boxes'] = json_encode( $rate_arr['meta_data']['boxes'] );
+				$rate_arr['meta_data']['rates'] = wp_json_encode( $rate_arr['meta_data']['rates'] );
+				$rate_arr['meta_data']['boxes'] = wp_json_encode( $rate_arr['meta_data']['boxes'] );
 
 				$this->add_rate( $rate_arr );
 			}
@@ -899,8 +900,8 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 			// WooCommerce skips serialized data when outputting order item meta, this is a workaround.
 			// See hooks above for formatting.
-			$rates[ $lowest_service ]['meta_data']['rates'] = json_encode( $rates[ $lowest_service ]['meta_data']['rates'] );
-			$rates[ $lowest_service ]['meta_data']['boxes'] = json_encode( $rates[ $lowest_service ]['meta_data']['boxes'] );
+			$rates[ $lowest_service ]['meta_data']['rates'] = wp_json_encode( $rates[ $lowest_service ]['meta_data']['rates'] );
+			$rates[ $lowest_service ]['meta_data']['boxes'] = wp_json_encode( $rates[ $lowest_service ]['meta_data']['boxes'] );
 
 			$this->add_rate( $rates[ $lowest_service ] );
 
@@ -1120,6 +1121,20 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			include_once 'wc-box-packer/class-wc-boxpack.php';
 		}
 
+
+		$enabled_services = $this->get_enabled_services();
+		$global_carriers  = $this->shipStationApi->get_carriers();
+		$saved_carriers   = array_intersect_key( $global_carriers, $enabled_services );
+		$carriers_by_code = array_combine( array_column( $saved_carriers, 'carrier_code' ), array_keys( $saved_carriers ) );
+
+		// Try to match carrier code.
+		if( isset( $carriers_by_code[ $carrier_partial ] ) ) {
+			$carrier_id = $carriers_by_code[ $carrier_partial ];
+		} else if( isset( $carriers_by_code[ $carrier_partial . '_walleted' ] ) ) {
+			$carrier_id = $carriers_by_code[ $carrier_partial . '_walleted' ];
+		}
+
+
 		$item_requests 	= array();
 		$wc_boxpack 	= new WC_Box_Packer\WC_Boxpack();
 		$boxes 			= $this->get_option( 'customboxes', array() );
@@ -1213,7 +1228,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				),
 				'packed' => $packed_items,
 				'price'	 => ( ! empty( $package->data ) ) ? $package->data['price'] : 0,
-				'package_code' => ( ! empty( $package->data ) ) ? $package->data['preset'] : 'package',
+				'package_code' => ( ! empty( $package->data ) ) ? $package->data['preset'] : '',
 			);
 
 			$box_log[] = array(
@@ -1289,37 +1304,6 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		}
 
 		return $hash;
-
-	}
-
-
-	/**
-	 * Generate a hash key based off of the given packages.
-	 *
-	 * @param Array $packages
-	 *
-	 * @return String $hash
-	 */
-	protected function generate_packages_cache_key( $packages ) {
-
-		// Maybe skip if cache was cleared.
-		$session 	= WC()->session->get( $this->plugin_prefix, array() );
-		$cleartime 	= get_transient( \IQLRSS\Driver::plugin_prefix( 'wcs_timeout' ) );
-		if( isset( $session['method_cache_time'] ) && $cleartime > $session['method_cache_time'] ) {
-			return '';
-		}
-
-		$keys = array();
-		foreach( $packages['contents'] as $key => $package ) {
-			$keys[] = array(
-				$key,
-				$package['quantity'],
-				$package['line_total'],
-			);
-		}
-
-		$hash = md5( wp_json_encode( $keys ) ) . \WC_Cache_Helper::get_transient_version( 'shipping' );
-		return ( ! empty( $keys ) ) ? $hash : '';
 
 	}
 
@@ -1426,6 +1410,16 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 */
 	protected function get_package_options() {
 
+		$packages = wp_cache_get( 'packages', $this->plugin_prefix );
+		if( ! empty( $packages ) ) {
+			return $packages;
+		}
+
+		$enabled_services = $this->get_enabled_services();
+		$global_carriers  = $this->shipStationApi->get_carriers();
+		$saved_carriers   = array_intersect_key( $global_carriers, $enabled_services );
+		$carriers_by_code = array_combine( array_column( $saved_carriers, 'carrier_code' ), array_keys( $saved_carriers ) );
+
 		$data = array(
 			'usps' => array(
 				'label'		=> esc_html__( 'USPS', 'live-rates-for-shipstation' ),
@@ -1442,16 +1436,27 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		);
 
 		// Append Translated Labels
-		foreach( $data as &$carriers ) {
+		foreach( $data as $carrier_partial => &$carriers ) {
 
 			$codes = wp_list_pluck( $carriers['packages'], 'code' );
 			$dupes = array_count_values( $codes );
+
+			// Try to match carrier code.
+			if( isset( $carriers_by_code[ $carrier_partial ] ) ) {
+				$carrier_id = $carriers_by_code[ $carrier_partial ];
+			} else if( isset( $carriers_by_code[ $carrier_partial . '_walleted' ] ) ) {
+				$carrier_id = $carriers_by_code[ $carrier_partial . '_walleted' ];
+			}
 
 			foreach( $carriers['packages'] as &$package ) {
 
 				$package['label'] = $this->get_package_label( $package['code'] );
 				if( $dupes[ $package['code'] ] > 1 ) {
 					$package['label'] .= sprintf( ' (%s x %s x %s)', $package['length'], $package['width'], $package['height'] );
+				}
+
+				if( ! empty( $carrier_id ) ) {
+					$package['carrier_id'] = $carrier_id;
 				}
 			}
 
@@ -1463,7 +1468,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 
 		/**
-		 * Allow hooking into Custom Package presets for management.
+		 * Allow hooking into Custom Package presets for 3rd party management.
 		 *
 		 * @hook filter
 		 *
@@ -1487,8 +1492,14 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		// Maybe reset if what we're given is not what we expect.
 		if( ! is_array( $packages ) ) $packages = $data;
 
+		// Cache results to avoid multiple file reads per request.
+		if( ! empty( $packages ) ) {
+			wp_cache_add( 'packages', $packages, $this->plugin_prefix );
+
 		// Maybe provide a default options / text when empty.
-		if( empty( $packages ) ) $packages = array( '' => esc_html__( 'No package presets.', 'live-rates-for-shipstation' ) );
+		} else {
+			$packages = array( '' => esc_html__( 'No package presets.', 'live-rates-for-shipstation' ) );
+		}
 
 		return $packages;
 

@@ -141,7 +141,7 @@ function iqlrssPrintCustomBoxItem( $box ) {
 										foreach( $parr['packages'] as $package ) {
 											printf( '<option value="%s" data-preset="%s">%s</option>',
 												esc_attr( $package['code'] ),
-												esc_attr( json_encode( $package ) ),
+												esc_attr( wp_json_encode( $package ) ),
 												esc_html( $package['label'] )
 											);
 										}
@@ -232,7 +232,7 @@ function iqlrssPrintCustomBoxItem( $box ) {
 					</div>
 				</div>
 
-				<button type="button" id="saveCustomBox" class="button-primary">Save Custom Box</button>
+				<button type="button" id="saveCustomBox" class="button-primary"><?php esc_html_e( 'Save Custom Box', 'live-rates-for-shipstation' ); ?></button>
 			</div>
 		</dialog>
     </td>

@@ -108,6 +108,7 @@ export class CustomBoxes {
             let data  = {};
             let index = -1;
 
+            /* Try to grab the box JSON via clicked element */
             if( null !== e.detail.targetClicked.previousElementSibling && 'INPUT' == e.detail.targetClicked.previousElementSibling.tagName ) {
                 data  = JSON.parse( e.detail.targetClicked.previousElementSibling.value );
                 index = [ ...e.detail.targetClicked.closest( 'tbody' ).children ].indexOf( e.detail.targetClicked.closest( 'tr' ) );
@@ -296,11 +297,11 @@ export class CustomBoxes {
      */
     processModalSave() {
 
-        const $modal        = document.getElementById( 'customBoxesFormModal' );
+        const color_error   = '#d63638';
+        const color_success = '#248A3D';
         const box_index     = this.#data.editBox;
         const modalData     = new FormData();
-        const errorColor    = '#d63638';
-        const successColor  = '#248A3D';
+        const $modal        = document.getElementById( 'customBoxesFormModal' );
 
         if( ! $modal.open ) return;
 
@@ -312,6 +313,14 @@ export class CustomBoxes {
          * @param {FormData} fd
          */
         const mapJson = ( fd ) => {
+
+            /* Grab the preset carrier id. */
+            let carrier_id;
+            if( $modal.querySelector( '#boxPreset' ).selectedOptions[0].value ) {
+                const boxJson    = JSON.parse( $modal.querySelector( '#boxPreset' ).selectedOptions[0].dataset.preset );
+                carrier_id = ( 'carrier_id' in boxJson ) ? boxJson.carrier_id : '';
+            }
+
             return {
                 preset: fd.get( 'box_preset' ),
                 nickname: fd.get( 'nickname' ),
@@ -328,7 +337,8 @@ export class CustomBoxes {
                 weight: fd.get( 'box_weight' ),
                 price: fd.get( 'box_price' ),
                 weight_max: fd.get( 'box_weight_max' ),
-                active: ( box_index >= 0 ) ? this.#data.domList.querySelector( `tr:nth-child(${box_index + 1}) td:last-child input` ).checked : 1
+                active: ( box_index >= 0 ) ? this.#data.domList.querySelector( `tr:nth-child(${box_index + 1}) td:last-child input` ).checked : 1,
+                carrier: carrier_id ?? '',
             };
         }
 
@@ -357,7 +367,6 @@ export class CustomBoxes {
             ].join( ' x ' );
 
             /* Inner Dimensions */
-            console.log( box );
             if( 'inner' in box && ! Object.values( box.inner ).every( v => ( null === v || 0 == v ) ) ) {
                 $clone.querySelector( '[data-assoc="box_dimensions"]' ).innerText += ' (' + [
                     box.inner.length,
@@ -468,34 +477,33 @@ export class CustomBoxes {
 
         /* Return Early - Errors! */
         if( $modal.querySelector( '.iqlrss-errortext' ) ) {
-            return modalLighting( errorColor );
+            return modalLighting( color_error );
         }
 
         /* Map known JSON fields */
-        const jsonBox = mapJson( modalData );
-        const box_string = JSON.stringify( jsonBox );
+        const jsonBox       = mapJson( modalData );
+        const box_string    = JSON.stringify( jsonBox );
 
         /* Error - Something went wrong, denote it to User */
         if( util.isEmpty( jsonBox ) || ! ( 'nickname' in jsonBox ) || ! box_string.length ) {
-            modalLighting( errorColor );
+            modalLighting( color_error );
             return this.modalToast( 'error', iqlrss.text.error_custombox_json );
         }
 
         /* Success! */
         manageCustomBox( jsonBox );
-        modalLighting( successColor );
+        modalLighting( color_success );
+
+        $modal.querySelector( 'input' ).focus();
         this.modalReset();
 
         /* Box added successfully! */
         if( -1 == box_index ) {
-            $modal.querySelector( 'input' ).focus();
             return this.modalToast( 'success', iqlrss.text.success_custombox_added );
         }
 
-        this.modalReset();
         $modal.close();
-
-        this.#data.domList.children[ box_index ].animate( { backgroundColor: [ successColor + '40' ], }, {
+        this.#data.domList.children[ box_index ].animate( { backgroundColor: [ color_success + '40' ], }, {
             duration: 600,
             easing: 'ease-in-out',
             direction: 'alternate',
