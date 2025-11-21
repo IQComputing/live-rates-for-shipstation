@@ -1117,34 +1117,22 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 */
 	protected function group_requestsby_wc_box_packer( $items ) {
 
+		$item_requests 	= array();
+		$boxes 			= $this->get_option( 'customboxes', array() );
+		$default_weight = $this->get_option( 'minweight', '' );
+
+		/* Return Early - No custom boxes found. */
+		if( empty( $boxes ) ) {
+			$this->log( esc_html__( 'Custom Boxes selected, but no boxes found. Items packed individually', 'live-rates-for-shipstation' ), 'warning' );
+			return $this->group_requestsby_individual( $items );
+		}
+
 		if( ! class_exists( '\IQRLSS\WC_Box_Packer\WC_Boxpack' ) ) {
 			include_once 'wc-box-packer/class-wc-boxpack.php';
 		}
 
-
-		$enabled_services = $this->get_enabled_services();
-		$global_carriers  = $this->shipStationApi->get_carriers();
-		$saved_carriers   = array_intersect_key( $global_carriers, $enabled_services );
-		$carriers_by_code = array_combine( array_column( $saved_carriers, 'carrier_code' ), array_keys( $saved_carriers ) );
-
-		// Try to match carrier code.
-		if( isset( $carriers_by_code[ $carrier_partial ] ) ) {
-			$carrier_id = $carriers_by_code[ $carrier_partial ];
-		} else if( isset( $carriers_by_code[ $carrier_partial . '_walleted' ] ) ) {
-			$carrier_id = $carriers_by_code[ $carrier_partial . '_walleted' ];
-		}
-
-
-		$item_requests 	= array();
-		$wc_boxpack 	= new WC_Box_Packer\WC_Boxpack();
-		$boxes 			= $this->get_option( 'customboxes', array() );
-		$default_weight = $this->get_option( 'minweight', '' );
-
-		if( empty( $boxes ) ) {
-			$this->log( esc_html__( 'Custom Boxes selected, but no boxes found. Items packed individually', 'live-rates-for-shipstation' ), 'warning' );
-		}
-
 		// Setup the WC_Boxpack boxes based on user submitted custom boxes.
+		$wc_boxpack = new WC_Box_Packer\WC_Boxpack();
 		foreach( $boxes as $box ) {
 			if( empty( $box['active'] ) ) continue;
 			$wc_boxpack->add_box( $box );
