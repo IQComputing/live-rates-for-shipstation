@@ -172,15 +172,15 @@ function iqlrssPrintCustomBoxItem( $box ) {
 					</div>
 
 					<div class="iqlrss-field">
-						<label for="boxWeight"><?php esc_html_e( 'Box Weight', 'live-rates-for-shipstation' ); ?></label>
-						<input type="text" name="box_weight" id="boxWeight" inputmode="decimal" class="iqlrss-numbers-only">
-						<p class="description"><?php esc_html_e( 'The weight of the empty box in lbs.', 'live-rates-for-shipstation' ); ?></p>
-					</div>
-
-					<div class="iqlrss-field">
 						<label for="boxMaxWeight"><?php esc_html_e( 'Max Packing Weight', 'live-rates-for-shipstation' ); ?></label>
 						<input type="text" name="box_weight_max" id="boxMaxWeight" inputmode="decimal" class="iqlrss-numbers-only">
 						<p class="description"><?php esc_html_e( 'Max weight the box can hold in lbs.', 'live-rates-for-shipstation' ); ?></p>
+					</div>
+
+					<div class="iqlrss-field">
+						<label for="boxWeight"><?php esc_html_e( 'Box Weight', 'live-rates-for-shipstation' ); ?></label>
+						<input type="text" name="box_weight" id="boxWeight" inputmode="decimal" class="iqlrss-numbers-only">
+						<p class="description"><?php esc_html_e( 'The weight of the empty box in lbs.', 'live-rates-for-shipstation' ); ?></p>
 					</div>
 
 					<div class="iqlrss-field --required">
