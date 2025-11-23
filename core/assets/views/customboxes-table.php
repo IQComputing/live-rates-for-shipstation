@@ -106,6 +106,7 @@ function iqlrssPrintCustomBoxItem( $box ) {
 <tr valign="top" id="customBoxesRow" style="display:<?php echo ( $show_custom ) ? 'table-row' : 'none'; ?>;" data-count="<?php echo esc_attr( count( $saved_boxes ) ); ?>">
 	<th scope="row" class="titledesc no-padleft"><label for="customBoxesSearch"><?php esc_html_e( 'Custom Packing Boxes', 'live-rates-for-shipstation' ); ?></label></th>
 	<td class="forminp">
+		<p style="margin-bottom:8px;"><?php esc_html_e( 'Your store products must have dimensions set to use this packing method.', 'live-rates-for-shipstation' ); ?></p>
 		<div id="customBoxActions">
 			<button type="button" class="button-primary" data-iqlrss-modal="customBoxesFormModal"><?php esc_html_e( 'Add New Custom Box', 'live-rates-for-shipstation' ); ?></button>
 			<button type="button" id="customBoxRemove" class="button-secondary"><?php esc_html_e( 'Remove Selected Boxes', 'live-rates-for-shipstation' ); ?></button>

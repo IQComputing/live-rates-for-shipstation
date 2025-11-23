@@ -69,7 +69,7 @@ table.nottoofat th,
 table.nottoofat td	{padding: 9px 7px;}
 th.no-padleft		{padding-left: 0;}
 
-.modal-toast    {position: relative; width: calc( 100% + 28px ); margin: -14px 0 0 -14px; padding: 4px 20px 5px 14px; box-sizing: border-box; border-radius: 6px 0 0 0; letter-spacing: 0.2px; font-style: italic; font-size: 13px; color: #fff;}
+.modal-toast    {position: relative; width: calc( 100% + 28px ); margin: -14px 0 0 -14px; padding: 5px 20px 5px 14px; box-sizing: border-box; border-radius: 6px 0 0 0; letter-spacing: 0.2px; font-style: italic; font-size: 13px; color: #fff;}
 .modal-timer    {position: absolute; bottom: 0; left: 0; width: 0; height: 2px;}
 
 .modal-toast.toast-error    {background: #d63638;}
