@@ -751,9 +751,10 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					continue;
 				}
 
+				$ratehash 	 = md5( sprintf( '%s%s', $shiprate['code'], $shiprate['carrier_id'] ) );
 				$service_arr = $enabled_services[ $shiprate['carrier_id'] ][ $shiprate['code'] ];
-				$cost = floatval( $shiprate['cost'] );
-				$ratemeta = array(
+				$cost 		 = floatval( $shiprate['cost'] );
+				$ratemeta 	 = array(
 					'_name'=> ( isset( $req['_name'] ) ) ? $req['_name'] : '', // Item product name.
 					'rate' => $cost,
 				);
@@ -820,10 +821,10 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				}
 
 				// Set rate or append the estimated item ship cost.
-				if( ! isset( $rates[ $shiprate['code'] ] ) ) {
+				if( ! isset( $rates[ $ratehash ] ) ) {
 
-					$rates[ $shiprate['code'] ] = array(
-						'id'		=> $shiprate['code'],
+					$rates[ $ratehash ] = array(
+						'id'		=> $ratehash,
 						'label'		=> ( ! empty( $service_arr['nickname'] ) ) ? $service_arr['nickname'] : $shiprate['name'],
 						'package'	=> $packages,
 						'cost'		=> array( $cost ),
@@ -841,18 +842,18 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					);
 
 				} else {
-					$rates[ $shiprate['code'] ]['cost'][] = $cost;
+					$rates[ $ratehash ]['cost'][] = $cost;
 				}
 
 				// Merge item rates
-				$rates[ $shiprate['code'] ]['meta_data']['rates'] = array_merge(
-					$rates[ $shiprate['code'] ]['meta_data']['rates'],
+				$rates[ $ratehash ]['meta_data']['rates'] = array_merge(
+					$rates[ $ratehash ]['meta_data']['rates'],
 					array( $ratemeta ),
 				);
 
 				// Merge item boxes
-				$rates[ $shiprate['code'] ]['meta_data']['boxes'] = array_merge(
-					$rates[ $shiprate['code'] ]['meta_data']['boxes'],
+				$rates[ $ratehash ]['meta_data']['boxes'] = array_merge(
+					$rates[ $ratehash ]['meta_data']['boxes'],
 					array( $req ),
 				);
 
