@@ -270,7 +270,7 @@ class Shipstation  {
 
 			// If other amount has a value, return it to the estimate.
 			if( isset( $rate['other_amount'], $rate['other_amount']['amount'] ) && ! empty( $rate['other_amount']['amount'] ) ) {
-				$est['other_costs']['other'] = $rate['other_amount'];
+				$est['other_costs']['service_other'] = $rate['other_amount'];
 			}
 
 			$data[] = $est;
