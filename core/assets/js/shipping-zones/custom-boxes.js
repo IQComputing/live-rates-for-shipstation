@@ -315,10 +315,10 @@ export class CustomBoxes {
         const mapJson = ( fd ) => {
 
             /* Grab the preset carrier id. */
-            let carrier_id;
+            let carrier_code;
             if( $modal.querySelector( '#boxPreset' ).selectedOptions[0].value ) {
-                const boxJson    = JSON.parse( $modal.querySelector( '#boxPreset' ).selectedOptions[0].dataset.preset );
-                carrier_id = ( 'carrier_id' in boxJson ) ? boxJson.carrier_id : '';
+                const boxJson = JSON.parse( $modal.querySelector( '#boxPreset' ).selectedOptions[0].dataset.preset );
+                carrier_code = ( 'carrier_code' in boxJson ) ? boxJson.carrier_code : '';
             }
 
             return {
@@ -338,7 +338,7 @@ export class CustomBoxes {
                 price: fd.get( 'box_price' ),
                 weight_max: fd.get( 'box_weight_max' ),
                 active: ( box_index >= 0 ) ? this.#data.domList.querySelector( `tr:nth-child(${box_index + 1}) td:last-child input` ).checked : 1,
-                carrier: carrier_id ?? '',
+                carrier: carrier_code ?? '',
             };
         }
 

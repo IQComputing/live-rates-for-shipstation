@@ -515,7 +515,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					'weight'	=> floatval( $json['weight'] ),
 					'weight_max'=> floatval( $json['weight_max'] ),
 					'price'		=> floatval( $json['price'] ),
-					'carrier_id'=> ( isset( $json['carrier'] ) ) ? sanitize_text_field( $json['carrier'] ) : '',
+					'carrier'	=> ( isset( $json['carrier'] ) ) ? sanitize_text_field( $json['carrier'] ) : '',
 				);
 
 			}
@@ -1423,10 +1423,9 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			return $packages;
 		}
 
-		$enabled_services = $this->get_enabled_services();
-		$global_carriers  = $this->shipStationApi->get_carriers();
-		$saved_carriers   = array_intersect_key( $global_carriers, $enabled_services );
-		$carriers_by_code = array_combine( array_column( $saved_carriers, 'carrier_code' ), array_keys( $saved_carriers ) );
+		$global_carriers= $this->shipStationApi->get_carriers();
+		$carrier_codes	= wp_list_pluck( $global_carriers, 'carrier_code' );
+		$carrier_codes	= array_intersect_key( $carrier_codes, array_flip( $this->carriers ) );
 
 		$data = array(
 			'usps' => array(
@@ -1444,35 +1443,37 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		);
 
 		// Append Translated Labels
-		foreach( $data as $carrier_partial => &$carriers ) {
+		$carrier_packages = array();
+		foreach( $data as $carrier_code => &$carriers ) {
+
+			// Match carrier slug with known carrier code.
+			$carrier_found = array_filter( $carrier_codes, fn( $c ) => $c === $carrier_code );
+			if( empty( $carrier_found ) ) {
+				$carrier_found = array_filter( $carrier_codes, fn( $c ) => false !== strpos( $c, $carrier_code . '_' ) );
+			}
+
+			// Skip - Carrier may not be set.
+			if( empty( $carrier_found ) ) continue;
 
 			$codes = wp_list_pluck( $carriers['packages'], 'code' );
 			$dupes = array_count_values( $codes );
 
-			// Try to match carrier code.
-			if( isset( $carriers_by_code[ $carrier_partial ] ) ) {
-				$carrier_id = $carriers_by_code[ $carrier_partial ];
-			} else if( isset( $carriers_by_code[ $carrier_partial . '_walleted' ] ) ) {
-				$carrier_id = $carriers_by_code[ $carrier_partial . '_walleted' ];
-			}
-
 			foreach( $carriers['packages'] as &$package ) {
 
+				$package['carrier_code'] = $carrier_code;
 				$package['label'] = $this->get_package_label( $package['code'] );
+
 				if( $dupes[ $package['code'] ] > 1 ) {
 					$package['label'] .= sprintf( ' (%s x %s x %s)', $package['length'], $package['width'], $package['height'] );
-				}
-
-				if( ! empty( $carrier_id ) ) {
-					$package['carrier_id'] = $carrier_id;
 				}
 			}
 
 			usort( $carriers['packages'], fn( $pa, $pb ) => strcmp( $pa['label'], $pb['label'] ) );
+			$carrier_packages[ $carrier_code ] = $carriers;
 
 		}
 
-		$data = array( '' => esc_html__( '-- Select Package Preset --', 'live-rates-for-shipstation' ) ) + $data;
+		$data = array( '' => esc_html__( '-- Select Package Preset --', 'live-rates-for-shipstation' ) ) + $carrier_packages;
 
 
 		/**
