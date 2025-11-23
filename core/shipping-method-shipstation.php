@@ -676,7 +676,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 		// Try to pull from cache. This may set $this->rates
 		// Return Early - We have cached rates to work with!
-		$packages_hash = $this->check_packages_rate_cache( $packages );
+		$this->check_packages_rate_cache( $packages );
 		if( ! empty( $this->rates ) ) {
 			return;
 
@@ -687,6 +687,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 		$enabled_services = $this->get_enabled_services();
 		if( empty( $enabled_services ) ) {
+			$this->log( esc_html__( 'No enabled carrier services found. Please enable carrier services within the shipping zone.', 'live-rates-for-shipstation' ) );
 			return;
 		}
 
@@ -867,9 +868,10 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 			foreach( $rates as $rate_arr ) {
 
-				// Skip incomplete rate requests
-				if( count( $item_requests ) != count( $rate_arr['cost'] ) ) {
-					continue;
+				// If more than 1 rate, add the cheapest.
+				if( count( $rate_arr['cost'] ) > 1 ) {
+					usort( $rate_arr['cost'], fn( $r1, $r2 ) => ( (float)$r1 < (float)$r2 ) ? -1 : 1 );
+					$rate_arr['cost'] = (array)array_shift( $rate_arr['cost'] );
 				}
 
 				// WooCommerce skips serialized data when outputting order item meta, this is a workaround.
@@ -907,10 +909,13 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 		}
 
-		// Add a cache key to check against.
-		WC()->session->set( $this->plugin_prefix, array_merge(
-			WC()->session->get( $this->plugin_prefix, array() ),
-			array( 'method_hash' => $packages_hash ),
+		$cachehash = $this->generate_packages_cache_key( $packages );
+		if( empty( $cachehash ) ) return;
+
+		// Cache packages to prevent multiple requests.
+		WC()->session->set( $this->plugin_prefix . '_packages', array_merge(
+			WC()->session->get( $this->plugin_prefix . '_packages', array() ),
+			array( 'method_hash' => $cachehash ),
 			array( 'method_cache_time' => time() ),
 		) );
 
@@ -1247,36 +1252,29 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 
 	/**
-	 * Attempt to pull from the WC() Session cache to prevent multiple caclulation
+	 * Set the rates based on cached packages.
+	 *
+	 * Attempt to pull from the WC() Session cache to prevent multiple calculations
 	 * requests, which could unnecessarily ping the API or add duplicate logs.
 	 * This issue is common when dealing with WP Blocks/Gutenberg Editor.
 	 *
 	 * @param Array $packages - Packages in use.
 	 *
-	 * @return String $hash - hash key neded to reset cache.
+	 * @return void
 	 */
 	protected function check_packages_rate_cache( $packages ) {
 
-		$session 	= WC()->session->get( $this->plugin_prefix, array() );
+		$session 	= WC()->session->get( $this->plugin_prefix . '_packages', array() );
 		$cleartime 	= get_transient( \IQLRSS\Driver::plugin_prefix( 'wcs_timeout' ) );
-
-		$keys = array();
-		foreach( $packages['contents'] as $key => $package ) {
-			$keys[] = array(
-				$key,
-				$package['quantity'],
-				$package['line_total'],
-			);
-		}
-		$hash = md5( wp_json_encode( $keys ) ) . \WC_Cache_Helper::get_transient_version( 'shipping' );
+		$cachehash 	= $this->generate_packages_cache_key( $packages );
 
 		// Return Early - Cache cleared or 30 minuites has passed (invalidate cache).
 		if( isset( $session['method_cache_time'] ) && ( $cleartime > $session['method_cache_time'] || $session['method_cache_time'] < ( time() - ( 30 * 60 ) ) ) ) {
-			return $hash;
+			return;
 
 		// Return Early- Cart has changed.
-		} else if( ! isset( $session['method_hash'] ) || $session['method_hash'] != $hash ) {
-			return $hash;
+		} else if( ! isset( $session['method_hash'] ) || empty( $cachehash ) || $session['method_hash'] != $cachehash ) {
+			return;
 		}
 
 		// Try to populate Rates.
@@ -1291,7 +1289,29 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 		}
 
-		return $hash;
+	}
+
+
+	/**
+	 * Generate a hash key based off of the given packages.
+	 *
+	 * @param Array $packages
+	 *
+	 * @return String $hash
+	 */
+	protected function generate_packages_cache_key( $packages ) {
+
+		$keys = array();
+		foreach( $packages['contents'] as $key => $package ) {
+			$keys[] = array(
+				$key,
+				$package['quantity'],
+				$package['line_total'],
+			);
+		}
+
+		if( empty( $keys ) ) return '';
+		return md5( wp_json_encode( $keys ) ) . \WC_Cache_Helper::get_transient_version( 'shipping' );
 
 	}
 
