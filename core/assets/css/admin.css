@@ -23,6 +23,8 @@
 .iqlrss-flex.--cols5 > *    {width: calc( 20% - 20px );}
 .iqlrss-flex[class*="--cols"]       {margin-right: -10px; margin-left: -10px;}
 .iqlrss-flex[class*="--cols"] > *   {margin: 10px;}
+.iqlrss-flex > .--w66       {width: calc( 66.66% - 20px );}
+.iqlrss-flex > .--w22       {width: calc( 22.22% - 20px );}
 
 .iqlrss-field label[for]                {display: block; margin-bottom: 4px;}
 .iqlrss-field:not(.--complex) input,
@@ -86,12 +88,12 @@ th.no-padleft		{padding-left: 0;}
 /**
  * Module: Modal
 **/
-.iqlrss-modal               {position: fixed; width: 100%; max-width: 80%; max-height: 80vh; border-radius: 10px; overflow: visible;}
+.iqlrss-modal               {position: fixed; width: 100%; max-width: 80%; max-height: 80vh; border-color: var( --wp-admin-theme-color ); border-radius: 10px;}
 .iqlrss-modal > button      {position: absolute; top: 0; right: 0; padding: 3px 12px; border: 0; border-radius: 0 0 0 10px; cursor: pointer;}
 
 .iqlrss-modal-title         {margin: 0 0 12px;}
 .iqlrss-modal-title.--tab   {position: absolute; top: -30px; left: 4px; z-index: 2; display: block; width: 100%; max-width: 350px; margin: 0; padding: 4px 10px 0; border-radius: 10px 10px 0 0; text-align: center;}
-.iqlrss-modal-content       {margin: -3px; padding: 3px; overflow-x: hidden; overflow-y: auto;}
+.iqlrss-modal-content       {height: 100%;}
 
 .wp-core-ui .iqlrss-modal > button          {background: #2271b1; color: #fff;}
 .wp-core-ui .iqlrss-modal > button:hover    {background: #135e96; color: #fff;}
@@ -134,9 +136,6 @@ th.no-padleft		{padding-left: 0;}
 #iqlrssCustomBoxes .iqlrss-field-switch input + span > .text-inactive,
 #iqlrssCustomBoxes .iqlrss-field-switch input:checked + span > .text-active    {padding: 2px 12px;}
 
-#customBoxesFormModal       {border-color: var( --wp-admin-theme-color ); overflow-y: auto;}
-#customBoxesFormModal .--w66            {width: calc( 66.66% - 20px );}
-#customBoxesFormModal .--w22            {width: calc( 22.22% - 20px );}
 #customBoxesFormModal .description      {margin-top: 0; letter-spacing: 0.01em; font-style: italic; font-size: 13px;}
 #customBoxesFormModal #saveCustomBox    {display: block; margin-top: 4px; margin-right: 0; margin-left: auto;}
 html:has( #customBoxesFormModal:modal ) {overflow: hidden;}
@@ -162,6 +161,8 @@ html:has( #customBoxesFormModal:modal ) {overflow: hidden;}
     /**
     * :: Utility
     **/
+    .iqlrss-flex > .--w66,
+    .iqlrss-flex > .--w22,
     .iqlrss-flex > .--w33,
     .iqlrss-flex.--cols3 > *,
     .iqlrss-flex > .--w20,
@@ -182,13 +183,31 @@ html:has( #customBoxesFormModal:modal ) {overflow: hidden;}
     #iqlrssCustomBoxes td:last-child,
     #iqlrssCustomBoxes td:first-child       {text-align: left;}
 
-    #customBoxesFormModal .--w22 {width: calc( 50% - 20px );}
-
     /* Services */
     #carrierServices thead          {display: none;}
     #carrierServices tbody tr       {display: block; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid;}
     #carrierServices tbody tr:last-child    {border-bottom: 0;}
     #carrierServices tbody td[data-label]:before{content: attr( data-label ) ':'; display: inline-block; margin-right: 4px; font-weight: 700;}
     #carrierServices tbody td:empty {display: none;}
+
+}
+
+
+/**
+ * Max Width 425px
+**/
+@media( max-width: 425px ) {
+
+    /**
+    * :: Utility
+    **/
+    .iqlrss-flex > .--w66,
+    .iqlrss-flex > .--w22,
+    .iqlrss-flex > .--w33,
+    .iqlrss-flex.--cols3 > *,
+    .iqlrss-flex > .--w20,
+    .iqlrss-flex.--cols4 > *,
+    .iqlrss-flex > .--w25,
+    .iqlrss-flex.--cols5 > *    {width: 100%;}
 
 }

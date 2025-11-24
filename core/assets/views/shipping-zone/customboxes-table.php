@@ -123,7 +123,6 @@ function iqlrssPrintCustomBoxItem( $box ) {
 
 		?><tbody></table>
 		<dialog id="customBoxesFormModal" class="iqlrss-modal">
-			<h3 class="iqlrss-modal-title --tab"><?php esc_html_e( 'Custom Box', 'live-rates-for-shipstation' ); ?></h3>
 			<button type="button"><span class="screen-reader-text"><?php esc_html_e( 'Close Custom Box Modal', 'live-rates-for-shipstation' ); ?></span><i class="dashicons dashicons-no"></i></button>
 			<div class="iqlrss-modal-content">
 
