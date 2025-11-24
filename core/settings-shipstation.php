@@ -600,10 +600,13 @@ Class Settings_Shipstation {
 			$enqueue = ( isset( $_GET, $_GET['instance_id'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
 			// Integration > ShipStation settings page
-			$enqueue = ( $enqueue || isset( $_GET, $_GET['section'] ) && 'shipstation' == $_GET['section'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			$enqueue = ( $enqueue || ( isset( $_GET, $_GET['section'] ) && 'shipstation' == $_GET['section'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+			// Edit Order page
+			$enqueue = ( $enqueue || ( isset( $_GET, $_GET['page'], $_GET['id'] ) && 'wc-orders' == $_GET['page'] && ! empty( $_GET['id'] ) ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
 			// Overprotective WooCommerce settings page check
-			$enqueue = ( $enqueue && 'woocommerce_page_wc-settings' == $screen_id );
+			$enqueue = ( $enqueue && in_array( $screen_id, array( 'woocommerce_page_wc-orders', 'woocommerce_page_wc-settings' ) ) );
 		}
 		return $enqueue;
 

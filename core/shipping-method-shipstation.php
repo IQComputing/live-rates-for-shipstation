@@ -463,7 +463,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		$packages		= $this->get_package_options();
 
 		ob_start();
-			include 'assets/views/customboxes-table.php';
+			include \IQLRSS\Driver::get_asset_path( 'views/shipping-zone/customboxes-table.php' );
 		return ob_get_clean();
 
 	}
@@ -572,7 +572,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		}
 
 		ob_start();
-			include 'assets/views/services-table.php';
+			include \IQLRSS\Driver::get_asset_path( 'views/shipping-zone/services-table.php' );
 		return ob_get_clean();
 
 	}

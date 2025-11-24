@@ -228,6 +228,8 @@ class Driver {
 		// Load core controllers.
 		Core\Rest_Router::initialize();
 		Core\Settings_Shipstation::initialize();
+		Core\Admin_Edit_Order::initialize();
+
 	}
 
 }

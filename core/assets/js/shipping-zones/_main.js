@@ -4,6 +4,9 @@
  * Not really meant to be used as an object but more for
  * encapsulation and organization.
  *
+ * Manages the the possible initialization of custom boxes.
+ * Manages the show/hide functionality of price adjustments.
+ *
  * @global {Object} iqlrss - Localized object of saved values.
  */
 export class shippingZoneSettings {

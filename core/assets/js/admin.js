@@ -18,3 +18,14 @@ if( document.getElementById( 'woocommerce_iqlrss_shipstation_title' ) ) {
 		new Module.shippingZoneSettings();
 	} );
 }
+
+
+/**
+ * Edit Order Module Settings
+ * @import editOrderSettings
+ */
+if( document.querySelector( 'form#order' ) ) {
+	import( './edit-order/_main.js' ).then( ( Module ) => {
+		new Module.editOrderSettings();
+	} );
+}
