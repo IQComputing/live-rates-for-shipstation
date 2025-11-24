@@ -517,7 +517,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 				$boxes[] = array(
 					'active' => absint( $json['active'] ),
-					'preset' => sanitize_text_field( $json['preset'] ),
+					'preset' => ( isset( $json['preset'] ) ) ? sanitize_text_field( $json['preset'] ) : '',
 					'nickname' => sanitize_text_field( $json['nickname'] ),
 					'outer' => array(
 						'length'	=> floatval( $json['outer']['length'] ),
