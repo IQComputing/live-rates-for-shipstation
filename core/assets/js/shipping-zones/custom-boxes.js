@@ -338,7 +338,7 @@ export class CustomBoxes {
                 price: fd.get( 'box_price' ),
                 weight_max: fd.get( 'box_weight_max' ),
                 active: ( box_index >= 0 ) ? this.#data.domList.querySelector( `tr:nth-child(${box_index + 1}) td:last-child input` ).checked : 1,
-                carrier: carrier_code ?? '',
+                carrier_code: carrier_code ?? '',
             };
         }
 
