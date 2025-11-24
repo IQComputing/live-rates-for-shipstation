@@ -87,7 +87,6 @@ Class Settings_Shipstation {
 
 		$data = array(
 			'api_verified'	=> \IQLRSS\Driver::get_ss_opt( 'api_key_valid', false ),
-			'apiv1_verified'=> \IQLRSS\Driver::get_ss_opt( 'apiv1_key_valid', false ),
 			'global_adjustment_type' => \IQLRSS\Driver::get_ss_opt( 'global_adjustment_type', '' ),
 			'store' => array(
 				'currency_symbol' => get_woocommerce_currency_symbol( get_woocommerce_currency() ),
@@ -328,20 +327,6 @@ Class Settings_Shipstation {
 					'default'		=> '',
 				);
 
-				// $appended_fields[ \IQLRSS\Driver::plugin_prefix( 'apiv1_key' ) ] = array(
-				// 	'title'			=> esc_html__( 'ShipStation [v1] API Key', 'live-rates-for-shipstation' ),
-				// 	'type'			=> 'password',
-				// 	'description'	=> esc_html__( 'See "ShipStation REST API Key" description, but instead of selecting [v2], select [v1].', 'live-rates-for-shipstation' ),
-				// 	'default'		=> '',
-				// );
-
-				// $appended_fields[ \IQLRSS\Driver::plugin_prefix( 'apiv1_secret' ) ] = array(
-				// 	'title'			=> esc_html__( 'ShipStation [v1] API Secret', 'live-rates-for-shipstation' ),
-				// 	'type'			=> 'password',
-				// 	'description'	=> esc_html__( 'The v1 API is _required_ to manage orders. The v2 API handles Live Rates.', 'live-rates-for-shipstation' ),
-				// 	'default'		=> '',
-				// );
-
 				$appended_fields[ \IQLRSS\Driver::plugin_prefix( 'carriers' ) ] = array(
 					'title'			=> esc_html__( 'Shipping Carriers', 'live-rates-for-shipstation' ),
 					'type'			=> 'multiselect',
@@ -416,18 +401,6 @@ Class Settings_Shipstation {
 			$settings[ \IQLRSS\Driver::plugin_prefix( 'api_key_valid' ) ] = false;
 			if( isset( $settings[ \IQLRSS\Driver::plugin_prefix( 'api_key_vt' ) ] ) ) {
 				unset( $settings[ \IQLRSS\Driver::plugin_prefix( 'api_key_vt' ) ] );
-			}
-
-			\IQLRSS\Driver::clear_cache();
-		}
-
-		// No [v1] API Key? Invalid!
-		$apiv1_key_key = \IQLRSS\Driver::plugin_prefix( 'apiv1_key' );
-		if( ! isset( $settings[ $apiv1_key_key ] ) || empty( $settings[ $apiv1_key_key ] ) ) {
-
-			$settings[ \IQLRSS\Driver::plugin_prefix( 'apiv1_key_valid' ) ] = false;
-			if( isset( $settings[ \IQLRSS\Driver::plugin_prefix( 'apiv1_key_vt' ) ] ) ) {
-				unset( $settings[ \IQLRSS\Driver::plugin_prefix( 'apiv1_key_vt' ) ] );
 			}
 
 			\IQLRSS\Driver::clear_cache();
