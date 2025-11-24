@@ -732,6 +732,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			'address_residential_indicator' => 'unknown',
 		);
 
+		$item_requests = array();
 		$callback = sprintf( 'group_requestsby_%s', str_replace( '-', '_', $packing_type ) );
 		if( method_exists( $this, $callback ) ) {
 			$item_requests = call_user_func( array( $this, $callback ), $packages['contents'] );
@@ -998,7 +999,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 *
 	 * @return Array $requests
 	 */
-	protected function group_requestsby_individual( $items ) {
+	public function group_requestsby_individual( $items ) {
 
 		$item_requests 	= array();
 		$default_weight = $this->get_option( 'minweight', '' );
@@ -1077,7 +1078,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 *
 	 * @return Array $requests
 	 */
-	protected function group_requestsby_onebox( $items ) {
+	public function group_requestsby_onebox( $items ) {
 
 		$default_weight = $this->get_option( 'minweight', 0 );
 		$subtype 		= $this->get_option( 'packing_sub', 'weightonly' );
@@ -1193,7 +1194,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 *
 	 * @return Array $requests
 	 */
-	protected function group_requestsby_wc_box_packer( $items ) {
+	public function group_requestsby_wc_box_packer( $items ) {
 
 		$item_requests 	= array();
 		$boxes 			= $this->get_option( 'customboxes', array() );
@@ -1485,6 +1486,18 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 		return $enabled;
 
+	}
+
+
+	/**
+	 * Convert a WooCommerce unit to a ShipStation unit.
+	 * 
+	 * @param String $unit
+	 * 
+	 * @return String $new_unit
+	 */
+	public function convert_unit_term( $unit ) {
+		return $this->shipStationApi->convert_unit_term( $unit );
 	}
 
 
