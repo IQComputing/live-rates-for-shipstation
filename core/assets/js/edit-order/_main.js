@@ -1,3 +1,5 @@
+import * as util from '../modules/utility.js';
+
 /**
  * WooCommerce Edit Order Settings
  *
@@ -15,7 +17,21 @@ export class editOrderSettings {
 	 */
 	constructor() {
 
-		console.log( 'here' );
+		this.createShippingLabel();
+
+	}
+
+
+	/**
+	 * Create Shipping Label
+	 */
+	createShippingLabel() {
+
+		document.querySelector( '[data-iqlrss-modal="shipstationLabelModal"]' ).addEventListener( 'click', ( e ) => {
+			e.stopImmediatePropagation();
+			e.preventDefault();
+			util.loadModule( 'modal', e.target, { 'modal': e.target.dataset.iqlrssModal } );
+		} );
 
 	}
 
