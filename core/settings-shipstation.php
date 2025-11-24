@@ -42,10 +42,6 @@ Class Settings_Shipstation {
 		add_action( 'woocommerce_cart_totals_after_order_total',array( $this, 'display_cart_weight' ) ) ;
 		add_action( 'woocommerce_update_option',				array( $this, 'clear_cache_on_update' ) );
 
-		// Track and Update exported ShipStation Orders
-		add_action( 'added_order_meta',	array( $this, 'denote_shipstation_export' ), 15, 4 );
-		add_action( 'init',				array( $this, 'update_exported_orders' ), 15, 4 );
-
 	}
 
 
@@ -91,7 +87,6 @@ Class Settings_Shipstation {
 
 		$data = array(
 			'api_verified'	=> \IQLRSS\Driver::get_ss_opt( 'api_key_valid', false ),
-			'apiv1_verified'=> \IQLRSS\Driver::get_ss_opt( 'apiv1_key_valid', false ),
 			'global_adjustment_type' => \IQLRSS\Driver::get_ss_opt( 'global_adjustment_type', '' ),
 			'store' => array(
 				'currency_symbol' => get_woocommerce_currency_symbol( get_woocommerce_currency() ),
@@ -246,82 +241,6 @@ Class Settings_Shipstation {
 	}
 
 
-	/**
-	 * Denote the exported order as a transient.
-	 * Use the transient later to update the order via the v1 API.
-	 *
-	 * @param Integer $meta_id
-	 * @param Integer $order_id
-	 * @param String $meta_key
-	 * @param String $meta_value
-	 *
-	 * @return void
-	 */
-	public function denote_shipstation_export( $meta_id, $order_id, $meta_key, $meta_value ) {
-
-		if( '_shipstation_exported' != $meta_key || 'yes' != $meta_value ) {
-			return;
-		}
-
-		$trans_key = \IQLRSS\Driver::plugin_prefix( 'exported_orders' );
-		$order_ids = get_transient( $trans_key );
-		$order_ids = ( ! empty( $order_ids ) ) ? $order_ids : array();
-
-		// Return Early - Order ID already exists.
-		if( in_array( $order_id, $order_ids ) ) {
-			return;
-		}
-
-		$order_ids[] = $order_id;
-		set_transient( $trans_key, $order_ids, HOUR_IN_SECONDS );
-
-	}
-
-
-	/**
-	 * If an `_exported_orders` transient exists
-	 * Update the order with some better info.
-	 *
-	 * @return void
-	 */
-	public function update_exported_orders() {
-
-		$trans_key = \IQLRSS\Driver::plugin_prefix( 'exported_orders' );
-		$order_ids = get_transient( $trans_key );
-
-		// Return Early - Delete transient, it's empty.
-		if( empty( $order_ids ) || ! is_array( $order_ids ) ) {
-			return delete_transient( $trans_key );
-		}
-
-		// Grab the oldest order while also priming the WC_Order cache.
-		$wc_orders = wc_get_orders( array(
-			'include'	=> array_map( 'absint', $order_ids ),
-			'orderby'	=> 'date',
-			'order'		=> 'ASC',
-			'limit'		=> count( $order_ids ),
-		) );
-
-		// Return Early - Could't associate WC_Orders with transient order ids.
-		if( empty( $wc_orders ) ) {
-			return delete_transient( $trans_key );
-		}
-
-		// Prime the cache
-		// API v1 will always cache it's ShipStation data in the WC_Order as metadata.
-		$apiv1 = new Api\Shipstationv1( true );
-		$apiv1->get_orders( array(
-			'createDateEnd' => gmdate( 'c', time() ),
-		) );
-
-		$api = new Api\Shipstation( true );
-		$api->create_shipments_from_wc_orders( $wc_orders );
-
-		return delete_transient( $trans_key );
-
-	}
-
-
 
 	/**------------------------------------------------------------------------------------------------ **/
 	/** :: Filter Hooks :: **/
@@ -408,20 +327,6 @@ Class Settings_Shipstation {
 					'default'		=> '',
 				);
 
-				// $appended_fields[ \IQLRSS\Driver::plugin_prefix( 'apiv1_key' ) ] = array(
-				// 	'title'			=> esc_html__( 'ShipStation [v1] API Key', 'live-rates-for-shipstation' ),
-				// 	'type'			=> 'password',
-				// 	'description'	=> esc_html__( 'See "ShipStation REST API Key" description, but instead of selecting [v2], select [v1].', 'live-rates-for-shipstation' ),
-				// 	'default'		=> '',
-				// );
-
-				// $appended_fields[ \IQLRSS\Driver::plugin_prefix( 'apiv1_secret' ) ] = array(
-				// 	'title'			=> esc_html__( 'ShipStation [v1] API Secret', 'live-rates-for-shipstation' ),
-				// 	'type'			=> 'password',
-				// 	'description'	=> esc_html__( 'The v1 API is _required_ to manage orders. The v2 API handles Live Rates.', 'live-rates-for-shipstation' ),
-				// 	'default'		=> '',
-				// );
-
 				$appended_fields[ \IQLRSS\Driver::plugin_prefix( 'carriers' ) ] = array(
 					'title'			=> esc_html__( 'Shipping Carriers', 'live-rates-for-shipstation' ),
 					'type'			=> 'multiselect',
@@ -496,18 +401,6 @@ Class Settings_Shipstation {
 			$settings[ \IQLRSS\Driver::plugin_prefix( 'api_key_valid' ) ] = false;
 			if( isset( $settings[ \IQLRSS\Driver::plugin_prefix( 'api_key_vt' ) ] ) ) {
 				unset( $settings[ \IQLRSS\Driver::plugin_prefix( 'api_key_vt' ) ] );
-			}
-
-			\IQLRSS\Driver::clear_cache();
-		}
-
-		// No [v1] API Key? Invalid!
-		$apiv1_key_key = \IQLRSS\Driver::plugin_prefix( 'apiv1_key' );
-		if( ! isset( $settings[ $apiv1_key_key ] ) || empty( $settings[ $apiv1_key_key ] ) ) {
-
-			$settings[ \IQLRSS\Driver::plugin_prefix( 'apiv1_key_valid' ) ] = false;
-			if( isset( $settings[ \IQLRSS\Driver::plugin_prefix( 'apiv1_key_vt' ) ] ) ) {
-				unset( $settings[ \IQLRSS\Driver::plugin_prefix( 'apiv1_key_vt' ) ] );
 			}
 
 			\IQLRSS\Driver::clear_cache();
