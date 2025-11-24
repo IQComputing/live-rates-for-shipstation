@@ -341,12 +341,30 @@ class Shipstation  {
 
 			$order_items     = $wc_order->get_items();
 			$order_item_ship = $wc_order->get_items( 'shipping' );
-			$order_item_ship = ( ! empty( $order_item_ship ) ) ? $order_item_ship[ array_key_first( $order_item_ship ) ] : null;
+			$shipmentItem = ( ! empty( $order_item_ship ) ) ? $order_item_ship[ array_key_first( $order_item_ship ) ] : null;
 
+			// Return Early - No shipping item found.
+			if( null === $shipmentItem ) {
+				return new \WP_Error( 400, esc_html__( 'No shipping item found in order.', 'live-rates-for-shipstation' ) );
+			}
+
+			// Shipment args I'll eventually need
+			$others = array(
+				'hold_until_date'	=> 'Y-m-d UTC',	// ShipStation will hold the shipment until this date. Maybe leave blank, but could impact preorder items?
+				'ship_by_date'		=> 'Y-m-d UTC', // Purely informational - useful for store owners collecting additional data.
+				'ship_date'			=> 'Y-m-d UTC', // The date the shipment is actually shipped. Defaults to current date.
+				'requested_shipment_service' => 'carrier_service_code', // ex. ups_ground
+				'warehouse_id'		=> 'se-*', // ShipStation warehouse association: WC_Order Label Override > Shipping Zone > Global. We can skip ship_from if we have this.
+				'return_to'			=> array(), // Return to address info - need settings for this.
+				'advanced_options'	=> array(), // Advanced options - might need settings for this.
+			);
+
+			// Defeault ShipStation Shipment Array
 			$shipment = array(
-				'validate_address'  => 'no_validation',
-				'carrier_id'        => $order_item_ship->get_meta( '_iqlrss_carrier_id', true ),
-				'store_id'          => \IQLRSS\Driver::get_ss_opt( 'store_id' ),
+				'external_order_id' => $wc_order->get_id(),
+				'order_source_code'=> 'woocommerce',
+				'carrier_id'        => $shipmentItem->get_meta( '_iqlrss_carrier_id', true ),
+				'service_code'      => $shipmentItem->get_meta( '_iqlrss_service_code', true ),
 				'shipping_paid'     => array(
 					'currency'  => $wc_order->get_currency(),
 					'amount'    => $wc_order->get_shipping_total(),
@@ -381,7 +399,30 @@ class Shipstation  {
 				'packages'  => array(),
 			);
 
-			$shipment['items'] = array();
+			// Add Packages
+			// $packages = $shipmentItem->get_meta( 'boxes', true );
+			// if( ! empty( $packages ) && is_array( $packages ) ) {
+			// 	foreach( $packages as $package ) {
+
+			// 		$shipment['packages'][] = array(
+			// 			'package_code'  => $ship_package['packageCode'],
+			// 			'package_name'  => $ship_package['packageName'],
+			// 			'weight'        => array(
+			// 				'value' => $ship_package['weight']['value'],
+			// 				'unit'  => $ship_package['weight']['unit'],
+			// 			),
+			// 			'dimensions' => array(
+			// 				'length'	=> $ship_package['dimensions']['length'],
+			// 				'width'		=> $ship_package['dimensions']['width'],
+			// 				'height'	=> $ship_package['dimensions']['height'],
+			// 				'unit'		=> $ship_package['dimensions']['unit'],
+			// 			),
+			// 		);
+
+			// 	}
+			// }
+
+			// Add Order Items
 			foreach( $shipstation_order_arr['items'] as $ship_item ) {
 
 				// Skip any items that don't exist in our orders
@@ -437,8 +478,6 @@ class Shipstation  {
 			$shipments[] = $shipment;
 
 		}
-
-		return $this->create_shipments( $shipments );
 
 	}
 
