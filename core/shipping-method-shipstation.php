@@ -310,7 +310,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 							// Add any other charges
 							if( isset( $rate_arr['other_costs'] ) ) {
 								foreach( $rate_arr['other_costs'] as $o_slug => $o_amount ) {
-									$new_display .= sprintf( ' | %s: %s', ucwords( $o_slug ), wc_price( $o_amount ) );
+									$new_display .= sprintf( ' | %s: %s', ucwords( str_replace( array( '-', '_' ), ' ', $o_slug ) ), wc_price( $o_amount ) );
 								}
 							}
 
@@ -757,8 +757,10 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				$ratehash 	 = md5( sprintf( '%s%s', $shiprate['code'], $shiprate['carrier_id'] ) );
 				$service_arr = $enabled_services[ $shiprate['carrier_id'] ][ $shiprate['code'] ];
 				$cost 		 = floatval( $shiprate['cost'] );
+				$rate_name	 = ( isset( $req['_name'] ) ) ? $req['_name'] : '';
+				$rate_name	 = ( empty( $rate_name ) && isset( $req['nickname'] ) ) ? $req['nickname'] : $rate_name;
 				$ratemeta 	 = array(
-					'_name'=> ( isset( $req['_name'] ) ) ? $req['_name'] : '', // Item product name.
+					'_name'=> $rate_name, // Item products(ID|Name) or box nickname.
 					'rate' => $cost,
 				);
 
@@ -1029,6 +1031,10 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			}
 
 			$request = array(
+				'_name' => sprintf( '%s|%s',
+					$item['data']->get_id(),
+					$item['data']->get_name(),
+				),
 				'weight' => ( ! empty( $item['data']->get_weight() ) ) ? $item['data']->get_weight() : $default_weight,
 			);
 
