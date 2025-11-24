@@ -310,7 +310,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 							// Add any other charges
 							if( isset( $rate_arr['other_costs'] ) ) {
 								foreach( $rate_arr['other_costs'] as $o_slug => $o_amount ) {
-									$new_display .= sprintf( ' | %s: %s', ucwords( $o_slug ), wc_price( $o_amount ) );
+									$new_display .= sprintf( ' | %s: %s', ucwords( str_replace( array( '-', '_' ), ' ', $o_slug ) ), wc_price( $o_amount ) );
 								}
 							}
 
@@ -332,6 +332,12 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					$display_arr = array();
 					foreach( $value as $i => $box_arr ) {
 
+						/* translators: %1$d is box/package count (1,2,3). */
+						$box_name = sprintf( esc_html__( 'Package %1$d', 'live-rates-for-shipstation' ), $i + 1 );
+						if( ! empty( $box_arr['nickname'] ) ) {
+							$box_name = $box_arr['nickname'];
+						}
+
 						$names = esc_html__( 'Product', 'live-rates-for-shipstation' );
 						if( isset( $box_arr['_name'] ) ) {
 							$names = $this->format_shipitem_name( $box_arr['_name'] );
@@ -340,11 +346,8 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 								return $this->format_shipitem_name( $name );
 							}, $box_arr['packed'] );
 						}
-
 						$display_arr[] = sprintf( '%s ( %s ) [ %s %s ( %s x %s x %s %s ) ]',
-
-							/* translators: %1$d is box/package count (1,2,3). */
-							sprintf( esc_html__( 'Package %1$d', 'live-rates-for-shipstation' ), $i + 1 ),
+							$box_name,
 							implode( ', ', (array)$names ),
 							$box_arr['weight']['value'],
 							$box_arr['weight']['unit'],
@@ -515,7 +518,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					'weight'	=> floatval( $json['weight'] ),
 					'weight_max'=> floatval( $json['weight_max'] ),
 					'price'		=> floatval( $json['price'] ),
-					'carrier'	=> ( isset( $json['carrier'] ) ) ? sanitize_text_field( $json['carrier'] ) : '',
+					'carrier_code' => ( isset( $json['carrier_code'] ) ) ? sanitize_text_field( $json['carrier_code'] ) : '',
 				);
 
 			}
@@ -754,8 +757,10 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				$ratehash 	 = md5( sprintf( '%s%s', $shiprate['code'], $shiprate['carrier_id'] ) );
 				$service_arr = $enabled_services[ $shiprate['carrier_id'] ][ $shiprate['code'] ];
 				$cost 		 = floatval( $shiprate['cost'] );
+				$rate_name	 = ( isset( $req['_name'] ) ) ? $req['_name'] : '';
+				$rate_name	 = ( empty( $rate_name ) && isset( $req['nickname'] ) ) ? $req['nickname'] : $rate_name;
 				$ratemeta 	 = array(
-					'_name'=> ( isset( $req['_name'] ) ) ? $req['_name'] : '', // Item product name.
+					'_name'=> $rate_name, // Item products(ID|Name) or box nickname.
 					'rate' => $cost,
 				);
 
@@ -1026,6 +1031,10 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			}
 
 			$request = array(
+				'_name' => sprintf( '%s|%s',
+					$item['data']->get_id(),
+					$item['data']->get_name(),
+				),
 				'weight' => ( ! empty( $item['data']->get_weight() ) ) ? $item['data']->get_weight() : $default_weight,
 			);
 
@@ -1211,18 +1220,22 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			$packed_items = ( is_array( $package->packed ) ) ? array_map( function( $item ) { return $item->meta['_name']; }, $package->packed ) : array();
 			$item_requests[] = array(
 				'weight' => array(
-					'value' => $package->weight,
+					'value' => round( $package->weight, 2 ),
 					'unit'	=> $this->shipStationApi->convert_unit_term( $this->store_data['weight_unit'] ),
 				),
 				'dimensions' => array(
-					'length'	=> $package->length,
-					'width'		=> $package->width,
-					'height'	=> $package->height,
+					'length'	=> round( $package->length, 2 ),
+					'width'		=> round( $package->width, 2 ),
+					'height'	=> round( $package->height, 2 ),
 					'unit'		=> $this->shipStationApi->convert_unit_term( $this->store_data['dim_unit'] ),
 				),
 				'packed' => $packed_items,
 				'price'	 => ( ! empty( $package->data ) ) ? $package->data['price'] : 0,
-				'package_code' => ( ! empty( $package->data ) ) ? $package->data['preset'] : '',
+				'nickname'		=> ( ! empty( $package->data ) ) ? $package->data['nickname'] : '',
+				'box_weight'	=> ( ! empty( $package->data ) ) ? $package->data['weight'] : 0,
+				'box_max_weight'=> ( ! empty( $package->data ) ) ? $package->data['weight_max'] : 0,
+				'package_code'	=> ( ! empty( $package->data ) ) ? $package->data['preset'] : '',
+				'carrier_code'	=> ( ! empty( $package->data ) ) ? $package->data['carrier_code'] : '',
 			);
 
 			$box_log[] = array(
