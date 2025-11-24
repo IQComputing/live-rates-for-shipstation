@@ -6,8 +6,10 @@
  * Generate a table based on saved carriers and their rates.
  * Pull in new rates based on selected carriers.
  *
+ * phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+ *
  * @param \IQLRSS\Core\Shipping_Method_Shipstation $this
- * @param \IQLRSS\Core\Shipstation_Api $shipStationAPI
+ * @param \IQLRSS\Core\Api\Shipstation $shipStationAPI
  * @param String $prefix - Plugin prefix
  * @param Array $saved_services - Saved Zone Services
  * @param Array $saved_carriers - Saved ShipStation Carriers
@@ -71,7 +73,7 @@ $global_adjustment_type = ( empty( $global_adjustment_type ) && ! empty( $global
 						print( '<tr>' );
 
 							// Service Checkbox and Metadata
-							print( '<td style="width: 50px;">' );
+							printf( '<td style="width: 50px;" data-label="%s">', esc_attr__( 'Enabled', 'live-rates-for-shipstation' ) );
 								printf( '<input type="checkbox" name="%s"%s>',
 									esc_attr( $attr_name . '[enabled]' ),
 									checked( $saved_atts['enabled'], true, false ),
@@ -98,14 +100,15 @@ $global_adjustment_type = ( empty( $global_adjustment_type ) && ! empty( $global
 							print( '</td>' );
 
 							// Service Nickname
-							printf( '<td><input type="text" name="%s" value="%s" placeholder="%s"></td>',
+							printf( '<td data-label="%s"><input type="text" name="%s" value="%s" placeholder="%s"></td>',
+								esc_attr__( 'Name', 'live-rates-for-shipstation' ),
 								esc_attr( $attr_name . '[nickname]' ),
 								esc_attr( $saved_atts['nickname'] ),
 								esc_attr( $service_arr['service_name'] ),
 							);
 
 							// Service Price Adjustment
-							print( '<td><div class="iqrlssimple-flex-2">' );
+							printf( '<td data-label="%s"><div class="iqrlsserviceprice-flex">', esc_attr__( 'Price Adjustment', 'live-rates-for-shipstation' ) );
 
 								printf( '<div><select name="%s" style="width:100%%;">', esc_attr( $attr_name . '[adjustment_type]' ) );
 									foreach( static::get_adjustment_types( true ) as $slug => $label ) {
@@ -126,7 +129,10 @@ $global_adjustment_type = ( empty( $global_adjustment_type ) && ! empty( $global
 							print( '</div></td>' );
 
 							// Carrier Name
-							printf( '<td><strong>%s</strong></td>', esc_html( $service_arr['carrier_name'] ) );
+							printf( '<td data-label="%s"><strong>%s</strong></td>',
+								esc_attr__( 'Carrier', 'live-rates-for-shipstation' ),
+								esc_html( $service_arr['carrier_name'] )
+							);
 
 						print( '</tr>' );
 
@@ -158,7 +164,7 @@ $global_adjustment_type = ( empty( $global_adjustment_type ) && ! empty( $global
 							$attr_name = sprintf( '%s[%s][%s]', $prefix, $carrier_id, $service_arr['service_code'] );
 
 							// Service Checkbox and Metadata
-							print( '<td style="width: 50px;">' );
+							printf( '<td style="width: 50px;" data-label="%s">', esc_attr__( 'Enabled', 'live-rates-for-shipstation' ) );
 								printf( '<input type="checkbox" name="%s">', esc_attr( $attr_name . '[enabled]' ) );
 
 								// Metadata
@@ -184,13 +190,14 @@ $global_adjustment_type = ( empty( $global_adjustment_type ) && ! empty( $global
 							print( '</td>' );
 
 							// Service Name
-							printf( '<td><input type="text" name="%s" value="" placeholder="%s"></td>',
+							printf( '<td data-label="%s"><input type="text" name="%s" value="" placeholder="%s"></td>',
+								esc_attr__( 'Name', 'live-rates-for-shipstation' ),
 								esc_attr( $attr_name . '[nickname]' ),
 								esc_attr( $service_arr['name'] ),
 							);
 
 							// Service Price Adjustment
-							print( '<td><div class="iqrlssimple-flex-2">' );
+							printf( '<td data-label="%s"><div class="iqrlsserviceprice-flex">', esc_attr__( 'Price Adjustment', 'live-rates-for-shipstation' ) );
 
 								printf( '<div><select name="%s" style="width:100%%;">', esc_attr( $attr_name . '[adjustment_type]' ) );
 									foreach( static::get_adjustment_types( true ) as $slug => $label ) {
@@ -210,7 +217,10 @@ $global_adjustment_type = ( empty( $global_adjustment_type ) && ! empty( $global
 							print( '</div></td>' );
 
 							// Carrier Name
-							printf( '<td><strong>%s</strong></td>', esc_html( $response['carrier']['name'] ) );
+							printf( '<td data-label="%s"><strong>%s</strong></td>',
+								esc_attr__( 'Carrier', 'live-rates-for-shipstation' ),
+								esc_html( $response['carrier']['name'] )
+							);
 
 						print( '</tr>' );
 
@@ -222,3 +232,10 @@ $global_adjustment_type = ( empty( $global_adjustment_type ) && ! empty( $global
 		</table>
 	</td>
 </tr>
+<?php
+/**
+ * PCP is not picking up that this is a method view.
+ * Disabled at the top, but needs reenabling as the system reads the files.
+ *
+ * phpcs:enable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
+ */

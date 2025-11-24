@@ -4,7 +4,7 @@
  * Plugin URI: https://iqcomputing.com/contact/
  * Description: ShipStation shipping method with live rates.
  * Version: 1.0.8
- * Requries at least: 5.9
+ * Requries at least: 6.2
  * Author: IQComputing
  * Author URI: https://iqcomputing.com/
  * License: GPLv3 or later
@@ -12,17 +12,14 @@
  * Text Domain: live-rates-for-shipstation
  * Requires Plugins: woocommerce, woocommerce-shipstation-integration
  *
- * @todo Create API endpoint for creating shipping labels.
- * @todo Create check for Manual Store. If ShipStations Manual Store is deactivated, we cannot create labels?
- * @todo Convert the settings checkbox to a toggle.
- * @todo When the v2 API key is validated, recreate the carrier Select2 and populate.
- * @todo API call statistics, tracking, and limiting.
- * @todo Create custom Integration page.
- * @todo Recreate the Shipping Zone packages table
- * @todo Add warehouse locations to Shipping Zone packages.
- * @todo Look into adding global warehouse option in options.
+ * @notes ShipStation does not make it easy or obvious how to update / create a Shipment for an Order.
+ * 		The shipment create endpoint keeps coming back successful, but nothing on the ShipStation side
+ * 		appears to change.
+ * 		The v1 API update Order endpoint also doesn't seem to allow Shipment updates, but is required
+ * 		to get the OrderID, required for any kind of create/update endpoints.
+ *
+ * @todo Add warehosue locations to Shipping Zone packages.
  * @todo Look into updating warehouses through Edit Order > Order Items.
- * @todo Ship date estimates? Many endpoints have shipdate args, not every service gives shipdates.
  */
 namespace IQLRSS;
 
@@ -88,7 +85,7 @@ class Driver {
 	 * @param String $key
 	 * @param Mixed $value
 	 *
-	 * @return Mixed
+	 * @return void
 	 */
 	public static function set_ss_opt( $key, $value ) {
 
@@ -102,6 +99,73 @@ class Driver {
 		}
 
 		update_option( 'woocommerce_shipstation_settings', $settings );
+
+	}
+
+
+	/**
+	 * Return a ShipStation Plugin Option Value
+	 *
+	 * @param String $key
+	 * @param Mixed $default
+	 * @param Boolean $skip_prefix - Skip Plugin Prefix and return a core ShipStation setting value.
+	 *
+	 * @return Mixed
+	 */
+	public static function get_opt( $key, $default = '' ) {
+		$settings = get_option( static::plugin_prefix( 'plugin' ) );
+		return ( isset( $settings[ $key ] ) && '' !== $settings[ $key ] ) ? maybe_unserialize( $settings[ $key ] ) : $default;
+	}
+
+
+	/**
+	 * Set a plugin option.
+	 *
+	 * @param String $key
+	 * @param Mixed $value
+	 *
+	 * @return void
+	 */
+	public static function set_opt( $key, $value ) {
+
+		$option 	= static::plugin_prefix( 'plugin' );
+		$settings 	= get_option( $option, array() );
+
+		if( is_bool( $value ) ) {
+			$settings[ $key ] = boolval( $value );
+		} else if( is_string( $value ) || is_numeric( $value ) ) {
+			$settings[ $key ] = sanitize_text_field( $value );
+		}
+
+		update_option( $option, $settings );
+
+	}
+
+
+	/**
+	 * Clear the Plugin API cache.
+	 *
+	 * @return void
+	 */
+	public static function clear_cache() {
+
+		global $wpdb;
+
+		/**
+		 * The API Class creates various transients to cache carrier services.
+		 * These transients are not tracked but generated based on the responses carrier codes.
+		 * All these transients are prefixed with our plugins unique string slug.
+		 * The first WHERE ensures only `_transient_` and the 2nd ensures only our plugins transients.
+		 */
+		$wpdb->query( $wpdb->prepare( "DELETE FROM %i WHERE option_name LIKE %s AND option_name LIKE %s", // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
+			$wpdb->options,
+			$wpdb->esc_like( '_transient_' ) . '%',
+			'%' . $wpdb->esc_like( '_' . static::get( 'slug' ) . '_' ) . '%'
+		) );
+
+		// Set transient to clear any WC_Session caches if they are found.
+		$expires = absint( apply_filters( 'wc_session_expiration', DAY_IN_SECONDS * 2 ) ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
+		set_transient( static::plugin_prefix( 'wcs_timeout' ), time(), $expires );
 
 	}
 
@@ -126,16 +190,33 @@ class Driver {
 
 
 	/**
-	 * Return a URL to an asset (JS/CSS)
+	 * Return a URL to an asset (JS/CSS usually)
 	 *
 	 * @param String $asset
 	 *
-	 * @return String $url
+	 * @return String
 	 */
 	public static function get_asset_url( $asset ) {
 
 		return sprintf( '%s/core/assets/%s',
 			rtrim( plugin_dir_url( __FILE__ ), '\\/' ),
+			$asset
+		);
+
+	}
+
+
+	/**
+	 * Return a path to an asset.
+	 *
+	 * @param String $asset
+	 *
+	 * @return String
+	 */
+	public static function get_asset_path( $asset ) {
+
+		return sprintf( '%s/core/assets/%s',
+			rtrim( plugin_dir_path( __FILE__ ), '\\/' ),
 			$asset
 		);
 
@@ -149,6 +230,12 @@ class Driver {
 	 * @return void
 	 */
 	public static function drive() {
+
+		// Run any version transition actions.
+		Stallation::transversion( static::$version );
+
+		// Load core controllers.
+		Core\Rest_Router::initialize();
 		Core\Settings_Shipstation::initialize();
 	}
 

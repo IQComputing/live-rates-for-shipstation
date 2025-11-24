@@ -2,18 +2,19 @@
 /**
  * ShipStation API Helper
  *
- * @link https://docs.shipstation.com/openapi
+ * Carrier ID	: se-*
+ * Carrier Code	: ups
  *
  * :: API Requests
  * :: Helper Methods
  */
-namespace IQLRSS\Core;
+namespace IQLRSS\Core\Api;
 
 if( ! defined( 'ABSPATH' ) ) {
 	return;
 }
 
-class Shipstation_Api  {
+class Shipstation  {
 
 	/**
 	 * Skip cache check
@@ -167,12 +168,12 @@ class Shipstation_Api  {
 					'friendly_name',
 				) ) );
 
-				$carrier['is_shipstation'] 	= ( ! empty( $carrier_data['primary'] ) );
+				$carrier['is_shipstation'] 	= $carrier_data['requires_funded_amount'];
 				$carrier['name'] 			= $carrier['friendly_name'];
 
 				// Denote Manual Connected Carrier.
 				if( ! $carrier['is_shipstation'] ) {
-					$carrier['name'] .= ' ' . esc_html__( '(Manual)', 'live-rates-for-shipstation' );
+					$carrier['name'] .= ' ' . esc_html__( '(Personal)', 'live-rates-for-shipstation' );
 				}
 
 				$data['carriers'][ $carrier['carrier_id'] ] = $carrier;
@@ -269,7 +270,7 @@ class Shipstation_Api  {
 
 			// If other amount has a value, return it to the estimate.
 			if( isset( $rate['other_amount'], $rate['other_amount']['amount'] ) && ! empty( $rate['other_amount']['amount'] ) ) {
-				$est['other_costs']['other'] = $rate['other_amount'];
+				$est['other_costs']['service_other'] = $rate['other_amount'];
 			}
 
 			$data[] = $est;

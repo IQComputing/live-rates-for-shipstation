@@ -40,7 +40,6 @@ Class Settings_Shipstation {
 		add_action( 'admin_footer',								array( $this, 'localize_script_vars' ), 3 );
 		add_action( 'admin_enqueue_scripts',					array( $this, 'enqueue_admin_assets' ) );
 		add_action( 'woocommerce_cart_totals_after_order_total',array( $this, 'display_cart_weight' ) ) ;
-		add_action( 'rest_api_init',							array( $this, 'api_actions_endpoint' ) );
 		add_action( 'woocommerce_update_option',				array( $this, 'clear_cache_on_update' ) );
 
 		// Track and Update exported ShipStation Orders
@@ -60,7 +59,7 @@ Class Settings_Shipstation {
 		// CSS
 		wp_register_style(
 			\IQLRSS\Driver::plugin_prefix( 'admin', '-' ),
-			\IQLRSS\Driver::get_asset_url( 'admin.css' ),
+			\IQLRSS\Driver::get_asset_url( 'css/admin.css' ),
 			array(),
 			\IQLRSS\Driver::get( 'version', '1.0.0' )
 		);
@@ -68,7 +67,7 @@ Class Settings_Shipstation {
 		// JS
 		wp_register_script_module(
 			\IQLRSS\Driver::plugin_prefix( 'admin', '-' ),
-			\IQLRSS\Driver::get_asset_url( 'admin.js' ),
+			\IQLRSS\Driver::get_asset_url( 'js/admin.js' ),
 			array( 'jquery' ),
 			\IQLRSS\Driver::get( 'version', '1.0.0' )
 		);
@@ -94,9 +93,12 @@ Class Settings_Shipstation {
 			'api_verified'	=> \IQLRSS\Driver::get_ss_opt( 'api_key_valid', false ),
 			'apiv1_verified'=> \IQLRSS\Driver::get_ss_opt( 'apiv1_key_valid', false ),
 			'global_adjustment_type' => \IQLRSS\Driver::get_ss_opt( 'global_adjustment_type', '' ),
+			'store' => array(
+				'currency_symbol' => get_woocommerce_currency_symbol( get_woocommerce_currency() ),
+			),
 			'rest' => array(
 				'nonce'		=> wp_create_nonce( 'wp_rest' ),
-				'apiactions'=> get_rest_url( null, sprintf( '/%s/v1/apiactions',
+				'settings'=> get_rest_url( null, sprintf( '/%s/v1/settings',
 					\IQLRSS\Driver::get( 'slug' )
 				) ),
 			),
@@ -104,8 +106,12 @@ Class Settings_Shipstation {
 				'button_api_verify'		=> esc_html__( 'Verify API', 'live-rates-for-shipstation' ),
 				'button_api_clearcache'	=> esc_html__( 'Clear API Cache', 'live-rates-for-shipstation' ),
 				'confirm_box_removal'	=> esc_html__( 'Please confirm you would like to completely remove (x) custom boxes.', 'live-rates-for-shipstation' ),
+				'confirm_modal_closure'	=> esc_html__( 'Changes you made may not be saved. Close modal window?', 'live-rates-for-shipstation' ),
+				'error_field_required'	=> esc_html__( 'This field is required, please enter a value.', 'live-rates-for-shipstation' ),
+				'error_custombox_json'	=> esc_html__( 'Something went wrong while saving your data. Please try again.', 'live-rates-for-shipstation' ),
 				'error_rest_generic'	=> esc_html__( 'Something went wrong with the REST Request. Please resave permalinks and try again.', 'live-rates-for-shipstation' ),
 				'error_verification_required'		=> esc_html__( 'Please click the Verify API button to ensure a connection exists.', 'live-rates-for-shipstation' ),
+				'success_custombox_added'			=> esc_html__( 'The Custom Box has been added to the list successfully!', 'live-rates-for-shipstation' ),
 				'desc_global_adjustment_percentage' => esc_html__( 'Example: IF UPS Ground is $7.25 and you input 15% ($1.08), the final shipping rate the customer sees is: $8.33', 'live-rates-for-shipstation' ),
 				'desc_global_adjustment_flatrate'	=> esc_html__( 'Example: IF UPS Ground is $5.50 and you input $2.37, the final shipping rate the customer sees is: $7.87', 'live-rates-for-shipstation' ),
 			),
@@ -195,159 +201,6 @@ Class Settings_Shipstation {
 
 
 	/**
-	 * REST Endpoint to validate the users API Key and clear API caches.
-	 *
-	 * @return void
-	 */
-	public function api_actions_endpoint() {
-
-		$prefix = \IQLRSS\Driver::get( 'slug' );
-
-		// Handle ajax requests
-		register_rest_route( "{$prefix}/v1", 'apiactions', array(
-			'methods' => array( 'POST' ),
-			'permission_callback' => fn() => is_user_logged_in(),
-			'callback' => function( $request ) {
-
-				$params = $request->get_params();
-				if( ! isset( $params['action'] ) || empty( $params['action'] ) ) {
-					wp_send_json_error();
-				}
-
-				switch( $params['action'] ) {
-
-					// Clear the API Caches
-					case 'clearcache':
-
-						// Success!
-						$this->clear_cache();
-						wp_send_json_success();
-
-					break;
-
-
-					// Verify API Key
-					case 'verify':
-
-						// Error - Unknown Type
-						if( empty( $params['type'] ) || ! in_array( $params['type'], array( 'v1', 'v2' ) ) ) {
-							wp_send_json_error( esc_html__( 'System could not discern API type.', 'live-rates-for-shipstation' ), 401 );
-
-						// Error - v1 API missing key or secret.
-						} else if( 'v1' == $params['type'] && ( empty( $params['key'] ) || empty( $params['secret'] ) ) ) {
-							wp_send_json_error( esc_html__( 'The ShipStation [v1] API required both a valid [v1] key and [v1] secret.', 'live-rates-for-shipstation' ), 401 );
-
-						// Error v2 API missing api key.
-						} else if( empty( $params['key'] ) ) {
-							wp_send_json_error( esc_html__( 'The ShipStation v2 API requires an API key.', 'live-rates-for-shipstation' ), 401 );
-						}
-
-						$type = sanitize_title( $params['type'] );
-						$settings = array(
-							'v2'			=> \IQLRSS\Driver::get_ss_opt( 'api_key' ),
-							'v2valid'		=> \IQLRSS\Driver::get_ss_opt( 'api_key_valid' ),
-							'v2valid_time'	=> \IQLRSS\Driver::get_ss_opt( 'api_key_vt' ),
-							'v1'			=> \IQLRSS\Driver::get_ss_opt( 'apiv1_key' ),
-							'v1secret'		=> \IQLRSS\Driver::get_ss_opt( 'apiv1_secret' ),
-							'v1valid'		=> \IQLRSS\Driver::get_ss_opt( 'apiv1_key_valid' ),
-							'v1valid_time'	=> \IQLRSS\Driver::get_ss_opt( 'apiv1_key_vt' ),
-						);
-						$keydata = array(
-							'old' => array(
-								'key' 	 => $settings[ $type ],
-								'secret' => $settings['v1secret'],
-							),
-							'new' => array(
-								'key'	 => sanitize_text_field( $params['key'] ),
-								'secret' => ( ! empty( $params['secret'] ) ) ? sanitize_text_field( $params['secret'] ) : '',
-							)
-						);
-
-						// Only allow verification once a day if the data is the same.
-						if( $keydata['old']['key'] == $keydata['new']['key'] ) {
-
-							$valid_time = $settings["{$type}valid_time"];
-							if( 'v1' == $type ) {
-								$valid_time = ( $keydata['old']['secret'] != $keydata['new']['secret'] ) ? 0 : $valid_time;
-							}
-
-							// Return Early - We don't need to make a call, it is still valid.
-							if( ! empty( $valid_time ) && $valid_time >= gmdate( 'Ymd', strtotime( 'today' ) ) ) {
-								wp_send_json_success();
-							}
-
-						}
-
-						// Verify the v1 API
-						if( 'v1' == $type ) {
-
-							// The API requires the keys to exist before being pinged.
-							\IQLRSS\Driver::set_ss_opt( 'apiv1_key', $keydata['new']['key'] );
-							\IQLRSS\Driver::set_ss_opt( 'apiv1_secret', $keydata['new']['secret'] );
-
-							// Ping the stores so that it sets the currently connected store ID.
-							$shipStationAPI = new Shipstation_Apiv1();
-							$request = $shipStationAPI->get_stores();
-
-							// Error - Something went wrong, the API should let us know.
-							if( is_wp_error( $request ) || empty( $request ) ) {
-
-								// Revert to old key and secret.
-								\IQLRSS\Driver::set_ss_opt( 'apiv1_key', $keydata['old']['key'] );
-								\IQLRSS\Driver::set_ss_opt( 'apiv1_secret', $keydata['old']['secret'] );
-
-								$message = ( is_wp_error( $request ) ) ? $request->get_error_message() : '';
-								$code = ( is_wp_error( $request ) ) ? $request->get_error_code() : 400;
-								wp_send_json_error( $message, $code );
-
-							}
-
-							// Success! - Denote v2 validity and valid time.
-							\IQLRSS\Driver::set_ss_opt( 'apiv1_key_valid', true );
-							\IQLRSS\Driver::set_ss_opt( 'apiv1_key_vt', gmdate( 'Ymd', strtotime( 'today' ) ) );
-							wp_send_json_success();
-
-						// Verify the v2 API
-						} else {
-
-							// The API requires the keys to exist before being pinged.
-							\IQLRSS\Driver::set_ss_opt( 'api_key', $keydata['new']['key'] );
-
-							// Ping the carriers so that they are cached.
-							$shipStationAPI = new Shipstation_Api();
-							$request = $shipStationAPI->get_carriers();
-
-							// Error - Something went wrong, the API should let us know.
-							if( is_wp_error( $request ) || empty( $request ) || ! is_array( $request ) ) {
-
-								// Revert to old key.
-								\IQLRSS\Driver::get_ss_opt( 'api_key', $keydata['old']['key'] );
-
-								$code 	 = ( is_wp_error( $request ) ) ? $request->get_error_code() : 400;
-								$message = ( is_wp_error( $request ) ) ? $request->get_error_message() : '';
-								wp_send_json_error( $message, $code );
-
-							}
-
-							// Success! - Denote v2 validity and valid time.
-							\IQLRSS\Driver::set_ss_opt( 'api_key_valid', true );
-							\IQLRSS\Driver::set_ss_opt( 'api_key_vt', gmdate( 'Ymd', strtotime( 'today' ) ) );
-							wp_send_json_success();
-
-						}
-
-					break;
-				}
-
-				// Cases should return their own error/success.
-				wp_send_json_error();
-			}
-		) );
-
-	}
-
-
-	/**
 	 * Clear the API cache.
 	 *
 	 * @return void
@@ -362,13 +215,14 @@ Class Settings_Shipstation {
 		 * All these transients are prefixed with our plugins unique string slug.
 		 * The first WHERE ensures only `_transient_` and the 2nd ensures only our plugins transients.
 		 */
-		$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s AND option_name LIKE %s",
+		$wpdb->query( $wpdb->prepare( "DELETE FROM %i WHERE option_name LIKE %s AND option_name LIKE %s", // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
+			$wpdb->options,
 			$wpdb->esc_like( '_transient_' ) . '%',
 			'%' . $wpdb->esc_like( '_' . \IQLRSS\Driver::get( 'slug' ) . '_' ) . '%'
 		) );
 
 		// Set transient to clear any WC_Session caches if they are found.
-		$expires = absint( apply_filters( 'wc_session_expiration', DAY_IN_SECONDS * 2 ) );
+		$expires = absint( apply_filters( 'wc_session_expiration', DAY_IN_SECONDS * 2 ) ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 		set_transient( \IQLRSS\Driver::plugin_prefix( 'wcs_timeout' ), time(), $expires );
 
 	}
@@ -387,7 +241,7 @@ Class Settings_Shipstation {
 			return;
 		}
 
-		$this->clear_cache();
+		\IQLRSS\Driver::clear_cache();
 
 	}
 
@@ -455,12 +309,12 @@ Class Settings_Shipstation {
 
 		// Prime the cache
 		// API v1 will always cache it's ShipStation data in the WC_Order as metadata.
-		$apiv1 = new Shipstation_Apiv1( true );
+		$apiv1 = new Api\Shipstationv1( true );
 		$apiv1->get_orders( array(
 			'createDateEnd' => gmdate( 'c', time() ),
 		) );
 
-		$api = new Shipstation_Api( true );
+		$api = new Api\Shipstation( true );
 		$api->create_shipments_from_wc_orders( $wc_orders );
 
 		return delete_transient( $trans_key );
@@ -513,15 +367,17 @@ Class Settings_Shipstation {
 	 */
 	public function append_shipstation_integration_settings( $fields ) {
 
-		$carriers = array();
+		$carriers = array(
+			'' => esc_html__( 'ShipStation carriers may still be loading...', 'live-rates-for-shipstation' ),
+		);
 		$appended_fields = array();
 
 		if( ! empty( \IQLRSS\Driver::get_ss_opt( 'api_key' ) ) ) {
 
 			$carrier_desc = esc_html__( 'Select which ShipStation carriers you would like to see live shipping rates from.', 'live-rates-for-shipstation' );
-			$shipStationAPI = new Shipstation_Api();
-			$response = $shipStationAPI->get_carriers();
+			$response = ( new Api\Shipstation() )->get_carriers();
 
+			$carriers = array();
 			if( is_a( $response, 'WP_Error' ) ) {
 				$carriers[''] = $response->get_error_message();
 			} else if( is_array( $response ) ) {
@@ -642,7 +498,7 @@ Class Settings_Shipstation {
 				unset( $settings[ \IQLRSS\Driver::plugin_prefix( 'api_key_vt' ) ] );
 			}
 
-			$this->clear_cache();
+			\IQLRSS\Driver::clear_cache();
 		}
 
 		// No [v1] API Key? Invalid!
@@ -654,7 +510,7 @@ Class Settings_Shipstation {
 				unset( $settings[ \IQLRSS\Driver::plugin_prefix( 'apiv1_key_vt' ) ] );
 			}
 
-			$this->clear_cache();
+			\IQLRSS\Driver::clear_cache();
 		}
 
 		return $settings;
@@ -744,7 +600,7 @@ Class Settings_Shipstation {
 			$enqueue = ( isset( $_GET, $_GET['instance_id'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
 			// Integration > ShipStation settings page
-			$enqueue = ( $enqueue || isset( $_GET, $_GET['section'] ) && 'shipstation' == $_GET['section'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			$enqueue = ( $enqueue || ( isset( $_GET, $_GET['section'] ) && 'shipstation' == $_GET['section'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
 			// Overprotective WooCommerce settings page check
 			$enqueue = ( $enqueue && 'woocommerce_page_wc-settings' == $screen_id );

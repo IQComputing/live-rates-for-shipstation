@@ -1,8 +1,7 @@
 <?php
 /**
  * Box Packing class found in woocommerce-shipping-ups
- * Updated by IQComputing because many of these methods
- * have the wrong return documentation.
+ * Updated by IQComputing
  *
  * @version 2.0.1
  * @author WooThemes / Mike Jolley
@@ -69,14 +68,11 @@ class WC_Boxpack {
 	 * add_box function.
 	 *
 	 * @access public
-	 * @param mixed $length
-	 * @param mixed $width
-	 * @param mixed $height
-	 * @param mixed $weight
+	 * @param Array $box - Array( 'outer' => array( 'length', 'width', 'height' ), 'inner' => array( see outer ) )
 	 * @return object WC_Boxpack_Box
 	 */
-	public function add_box( $length, $width, $height, $weight = 0 ) {
-		$new_box = new WC_Boxpack_Box( $length, $width, $height, $weight );
+	public function add_box( $box ) {
+		$new_box = new WC_Boxpack_Box( $box );
 		$this->boxes[] = $new_box;
 		return $new_box;
 	}
@@ -173,6 +169,7 @@ class WC_Boxpack {
 					$package->volume   = $item->get_volume();
 					$package->unpacked = true;
 					$package->packed   = array( $item );
+					$package->data     = array();
 					$this->packages[]  = $package;
 				}
 			}

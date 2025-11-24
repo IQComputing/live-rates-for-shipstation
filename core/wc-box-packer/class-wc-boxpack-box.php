@@ -1,8 +1,7 @@
 <?php
 /**
  * Box Packing class found in woocommerce-shipping-ups
- * Updated by IQComputing because many of these methods
- * have the wrong return documentation.
+ * Updated by IQComputing
  *
  * @version 2.0.1
  * @author WooThemes / Mike Jolley
@@ -67,20 +66,45 @@ class WC_Boxpack_Box {
 	private $type = 'box';
 
 	/**
-	 * __construct function.
+	 * Box info - contains the core box properties and
+	 * additonal data like nickname and price.
+	 * See the Shipping Method Custom Packing Boxes for more info.
 	 *
-	 * @access public
+	 * @var Array
+	 */
+	private $data = array();
+
+
+	/**
+	 * Setup box properties.
+	 *
+	 * @param Array $box - Array( 'outer' => array( 'length', 'width', 'height' ), 'inner' => array( see outer ) )
+	 *
 	 * @return void
 	 */
-	public function __construct( $length, $width, $height, $weight = 0 ) {
-		$dimensions = array( $length, $width, $height );
+	public function __construct( $box ) {
 
-		sort( $dimensions );
+		// Default - All Outer
+		$this->length = floatval( $box['outer']['length'] );
+		$this->width  = floatval( $box['outer']['width'] );
+		$this->height = floatval( $box['outer']['height'] );
+		$this->outer_length = floatval( $box['outer']['length'] );
+		$this->outer_width  = floatval( $box['outer']['width'] );
+		$this->outer_height = floatval( $box['outer']['height'] );
 
-		$this->outer_length = $this->length = floatval( $dimensions[2] );
-		$this->outer_width  = $this->width  = floatval( $dimensions[1] );
-		$this->outer_height = $this->height = floatval( $dimensions[0] );
-		$this->weight       = floatval( $weight );
+		// Inner
+		if( ! empty( array_filter( (array)$box['inner'] ) ) ) {
+			$this->length = floatval( $box['inner']['length'] );
+			$this->width  = floatval( $box['inner']['width'] );
+			$this->height = floatval( $box['inner']['height'] );
+		}
+
+		// Weight
+		$this->weight = floatval( $box['weight'] );
+
+		// Everything else
+		$this->data = $box;
+
 	}
 
 	/**
@@ -210,7 +234,6 @@ class WC_Boxpack_Box {
 
 		$this->reset_packed_dimensions();
 
-		// @todo Rememer this kind of loop, neat method, love it.
 		while ( sizeof( $items ) > 0 ) {
 			$item = array_shift( $items );
 
@@ -267,6 +290,7 @@ class WC_Boxpack_Box {
 		$package->width    = $this->get_outer_width();
 		$package->height   = $this->get_outer_height();
 		$package->value    = $packed_value;
+		$package->data     = $this->data;
 
 		// Calculate packing success % based on % of weight and volume of all items packed
 		$packed_weight_ratio      = null;
@@ -280,15 +304,19 @@ class WC_Boxpack_Box {
 			$packed_volume_ratio = $packed_volume / ( $packed_volume + $unpacked_volume );
 		}
 
+		// Fallback to amount packed
 		if ( is_null( $packed_weight_ratio ) && is_null( $packed_volume_ratio ) ) {
-			// Fallback to amount packed
 			$package->percent = ( sizeof( $packed ) / ( sizeof( $unpacked ) + sizeof( $packed ) ) ) * 100;
+
+		// Volume only
 		} elseif ( is_null( $packed_weight_ratio ) ) {
-			// Volume only
 			$package->percent = $packed_volume_ratio * 100;
+
+		// Weight only
 		} elseif ( is_null( $packed_volume_ratio ) ) {
-			// Weight only
 			$package->percent = $packed_weight_ratio * 100;
+
+		// Default?
 		} else {
 			$package->percent = $packed_weight_ratio * $packed_volume_ratio * 100;
 		}
@@ -386,5 +414,17 @@ class WC_Boxpack_Box {
 	 */
 	public function get_packed_length() {
 		return $this->packed_length;
+	}
+
+	/**
+	 * Return box data.
+	 *
+	 * @param String $key
+	 * @param Mixed $default
+	 *
+	 * @return Mixed
+	 */
+	public function get_data( $key, $default = '' ) {
+		return ( isset( $this->data[ $key ] ) ) ? $this->data[ $key ] : $default;
 	}
 }

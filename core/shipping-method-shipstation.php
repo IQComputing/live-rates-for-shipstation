@@ -2,6 +2,12 @@
 /**
  * ShipStation Live Shipping Rates Method
  *
+ * @todo Consider moving Shipping Calculations into it's own class.
+ *
+ * @link https://www.fedex.com/en-us/shipping/one-rate.html
+ * @link https://www.usps.com/ship/priority-mail.htm#flatrate
+ * @link https://www.ups.com/worldshiphelp/WSA/ENG/AppHelp/mergedProjects/CORE/Codes/Package_Type_Codes.htm
+ *
  * :: Action Hooks
  * :: Filter Hooks
  * :: Shipping Zone
@@ -24,19 +30,6 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 * @var String
 	 */
 	protected $plugin_prefix;
-
-
-	/**
-	 * Array of expected dimension keys (width, height, length, weight)
-	 *
-	 * @var Array
-	 */
-	protected $dimension_keys = array(
-		'width'		=> 'width',
-		'height'	=> 'height',
-		'length'	=> 'length',
-		'weight'	=> 'weight',
-	);
 
 
 	/**
@@ -85,7 +78,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	public function __construct( $instance_id = 0 ) {
 
 		$this->plugin_prefix 		= \IQLRSS\Driver::get( 'slug' );
-		$this->shipStationApi 		= new Shipstation_Api();
+		$this->shipStationApi 		= new Api\Shipstation();
 		$this->id 					= \IQLRSS\Driver::plugin_prefix( 'shipstation' );
 		$this->instance_id 			= absint( $instance_id );
 		$this->method_title 		= esc_html__( 'Live Rates for ShipStation', 'live-rates-for-shipstation' );
@@ -132,7 +125,10 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 * @return void
 	 */
 	private function action_hooks() {
+
 		add_action( 'woocommerce_update_options_shipping_' . $this->id, array( $this, 'process_admin_options' ) );
+		add_action( 'admin_footer', array( $this, 'hide_zone_setting_fields' ) );
+
 	}
 
 
@@ -145,6 +141,28 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 		( new \IQLRSS\Core\Settings_Shipstation() )->clear_cache();
 		return parent::process_admin_options();
+
+	}
+
+
+	/**
+	 * Hide Shipping Zone setting fields
+	 * 1). Since they're row options we rarely have markup control over.
+	 * 2). Since modules load JS a bit later.
+	 *
+	 * @return void
+	 */
+	public function hide_zone_setting_fields() {
+
+		?><script type="text/javascript">
+
+			/* Hide onebox when not set */
+			if( document.getElementById( 'woocommerce_iqlrss_shipstation_packing' ) ) { ( function() {
+				if( 'onebox' != document.getElementById( 'woocommerce_iqlrss_shipstation_packing' ).value ) {
+					document.getElementById( 'woocommerce_iqlrss_shipstation_packing' ).closest( 'tr' ).nextElementSibling.style.display = 'none';
+				}
+			} )(); }
+		</script><?php
 
 	}
 
@@ -395,6 +413,11 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				'default'		=> esc_html__( 'ShipStation Rates', 'live-rates-for-shipstation' ),
 				'desc_tip'		=> true,
 			),
+			'minweight' => array(
+				'title'			=> esc_html__( 'Product Weight Fallback', 'live-rates-for-shipstation' ),
+				'type'			=> 'text',
+				'description'	=> esc_html__( 'This value will be used if both weight and dimensions are missing from any given product. ShipStation at minimum needs a product weight to retrieve rates.', 'live-rates-for-shipstation' ),
+			),
 			'packing' => array(
 				'title'			=> esc_html__( 'Product Packing', 'live-rates-for-shipstation' ),
 				'type'			=> 'select',
@@ -402,8 +425,18 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				'options'		=> array(
 					'individual'	=> esc_html__( 'Pack items individually', 'live-rates-for-shipstation' ),
 					'wc-box-packer'	=> esc_html__( 'Pack items using Custom Packing Boxes', 'live-rates-for-shipstation' ),
+					'onebox'		=> esc_html__( 'Pack items into one package derived from products', 'live-rates-for-shipstation' ),
 				),
 				'description'	=> esc_html__( 'Individually can be more costly. Custom packing boxes will automatically fit as many products in set dimensions lowering shipping costs.', 'live-rates-for-shipstation' ),
+			),
+			'packing_sub' => array(
+				'title'			=> esc_html__( 'Package Dimensions', 'live-rates-for-shipstation' ),
+				'type'			=> 'select',
+				'options'		=> array(
+					'weightonly'	=> esc_html__( 'Total weight', 'live-rates-for-shipstation' ),
+					'stacked'		=> esc_html__( 'Stacked vertically', 'live-rates-for-shipstation' ),
+				),
+				'description'	=> esc_html__( 'Stacked vertically - sums product heights and weights, takes largest of other dimensions. Weight only sums product weights and retrieves rates using the total.', 'live-rates-for-shipstation' ),
 			),
 			'customboxes' => array(
 				'type' => 'customboxes', // See self::generate_customboxes_html()
@@ -412,6 +445,87 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				'type' => 'services', // See self::generate_services_html()
 			),
 		);
+
+	}
+
+
+	/**
+	 * Automatic dynamic method inherited from parent.
+	 * Generate HTML for custom boxes fields.
+	 *
+	 * @return String - HTML
+	 */
+	public function generate_customboxes_html() {
+
+		$prefix 		= $this->plugin_prefix;
+		$show_custom 	= ( 'wc-box-packer' == $this->get_option( 'packing', 'individual' ) );
+		$saved_boxes 	= $this->get_option( 'customboxes', array() );
+		$packages		= $this->get_package_options();
+
+		ob_start();
+			include 'assets/views/customboxes-table.php';
+		return ob_get_clean();
+
+	}
+
+
+	/**
+	 * Validate customboxes.
+	 *
+	 * @return Array $boxes
+	 */
+	public function validate_customboxes_field() {
+
+		if( ! isset( $_POST['_wpnonce'] ) ) {
+			return;
+		}
+
+		$nonce = sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) );
+		if( ! wp_verify_nonce( $nonce, 'woocommerce-settings' ) ) {
+			return;
+		} else if( ! isset( $_POST['custombox'] ) || ! is_array( $_POST['custombox'] ) ) {
+			return;
+		}
+
+		// Input sanitized during processing.
+		$posted_boxes = wp_unslash( $_POST['custombox'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+
+		$boxes = array();
+		foreach( $posted_boxes as $box_arr ) {
+
+			if( isset( $box_arr['json'] ) ) {
+
+				$json = json_decode( $box_arr['json'], true );
+				if( empty( $json['outer'] ) ) continue;
+
+				$boxes[] = array(
+					'active' => absint( $json['active'] ),
+					'preset' => sanitize_text_field( $json['preset'] ),
+					'nickname' => sanitize_text_field( $json['nickname'] ),
+					'outer' => array(
+						'length'	=> floatval( $json['outer']['length'] ),
+						'width'		=> floatval( $json['outer']['width'] ),
+						'height'	=> floatval( $json['outer']['height'] ),
+					),
+					'inner' => array(
+						'length'	=> floatval( $json['inner']['length'] ),
+						'width'		=> floatval( $json['inner']['width'] ),
+						'height'	=> floatval( $json['inner']['height'] ),
+					),
+					'weight'	=> floatval( $json['weight'] ),
+					'weight_max'=> floatval( $json['weight_max'] ),
+					'price'		=> floatval( $json['price'] ),
+					'carrier'	=> ( isset( $json['carrier'] ) ) ? sanitize_text_field( $json['carrier'] ) : '',
+				);
+
+			}
+		}
+
+		usort( $boxes, function( $arrA, $arrB ) {
+			return strcasecmp( $arrA['nickname'], $arrB['nickname'] );
+		} );
+
+		return $boxes;
 
 	}
 
@@ -458,26 +572,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		}
 
 		ob_start();
-			include 'views/services-table.php';
-		return ob_get_clean();
-
-	}
-
-
-	/**
-	 * Automatic dynamic method inherited from parent.
-	 * Generate HTML for custom boxes fields.
-	 *
-	 * @return String - HTML
-	 */
-	public function generate_customboxes_html() {
-
-		$prefix 		= $this->plugin_prefix;
-		$show_custom 	= ( 'wc-box-packer' == $this->get_option( 'packing', 'individual' ) );
-		$saved_boxes 	= $this->get_option( 'customboxes', array() );
-
-		ob_start();
-			include 'views/customboxes-table.php';
+			include 'assets/views/services-table.php';
 		return ob_get_clean();
 
 	}
@@ -562,55 +657,6 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	}
 
 
-	/**
-	 * Validate customboxes field.
-	 *
-	 * @return Array $boxes
-	 */
-	public function validate_customboxes_field() {
-
-		if( ! isset( $_POST['_wpnonce'] ) ) {
-			return;
-		}
-
-		$nonce = sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) );
-		if( ! wp_verify_nonce( $nonce, 'woocommerce-settings' ) ) {
-			return;
-		} else if( ! isset( $_POST['custombox'] ) || ! is_array( $_POST['custombox'] ) ) {
-			return;
-		}
-
-		// Input sanitized during processing.
-		$posted_boxes = wp_unslash( $_POST['custombox'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-
-		$boxes = array();
-		foreach( $posted_boxes as $box_arr ) {
-
-			$vals = array_filter( $box_arr, 'is_numeric' );
-			if( count( $vals ) < 7 ) continue;
-
-			$boxes[] = array(
-				'outer' => array(
-					'length'	=> floatval( $box_arr['ol'] ),
-					'width'		=> floatval( $box_arr['ow'] ),
-					'height'	=> floatval( $box_arr['oh'] ),
-				),
-				'inner' => array(
-					'length'	=> floatval( $box_arr['il'] ),
-					'width'		=> floatval( $box_arr['iw'] ),
-					'height'	=> floatval( $box_arr['ih'] ),
-				),
-				'weight'	=> floatval( $box_arr['w'] ),
-				'weight_max'=> floatval( $box_arr['wm'] ),
-			);
-
-		}
-
-		return $boxes;
-
-	}
-
-
 
 	/**------------------------------------------------------------------------------------------------ **/
 	/** :: Shipping Calculations :: **/
@@ -630,7 +676,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 		// Try to pull from cache. This may set $this->rates
 		// Return Early - We have cached rates to work with!
-		$packages_hash = $this->check_packages_rate_cache( $packages );
+		$this->check_packages_rate_cache( $packages );
 		if( ! empty( $this->rates ) ) {
 			return;
 
@@ -641,6 +687,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 		$enabled_services = $this->get_enabled_services();
 		if( empty( $enabled_services ) ) {
+			$this->log( esc_html__( 'No enabled carrier services found. Please enable carrier services within the shipping zone.', 'live-rates-for-shipstation' ) );
 			return;
 		}
 
@@ -668,23 +715,16 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			'address_residential_indicator' => 'unknown',
 		);
 
-		// Individual Packaging
-		if( 'individual' == $packing_type ) {
-			$item_requests = $this->get_individual_requests( $packages['contents'] );
-
-		// WC Boxed Packaging
-		} else {
-			$item_requests = $this->get_custombox_requests( $packages['contents'] );
-		}
-
-		// Rates groups shipping estimates by service ID.
-		$rates = array();
+		// Pack items
+		$item_requests = call_user_func( array( $this, sprintf( 'group_requestsby_%s', str_replace( '-', '_', $packing_type ) ) ), $packages['contents'] );
 
 		/**
 		 * This has to be done per package as the other rates endpoint
 		 * requires the customers address1 for verification and really
 		 * it's not much faster.
+		 * Group rates.
 		 */
+		$rates = array();
 		foreach( $item_requests as $item_id => $req ) {
 
 			// Create the API request combining the package (weight, dimensions), general request data, and the carrier info.
@@ -699,6 +739,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			// Ping the ShipStation API to get rates per Carrier.
 			// Continue - Something went wrong, should be logged on the API side.
 			$available_rates = $this->shipStationApi->get_shipping_estimates( $api_request );
+
 			if( is_wp_error( $available_rates ) || empty( $available_rates ) ) {
 				continue;
 			}
@@ -710,9 +751,10 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					continue;
 				}
 
+				$ratehash 	 = md5( sprintf( '%s%s', $shiprate['code'], $shiprate['carrier_id'] ) );
 				$service_arr = $enabled_services[ $shiprate['carrier_id'] ][ $shiprate['code'] ];
-				$cost = floatval( $shiprate['cost'] );
-				$ratemeta = array(
+				$cost 		 = floatval( $shiprate['cost'] );
+				$ratemeta 	 = array(
 					'_name'=> ( isset( $req['_name'] ) ) ? $req['_name'] : '', // Item product name.
 					'rate' => $cost,
 				);
@@ -766,6 +808,12 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					}
 				}
 
+				// Maybe a package price
+				if( 'wc-box-packer' == $packing_type && ! empty( $req['price'] ) ) {
+					$cost += floatval( $req['price'] );
+					$ratemeta['other_costs']['box_price'] = $req['price'];
+				}
+
 				// Maybe apply per item.
 				if( 'individual' == $packing_type ) {
 					$cost *= $packages['contents'][ $item_id ]['quantity'];
@@ -773,10 +821,10 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				}
 
 				// Set rate or append the estimated item ship cost.
-				if( ! isset( $rates[ $shiprate['code'] ] ) ) {
+				if( ! isset( $rates[ $ratehash ] ) ) {
 
-					$rates[ $shiprate['code'] ] = array(
-						'id'		=> $shiprate['code'],
+					$rates[ $ratehash ] = array(
+						'id'		=> $ratehash,
 						'label'		=> ( ! empty( $service_arr['nickname'] ) ) ? $service_arr['nickname'] : $shiprate['name'],
 						'package'	=> $packages,
 						'cost'		=> array( $cost ),
@@ -794,18 +842,18 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					);
 
 				} else {
-					$rates[ $shiprate['code'] ]['cost'][] = $cost;
+					$rates[ $ratehash ]['cost'][] = $cost;
 				}
 
 				// Merge item rates
-				$rates[ $shiprate['code'] ]['meta_data']['rates'] = array_merge(
-					$rates[ $shiprate['code'] ]['meta_data']['rates'],
+				$rates[ $ratehash ]['meta_data']['rates'] = array_merge(
+					$rates[ $ratehash ]['meta_data']['rates'],
 					array( $ratemeta ),
 				);
 
 				// Merge item boxes
-				$rates[ $shiprate['code'] ]['meta_data']['boxes'] = array_merge(
-					$rates[ $shiprate['code'] ]['meta_data']['boxes'],
+				$rates[ $ratehash ]['meta_data']['boxes'] = array_merge(
+					$rates[ $ratehash ]['meta_data']['boxes'],
 					array( $req ),
 				);
 
@@ -813,23 +861,24 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 		}
 
-		$single_lowest 			= \IQLRSS\Driver::get_ss_opt( 'return_lowest', 'no' );
-		$single_lowest_label 	= \IQLRSS\Driver::get_ss_opt( 'return_lowest_label', '' );
+		$single_lowest 		 = \IQLRSS\Driver::get_ss_opt( 'return_lowest', 'no' );
+		$single_lowest_label = \IQLRSS\Driver::get_ss_opt( 'return_lowest_label', '' );
 
 		// Add all shipping rates, let the user decide.
 		if( 'no' == $single_lowest || empty( $single_lowest ) ) {
 
 			foreach( $rates as $rate_arr ) {
 
-				// Skip incomplete rate requests
-				if( count( $item_requests ) != count( $rate_arr['cost'] ) ) {
-					continue;
+				// If more than 1 rate, add the cheapest.
+				if( count( $rate_arr['cost'] ) > 1 ) {
+					usort( $rate_arr['cost'], fn( $r1, $r2 ) => ( (float)$r1 < (float)$r2 ) ? -1 : 1 );
+					$rate_arr['cost'] = (array)array_shift( $rate_arr['cost'] );
 				}
 
 				// WooCommerce skips serialized data when outputting order item meta, this is a workaround.
 				// See hooks above for formatting.
-				$rate_arr['meta_data']['rates'] = json_encode( $rate_arr['meta_data']['rates'] );
-				$rate_arr['meta_data']['boxes'] = json_encode( $rate_arr['meta_data']['boxes'] );
+				$rate_arr['meta_data']['rates'] = wp_json_encode( $rate_arr['meta_data']['rates'] );
+				$rate_arr['meta_data']['boxes'] = wp_json_encode( $rate_arr['meta_data']['boxes'] );
 
 				$this->add_rate( $rate_arr );
 			}
@@ -854,17 +903,20 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 			// WooCommerce skips serialized data when outputting order item meta, this is a workaround.
 			// See hooks above for formatting.
-			$rates[ $lowest_service ]['meta_data']['rates'] = json_encode( $rates[ $lowest_service ]['meta_data']['rates'] );
-			$rates[ $lowest_service ]['meta_data']['boxes'] = json_encode( $rates[ $lowest_service ]['meta_data']['boxes'] );
+			$rates[ $lowest_service ]['meta_data']['rates'] = wp_json_encode( $rates[ $lowest_service ]['meta_data']['rates'] );
+			$rates[ $lowest_service ]['meta_data']['boxes'] = wp_json_encode( $rates[ $lowest_service ]['meta_data']['boxes'] );
 
 			$this->add_rate( $rates[ $lowest_service ] );
 
 		}
 
-		// Add a cache key to check against.
-		WC()->session->set( $this->plugin_prefix, array_merge(
-			WC()->session->get( $this->plugin_prefix, array() ),
-			array( 'method_hash' => $packages_hash ),
+		$cachehash = $this->generate_packages_cache_key( $packages );
+		if( empty( $cachehash ) ) return;
+
+		// Cache packages to prevent multiple requests.
+		WC()->session->set( $this->plugin_prefix . '_packages', array_merge(
+			WC()->session->get( $this->plugin_prefix . '_packages', array() ),
+			array( 'method_hash' => $cachehash ),
 			array( 'method_cache_time' => time() ),
 		) );
 
@@ -878,9 +930,11 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 *
 	 * @return Array $requests
 	 */
-	protected function get_individual_requests( $items ) {
+	protected function group_requestsby_individual( $items ) {
 
-		$item_requests = array();
+		$item_requests 	= array();
+		$default_weight = $this->get_option( 'minweight', '' );
+
 		foreach( $items as $item_id => $item ) {
 
 			// Continue - No shipping needed for product.
@@ -893,52 +947,168 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					$item['data']->get_id(),
 					$item['data']->get_name(),
 				),
+				'weight' => ( ! empty( $item['data']->get_weight() ) ) ? $item['data']->get_weight() : $default_weight,
 			);
 			$physicals = array_filter( array(
-				'weight'	=> $item['data']->get_weight(),
 				'length'	=> $item['data']->get_length(),
 				'width'		=> $item['data']->get_width(),
 				'height'	=> $item['data']->get_height(),
 			) );
 
 			// Return Early - Product missing one of the 4 key dimensions.
-			if( count( $physicals ) < 4 ) {
+			if( count( $physicals ) < 3 || empty( $request['weight'] ) ) {
 				$this->log( sprintf(
 
 					/* translators: %1$d is the Product ID. %2$s is the Product Dimensions separated by a comma. */
-					esc_html__( 'Product ID #%1$d missing (%2$s) dimensions. Shipping calculations terminated.', 'live-rates-for-shipstation' ),
+					esc_html__( 'Product ID #%1$d missing (%2$s) dimensions. Weight is a minimum requirement. Shipping calculations terminated.', 'live-rates-for-shipstation' ),
 					$item['product_id'],
 					implode( ', ', array_diff_key( array(
+						'length'	=> 'length',
 						'width'		=> 'width',
 						'height'	=> 'height',
-						'length'	=> 'length',
 						'weight'	=> 'weight',
-					), $physicals ) )
+					), $physicals + array( 'weight' => $request['weight'] ) ) )
 				) );
+
 				return array();
 			}
 
-			$request['weight'] = array(
-				'value' => (float)round( wc_get_weight( $physicals['weight'], $this->store_data['weight_unit'] ), 2 ),
-				'unit'	=> $this->shipStationApi->convert_unit_term( $this->store_data['weight_unit'] ),
-			);
-
-			// Unset weight and sort dimensions
-			unset( $physicals['weight'] );
+			// Set rate request dimensions.
 			sort( $physicals );
+			if( 3 == count( $physicals ) ) {
+				$request['dimensions'] = array(
+					'length'	=> round( wc_get_dimension( $physicals[2], $this->store_data['dim_unit'] ), 2 ),
+					'width'		=> round( wc_get_dimension( $physicals[1], $this->store_data['dim_unit'] ), 2 ),
+					'height'	=> round( wc_get_dimension( $physicals[0], $this->store_data['dim_unit'] ), 2 ),
+					'unit'		=> $this->shipStationApi->convert_unit_term( $this->store_data['dim_unit'] ),
+				);
+			}
 
-			$request['dimensions'] = array(
-				'length'	=> round( wc_get_dimension( $physicals[2], $this->store_data['dim_unit'] ), 2 ),
-				'width'		=> round( wc_get_dimension( $physicals[1], $this->store_data['dim_unit'] ), 2 ),
-				'height'	=> round( wc_get_dimension( $physicals[0], $this->store_data['dim_unit'] ), 2 ),
-				'unit'		=> $this->shipStationApi->convert_unit_term( $this->store_data['dim_unit'] ),
-			);
+			// Set rate request weight.
+			if( ! empty( $request['weight'] ) ) {
+				$request['weight'] = array(
+					'value' => (float)round( wc_get_weight( $request['weight'], $this->store_data['weight_unit'] ), 2 ),
+					'unit'	=> $this->shipStationApi->convert_unit_term( $this->store_data['weight_unit'] ),
+				);
+			}
 
 			$item_requests[ $item_id ] = $request;
 
 		}
 
 		return $item_requests;
+
+	}
+
+
+	/**
+	 * One Big Box
+	 * Group all the products by weight and get rates by total weight.
+	 *
+	 * @param Array $items
+	 *
+	 * @return Array $requests
+	 */
+	protected function group_requestsby_onebox( $items ) {
+
+		$default_weight = $this->get_option( 'minweight', 0 );
+		$subtype 		= $this->get_option( 'packing_sub', 'weightonly' );
+		$dimensions = array(
+			'running' => array_combine( array( 'length', 'width', 'height', 'weight' ), array_fill( 0, 4, 0 ) ),
+			'largest' => array_combine( array( 'length', 'width', 'height', 'weight' ), array_fill( 0, 4, 0 ) ),
+		);
+
+		foreach( $items as $item_id => $item ) {
+
+			// Continue - No shipping needed for product.
+			if( ! $item['data']->needs_shipping() ) {
+				continue;
+			}
+
+			$request = array(
+				'weight' => ( ! empty( $item['data']->get_weight() ) ) ? $item['data']->get_weight() : $default_weight,
+			);
+
+			// Return Early - Missing minimum requirement: weight.
+			if( empty( $request['weight'] ) ) {
+
+				$this->log( sprintf(
+
+					/* translators: %1$d is the Product ID. */
+					esc_html__( 'Product ID #%1$d missing weight. Shipping Zone weight fallback could not be used. Shipping calculations terminated.', 'live-rates-for-shipstation' ),
+					$item['product_id']
+				) );
+
+				return array();
+
+			}
+
+			$dimensions['running']['weight'] = $dimensions['running']['weight'] + ( floatval( $request['weight'] ) * $item['quantity'] );
+			$dimensions['running']['height'] = $dimensions['running']['height'] + ( floatval( $item['data']->get_height() ) * $item['quantity'] );
+			$dimensions['largest'] = array(
+				'length'	=> ( $dimensions['largest']['length'] < $item['data']->get_length() ) ? $item['data']->get_length() : $dimensions['largest']['length'],
+				'width'		=> ( $dimensions['largest']['width'] < $item['data']->get_width() )   ? $item['data']->get_width()  : $dimensions['largest']['width'],
+				'height'	=> ( $dimensions['largest']['height'] < $item['data']->get_height() ) ? $item['data']->get_height() : $dimensions['largest']['height'],
+				'weight'	=> ( $dimensions['largest']['weight'] < $request['weight'] )		  ? $request['weight']			: $dimensions['largest']['weight'],
+			);
+
+		}
+
+		// Return Early - Rates by total weight.
+		if( 'weightonly' == $subtype ) {
+
+			return array( array(
+				'weight' => array(
+					'value' => (float)round( wc_get_weight( $dimensions['running']['weight'], $this->store_data['weight_unit'] ), 2 ),
+					'unit'	=> $this->shipStationApi->convert_unit_term( $this->store_data['weight_unit'] ),
+				),
+			) );
+
+		}
+
+		$physicals = array_filter( array(
+			'length'	=> $dimensions['largest']['length'],
+			'width'		=> $dimensions['largest']['width'],
+			'height'	=> $dimensions['running']['height'],
+			'weight'	=> $dimensions['running']['weight'],
+		) );
+
+		// Return Early - Error - Missing dimensions to work with.
+		if( $physicals < 4 ) {
+
+			$this->log( sprintf(
+
+				/* translators: %1$d is the Product ID. %2$s is the Product Dimensions separated by a comma. */
+				esc_html__( 'OneBox rate requestion missing dimensions (%1$s). Weight is a minimum requirement. Shipping calculations terminated.', 'live-rates-for-shipstation' ),
+				implode( ', ', array_diff_key( array(
+					'length'	=> 'length',
+					'width'		=> 'width',
+					'height'	=> 'height',
+					'weight'	=> 'weight',
+				), $physicals ) )
+			) );
+
+			return array();
+
+		}
+
+		// Default - Stacked Verticially
+		return array( array(
+			'weight' => array(
+				'unit'	=> $this->shipStationApi->convert_unit_term( $this->store_data['weight_unit'] ),
+				'value' => (float)round( wc_get_weight( $physicals['weight'], $this->store_data['weight_unit'] ), 2 ),
+			),
+			'dimensions' => array(
+				'unit'		=> $this->shipStationApi->convert_unit_term( $this->store_data['dim_unit'] ),
+
+				// Largest
+				'length'	=> round( wc_get_dimension( $physicals['length'], $this->store_data['dim_unit'] ), 2 ),
+				'width'		=> round( wc_get_dimension( $physicals['width'], $this->store_data['dim_unit'] ), 2 ),
+
+				// Running
+				'height'	=> round( wc_get_dimension( $physicals['height'], $this->store_data['dim_unit'] ), 2 ),
+			),
+		) );
 
 	}
 
@@ -951,74 +1121,68 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 *
 	 * @return Array $requests
 	 */
-	protected function get_custombox_requests( $items ) {
+	protected function group_requestsby_wc_box_packer( $items ) {
+
+		$item_requests 	= array();
+		$boxes 			= $this->get_option( 'customboxes', array() );
+		$default_weight = $this->get_option( 'minweight', '' );
+
+		/* Return Early - No custom boxes found. */
+		if( empty( $boxes ) ) {
+			$this->log( esc_html__( 'Custom Boxes selected, but no boxes found. Items packed individually', 'live-rates-for-shipstation' ), 'warning' );
+			return $this->group_requestsby_individual( $items );
+		}
 
 		if( ! class_exists( '\IQRLSS\WC_Box_Packer\WC_Boxpack' ) ) {
 			include_once 'wc-box-packer/class-wc-boxpack.php';
 		}
 
-		$item_requests = array();
-		$wc_boxpack = new WC_Box_Packer\WC_Boxpack();
-		$boxes = $this->get_option( 'customboxes', array() );
-
-		if( empty( $boxes ) ) {
-			$this->log( esc_html__( 'Custom Boxes selected, but no boxes found. Items packed individually', 'live-rates-for-shipstation' ), 'warning' );
-		}
-
 		// Setup the WC_Boxpack boxes based on user submitted custom boxes.
+		$wc_boxpack = new WC_Box_Packer\WC_Boxpack();
 		foreach( $boxes as $box ) {
-
-			$custombox = $wc_boxpack->add_box( $box['outer']['length'], $box['outer']['width'], $box['outer']['height'], $box['weight'] );
-			$custombox->set_inner_dimensions( $box['inner']['length'], $box['inner']['width'], $box['inner']['height'] );
-			if( $box['weight_max'] ) $custombox->set_max_weight( $box['weight_max'] );
-
+			if( empty( $box['active'] ) ) continue;
+			$wc_boxpack->add_box( $box );
 		}
 
 		// Loop the items, grabs their dimensions, and assocaite them with WC_Boxpack for future packing.
 		foreach( $items as $item_id => $item ) {
+			if( ! $item['data']->needs_shipping() ) continue;
 
-			// Continue - No shipping needed for product.
-			if( ! $item['data']->needs_shipping() ) {
-				continue;
-			}
-
-			$data = array();
+			$weight	= ( ! empty( $item['data']->get_weight() ) ) ? $item['data']->get_weight() : $default_weight;
+			$data	= array(
+				'weight' => (float)round( wc_get_weight( $weight, $this->store_data['weight_unit'] ), 2 ),
+			);
 			$physicals = array_filter( array(
-				'weight'	=> $item['data']->get_weight(),
 				'length'	=> $item['data']->get_length(),
 				'width'		=> $item['data']->get_width(),
 				'height'	=> $item['data']->get_height(),
 			) );
 
 			// Return Early - Product missing one of the 4 key dimensions.
-			if( count( $physicals ) < 4 ) {
+			if( count( $physicals ) < 3 && empty( $data['weight'] ) ) {
 				$this->log( sprintf(
 
 					/* translators: %1$d is the Product ID. %2$s is the Product Dimensions separated by a comma. */
-					esc_html__( 'Product ID #%1$d missing (%2$s) dimensions. Shipping calculations terminated.', 'live-rates-for-shipstation' ),
+					esc_html__( 'Product ID #%1$d missing (%2$s) dimensions and no weight found. Shipping calculations terminated.', 'live-rates-for-shipstation' ),
 					$item['product_id'],
 					implode( ', ', array_diff_key( array(
 						'width'		=> 'width',
 						'height'	=> 'height',
 						'length'	=> 'length',
-						'weight'	=> 'weight',
 					), $physicals ) )
 				) );
 				return array();
 			}
 
-			$data['weight'] = (float)round( wc_get_weight( $physicals['weight'], $this->store_data['weight_unit'] ), 2 );
-
-			// Unset weight to exclude it from sort
-			unset( $physicals['weight'] );
 			sort( $physicals );
-
 			$data = array(
 				'length'	=> round( wc_get_dimension( $physicals[2], $this->store_data['dim_unit'] ), 2 ),
 				'width'		=> round( wc_get_dimension( $physicals[1], $this->store_data['dim_unit'] ), 2 ),
 				'height'	=> round( wc_get_dimension( $physicals[0], $this->store_data['dim_unit'] ), 2 ),
-			) + $data;
+				'weight'	=> round( wc_get_weight( $data['weight'], $this->store_data['weight_unit'] ), 2 ),
+			);
 
+			// Pack Products
 			for( $i = 0; $i < $item['quantity']; $i++ ) {
 				$wc_boxpack->add_item(
 					$data['length'],
@@ -1057,6 +1221,8 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					'unit'		=> $this->shipStationApi->convert_unit_term( $this->store_data['dim_unit'] ),
 				),
 				'packed' => $packed_items,
+				'price'	 => ( ! empty( $package->data ) ) ? $package->data['price'] : 0,
+				'package_code' => ( ! empty( $package->data ) ) ? $package->data['preset'] : '',
 			);
 
 			$box_log[] = array(
@@ -1072,6 +1238,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					esc_html__( 'Volume', 'live-rates-for-shipstation' ),
 				),
 				'max_volume' => floatval( $package->width * $package->height * $package->length ),
+				'data' => ( ! empty( $package->data ) ) ? $package->data : array(),
 			);
 
 		}
@@ -1086,36 +1253,29 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 
 	/**
-	 * Attempt to pull from the WC() Session cache to prevent multiple caclulation
+	 * Set the rates based on cached packages.
+	 *
+	 * Attempt to pull from the WC() Session cache to prevent multiple calculations
 	 * requests, which could unnecessarily ping the API or add duplicate logs.
 	 * This issue is common when dealing with WP Blocks/Gutenberg Editor.
 	 *
 	 * @param Array $packages - Packages in use.
 	 *
-	 * @return String $hash - hash key neded to reset cache.
+	 * @return void
 	 */
 	protected function check_packages_rate_cache( $packages ) {
 
-		$session 	= WC()->session->get( $this->plugin_prefix, array() );
+		$session 	= WC()->session->get( $this->plugin_prefix . '_packages', array() );
 		$cleartime 	= get_transient( \IQLRSS\Driver::plugin_prefix( 'wcs_timeout' ) );
-
-		$keys = array();
-		foreach( $packages['contents'] as $key => $package ) {
-			$keys[] = array(
-				$key,
-				$package['quantity'],
-				$package['line_total'],
-			);
-		}
-		$hash = md5( wp_json_encode( $keys ) ) . \WC_Cache_Helper::get_transient_version( 'shipping' );
+		$cachehash 	= $this->generate_packages_cache_key( $packages );
 
 		// Return Early - Cache cleared or 30 minuites has passed (invalidate cache).
 		if( isset( $session['method_cache_time'] ) && ( $cleartime > $session['method_cache_time'] || $session['method_cache_time'] < ( time() - ( 30 * 60 ) ) ) ) {
-			return $hash;
+			return;
 
 		// Return Early- Cart has changed.
-		} else if( ! isset( $session['method_hash'] ) || $session['method_hash'] != $hash ) {
-			return $hash;
+		} else if( ! isset( $session['method_hash'] ) || empty( $cachehash ) || $session['method_hash'] != $cachehash ) {
+			return;
 		}
 
 		// Try to populate Rates.
@@ -1130,8 +1290,6 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 		}
 
-		return $hash;
-
 	}
 
 
@@ -1144,13 +1302,6 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 */
 	protected function generate_packages_cache_key( $packages ) {
 
-		// Maybe skip if cache was cleared.
-		$session 	= WC()->session->get( $this->plugin_prefix, array() );
-		$cleartime 	= get_transient( \IQLRSS\Driver::plugin_prefix( 'wcs_timeout' ) );
-		if( isset( $session['method_cache_time'] ) && $cleartime > $session['method_cache_time'] ) {
-			return '';
-		}
-
 		$keys = array();
 		foreach( $packages['contents'] as $key => $package ) {
 			$keys[] = array(
@@ -1160,8 +1311,8 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			);
 		}
 
-		$hash = md5( wp_json_encode( $keys ) ) . \WC_Cache_Helper::get_transient_version( 'shipping' );
-		return ( ! empty( $keys ) ) ? $hash : '';
+		if( empty( $keys ) ) return '';
+		return md5( wp_json_encode( $keys ) ) . \WC_Cache_Helper::get_transient_version( 'shipping' );
 
 	}
 
@@ -1170,6 +1321,55 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	/**------------------------------------------------------------------------------------------------ **/
 	/** :: Helper Methods :: **/
 	/**------------------------------------------------------------------------------------------------ **/
+	/**
+	 * Map known packages.
+	 * @see assets/json
+	 *
+	 * @param String $key
+	 *
+	 * @return String
+	 */
+	public function get_package_label( $key ) {
+
+		$labels = array(
+			// UPS
+			'flat_rate_envelope'	=> esc_html__( 'USPS Flat Rate Envelope', 'live-rates-for-shipstation' ),
+			'flat_rate_legal_envelope'	=> esc_html__( 'USPS Flat Rate Legal Envelope', 'live-rates-for-shipstation' ),
+			'flat_rate_padded_envelope'	=> esc_html__( 'USPS Flat Rate Padded Envelope', 'live-rates-for-shipstation' ),
+			'large_envelope_or_flat'=> esc_html__( 'USPS Large Envelope or Flat', 'live-rates-for-shipstation' ),
+			'large_flat_rate_box'	=> esc_html__( 'USPS Large Flat Rate Box', 'live-rates-for-shipstation' ),
+			'medium_flat_rate_box'	=> esc_html__( 'USPS Medium Flat Rate Box', 'live-rates-for-shipstation' ),
+			'small_flat_rate_box'	=> esc_html__( 'USPS Small Flat Rate Box', 'live-rates-for-shipstation' ),
+			'regional_rate_box_a'	=> esc_html__( 'USPS Regional Rate Box A', 'live-rates-for-shipstation' ),
+			'regional_rate_box_b'	=> esc_html__( 'USPS Regional Rate Box B', 'live-rates-for-shipstation' ),
+
+			// USPS
+			'ups_10_kg_box'			=> esc_html__( 'UPS 10kg (22lbs) Box', 'live-rates-for-shipstation' ),
+			'ups_25_kg_box'			=> esc_html__( 'UPS 25kg (55lbs) Box', 'live-rates-for-shipstation' ),
+			'ups__express_box_large'=> esc_html__( 'UPS Express Box - Large', 'live-rates-for-shipstation' ), // Why does this have an extra underscore? Ask ShipStation.
+			'ups_express_box_medium'=> esc_html__( 'UPS Express Box - Medium', 'live-rates-for-shipstation' ),
+			'ups_express_box_small'	=> esc_html__( 'UPS Express Box - Small', 'live-rates-for-shipstation' ),
+			'ups_tube'				=> esc_html__( 'UPS Tube', 'live-rates-for-shipstation' ),
+			'ups_express_pak'		=> esc_html__( 'UPS Express Pak', 'live-rates-for-shipstation' ),
+			'ups_letter'			=> esc_html__( 'UPS Letter', 'live-rates-for-shipstation' ),
+
+			// FedEx
+			'fedex_10kg_box'	=> esc_html__( 'FedEx 10kg (22lbs) Box', 'live-rates-for-shipstation' ),
+			'fedex_25kg_box'	=> esc_html__( 'FedEx 25kg (55lbs) Box', 'live-rates-for-shipstation' ),
+			'fedex_extra_large_box' => esc_html__( 'FedEx Extra Large Box', 'live-rates-for-shipstation' ),
+			'fedex_large_box'	=> esc_html__( 'FedEx Large Box', 'live-rates-for-shipstation' ),
+			'fedex_medium_box'	=> esc_html__( 'FedEx Medium Box', 'live-rates-for-shipstation' ),
+			'fedex_small_box'	=> esc_html__( 'FedEx Small Box', 'live-rates-for-shipstation' ),
+			'fedex_tube'		=> esc_html__( 'FedEx Tube', 'live-rates-for-shipstation' ),
+			'fedex_envelope'	=> esc_html__( 'FedEx Envelope', 'live-rates-for-shipstation' ),
+			'fedex_pak'			=> esc_html__( 'FedEx Padded Pak', 'live-rates-for-shipstation' ),
+		);
+
+		return ( isset( $labels [ $key ] ) ) ? $labels[ $key ] : esc_html__( 'Unknown Package', 'live-rates-for-shipstation' );
+
+	}
+
+
 	/**
 	 * Return an array of Price Adjustment Type options.
 	 *
@@ -1213,6 +1413,110 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 
 	/**
+	 * Return an array of package options.
+	 *
+	 * @return Array
+	 */
+	protected function get_package_options() {
+
+		$packages = wp_cache_get( 'packages', $this->plugin_prefix );
+		if( ! empty( $packages ) ) {
+			return $packages;
+		}
+
+		$global_carriers= $this->shipStationApi->get_carriers();
+		$carrier_codes	= wp_list_pluck( $global_carriers, 'carrier_code' );
+		$carrier_codes	= array_intersect_key( $carrier_codes, array_flip( $this->carriers ) );
+
+		$data = array(
+			'usps' => array(
+				'label'		=> esc_html__( 'USPS', 'live-rates-for-shipstation' ),
+				'packages'	=> json_decode( file_get_contents( \IQLRSS\Driver::get_asset_path( 'json/usps-packages.json' ) ), true ),
+			),
+			'ups'	=> array(
+				'label'		=> esc_html__( 'UPS', 'live-rates-for-shipstation' ),
+				'packages'	=> json_decode( file_get_contents( \IQLRSS\Driver::get_asset_path( 'json/ups-packages.json' ) ), true ),
+			),
+			'fedex' => array(
+				'label'		=> esc_html__( 'FedEx', 'live-rates-for-shipstation' ),
+				'packages'	=> json_decode( file_get_contents( \IQLRSS\Driver::get_asset_path( 'json/fedex-packages.json' ) ), true ),
+			),
+		);
+
+		// Append Translated Labels
+		$carrier_packages = array();
+		foreach( $data as $carrier_code => &$carriers ) {
+
+			// Match carrier slug with known carrier code.
+			$carrier_found = array_filter( $carrier_codes, fn( $c ) => $c === $carrier_code );
+			if( empty( $carrier_found ) ) {
+				$carrier_found = array_filter( $carrier_codes, fn( $c ) => false !== strpos( $c, $carrier_code . '_' ) );
+			}
+
+			// Skip - Carrier may not be set.
+			if( empty( $carrier_found ) ) continue;
+
+			$codes = wp_list_pluck( $carriers['packages'], 'code' );
+			$dupes = array_count_values( $codes );
+
+			foreach( $carriers['packages'] as &$package ) {
+
+				$package['carrier_code'] = $carrier_code;
+				$package['label'] = $this->get_package_label( $package['code'] );
+
+				if( $dupes[ $package['code'] ] > 1 ) {
+					$package['label'] .= sprintf( ' (%s x %s x %s)', $package['length'], $package['width'], $package['height'] );
+				}
+			}
+
+			usort( $carriers['packages'], fn( $pa, $pb ) => strcmp( $pa['label'], $pb['label'] ) );
+			$carrier_packages[ $carrier_code ] = $carriers;
+
+		}
+
+		$data = array( '' => esc_html__( '-- Select Package Preset --', 'live-rates-for-shipstation' ) ) + $carrier_packages;
+
+
+		/**
+		 * Allow hooking into Custom Package presets for 3rd party management.
+		 *
+		 * @hook filter
+		 *
+		 * @param Array $data - Array( Array(
+		 * 		'label' => 'Optional Optgroup Name',
+		 * 		'packages' => Array(
+		 * 			'label'  => '',
+		 * 			'code'   => '',
+		 * 			'length' => 0,
+		 * 			'width'  => 0,
+		 * 			'height' => 0,
+		 * 			'weight_max' => 0,
+		 * 		)
+		 * ) )
+		 * @param \IQLRSS\Core\Shipping_Method_Shipstation $this
+		 *
+		 * @return Array $data
+		 */
+		$packages = apply_filters( 'iqlrss/zone/package_presets', $data, $this );
+
+		// Maybe reset if what we're given is not what we expect.
+		if( ! is_array( $packages ) ) $packages = $data;
+
+		// Cache results to avoid multiple file reads per request.
+		if( ! empty( $packages ) ) {
+			wp_cache_add( 'packages', $packages, $this->plugin_prefix );
+
+		// Maybe provide a default options / text when empty.
+		} else {
+			$packages = array( '' => esc_html__( 'No package presets.', 'live-rates-for-shipstation' ) );
+		}
+
+		return $packages;
+
+	}
+
+
+	/**
 	 * Format a stringified product name.
 	 * ex. 213|Shirt|optional|meta|data
 	 *
@@ -1222,7 +1526,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 *
 	 * @return String $name
 	 */
-	public function format_shipitem_name( $shipitem_name, $link = false, $context = 'edit' ) {
+	protected function format_shipitem_name( $shipitem_name, $link = false, $context = 'edit' ) {
 
 		$name = mb_strimwidth( $shipitem_name, 0, 47, '...' );
 		$name_arr = explode( '|', $shipitem_name );
