@@ -4,118 +4,135 @@
         "length": "15.8",
         "width": "12.9",
         "height": "10",
-        "weight_max": "22"
+        "weight_max": "22",
+        "carrier_code": "fedex"
     },
     {
         "code": "fedex_25kg_box",
         "length": "21.5",
         "width": "16.5",
         "height": "13",
-        "weight_max": "55"
+        "weight_max": "55",
+        "carrier_code": "fedex"
     },
     {
         "code": "fedex_envelope",
         "length": "11.5",
         "width": "9.5",
         "height": "1",
-        "weight_max": ""
+        "weight_max": "",
+        "carrier_code": "fedex"
     },
     {
         "code": "fedex_envelope",
         "length": "12.5",
         "width": "9.5",
         "height": "1",
-        "weight_max": ""
+        "weight_max": "",
+        "carrier_code": "fedex"
     },
     {
         "code": "fedex_envelope",
         "length": "15.5",
         "width": "9.5",
         "height": "1",
-        "weight_max": ""
+        "weight_max": "",
+        "carrier_code": "fedex"
     },
     {
         "code": "fedex_extra_large_box",
         "length": "11.875",
         "width": "10.75",
         "height": "11",
-        "weight_max": ""
+        "weight_max": "",
+        "carrier_code": "fedex"
     },
     {
         "code": "fedex_extra_large_box",
         "length": "15.75",
         "width": "14.125",
         "height": "6",
-        "weight_max": ""
+        "weight_max": "",
+        "carrier_code": "fedex"
     },
     {
         "code": "fedex_large_box",
         "length": "17.5",
         "width": "12.375",
         "height": "3",
-        "weight_max": ""
+        "weight_max": "",
+        "carrier_code": "fedex"
     },
     {
         "code": "fedex_large_box",
         "length": "11.25",
         "width": "8.75",
         "height": "7.75",
-        "weight_max": ""
+        "weight_max": "",
+        "carrier_code": "fedex"
     },
     {
         "code": "fedex_medium_box",
         "length": "13.25",
         "width": "11.5",
         "height": "2.375",
-        "weight_max": ""
+        "weight_max": "",
+        "carrier_code": "fedex"
     },
     {
         "code": "fedex_medium_box",
         "length": "11.25",
         "width": "8.75",
         "height": "4.375",
-        "weight_max": ""
+        "weight_max": "",
+        "carrier_code": "fedex"
     },
     {
         "code": "fedex_pak",
         "length": "12.75",
         "width": "10.25",
         "height": "1",
-        "weight_max": ""
+        "weight_max": "",
+        "carrier_code": "fedex"
     },
     {
         "code": "fedex_pak",
         "length": "14.75",
         "width": "11.75",
         "height": "1",
-        "weight_max": ""
+        "weight_max": "",
+        "carrier_code": "fedex"
     },
     {
         "code": "fedex_pak",
         "length": "14.5",
         "width": "10",
         "height": "1",
-        "weight_max": ""
+        "weight_max": "",
+        "carrier_code": "fedex"
     },
     {
         "code": "fedex_small_box",
         "length": "12.375",
         "width": "10.875",
         "height": "1.5",
-        "weight_max": ""
+        "weight_max": "",
+        "carrier_code": "fedex"
     },
     {
         "code": "fedex_small_box",
         "length": "11.25",
         "width": "8.75",
         "height": "2.625",
-        "weight_max": ""
+        "weight_max": "",
+        "carrier_code": "fedex"
     },
     {
         "code": "fedex_tube",
         "length": "38",
         "width": "6",
         "height": "6",
-        "weight_max": ""
+        "weight_max": "",
+        "carrier_code": "fedex"
     }
 ]
