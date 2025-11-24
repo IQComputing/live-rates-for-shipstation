@@ -2,6 +2,8 @@
 /**
  * ShipStation API Helper
  *
+ * @link https://docs.shipstation.com/openapi
+ *
  * Carrier ID	: se-*
  * Carrier Code	: ups
  *
@@ -232,13 +234,16 @@ class Shipstation  {
 	 *
 	 * @todo Look into `delivery_days` field. UPS has, is it carrier consistent?
 	 *
-	 * @param Array $est_opts
+	 * @link https://docs.shipstation.com/openapi/rates/calculate_rates
+	 * @link https://docs.shipstation.com/openapi/rates/estimate_rates
+	 *
+	 * @param Array $api_args - See ShipStation API docs for required fields.
 	 *
 	 * @return Array|WP_Error
 	 */
-	public function get_shipping_estimates( $est_opts ) {
+	public function get_shipping_estimates( $api_args ) {
 
-		$body = $this->make_request( 'post', 'rates/estimate', $est_opts );
+		$body = $this->make_request( 'post', 'rates/estimate', $api_args );
 
 		// Return Early - API Request error - see logs.
 		if( is_wp_error( $body ) ) {
@@ -283,30 +288,30 @@ class Shipstation  {
 
 
 	/**
-	 * Create a new Shipment
+	 * Purchase a shipping label by a carrier.
 	 *
-	 * @param Array $args
+	 * @link https://docs.shipstation.com/openapi/labels/create_label
 	 *
-	 * @return Array $data
+	 * @param Array $api_args - See ShipStation API docs for required fields.
+	 * @param Boolean $test_label - Whether or not to create a test label.
+	 *
+	 * @return Array|WP_Error
 	 */
-	public function create_shipments( $args ) {
+	public function purchase_shipping_label( $api_args, $test_label = false ) {
 
-		$body = $this->make_request( 'post', 'shipments', array( 'shipments' => $args ) );
+		if( $test_label ) $api_args['test_label'] = true;
+		$body = $this->make_request( 'post', 'labels', $api_args );
 
 		// Return Early - API Request error - see logs.
 		if( is_wp_error( $body ) ) {
 			return $body;
 		}
 
-		/**
-		 * API returns no errors but also doesn't do anything in ShipStation.
-		 */
-		$data = $body;
+		$data = array();
 
 		return $data;
 
 	}
-
 
 
 	/**
@@ -316,7 +321,7 @@ class Shipstation  {
 	 *
 	 * @return Array|WP_Error
 	 */
-	public function create_shipments_from_wc_orders( $wc_orders ) {
+	public function shipment_args_from_wc_orders( $wc_orders ) {
 
 		$data = array();
 		if( empty( $wc_orders ) ) {
@@ -324,7 +329,7 @@ class Shipstation  {
 		}
 
 		$shipments = array();
-		foreach( $wc_orders as $wc_order ) {
+		foreach( (array)$wc_orders as $wc_order ) {
 
 			// Skip
 			if( ! is_a( $wc_order, 'WC_Order' ) ) continue;
