@@ -776,7 +776,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		 * 
 		 * @return Array $settings
 		 */
-		$filtered_requests = apply_filters( 'iqlrss/shipping/packages', $item_requests, $packages, $this );
+		$filtered_requests = apply_filters( 'iqlrss/shipping/packages', $item_requests, $packages, $packing_type, $this );
 
 		// IF the hash doesn't match what was given to the filter, note it in the logs so the store owner will know.
 		$item_req_hash 		= ( ! empty( $item_requests ) ) ? md5( maybe_serialize( $item_requests ) ) : '';
