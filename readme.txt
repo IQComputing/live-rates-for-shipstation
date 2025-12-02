@@ -3,7 +3,7 @@ Contributors: iqcomputing
 Tags: woocommerce, shipstation, usps, ups, fedex
 Requires at least: 5.9
 Tested up to: 6.8
-Stable tag: 1.0.8
+Stable tag: 1.1.0
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -49,6 +49,16 @@ Don't have a ShipStation account? [Open a ShipStation account today!](https://ww
 1. From here you can setup custom boxes and select which services from the previously selected carriers you would like to make available for the selected shipping zone.
 
 == Changelog ==
+
+= 1.1.0 (2025-12-01) =
+* Redux the Custom Packaging screen and options.
+* Packing option for Weight Only.
+* Packing option for Stacked Vertically.
+* Packing option for default product weight.
+* Custom Package Presets from UPS, FedEx, and USPS.
+* New filter hook for Shipping Zone Settings `iqlrss/zone/settings`. Useful for managing Product Packing options.
+* New filter hook for Shipping Zone Settings `iqlrss/zone/package_presets`. Useful for managing Custom Package presets.
+* New filter hook for Shipping Estimates `iqlrss/shipping/packages`. Useful for modifying what gets sent to ShipStation API for retrieving shipping estimates.
 
 = 1.0.8 (2025-10-10) =
 * Patches issue of missing `other_amount` when applying shipping rates (thanks @centuryperf)!

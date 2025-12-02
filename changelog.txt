@@ -2,6 +2,41 @@
 
 This is a brief text document keeping track of changes to the plugin. For a full history, see the Github Repository.
 
+= 1.1.0 =
+
+Relase Date: December 01, 2025
+
+* Overview
+	* Custom Packages really needed to be redone to better support label creation.
+		* Having modal support will make creating custom options / screens easier in future updates.
+		* Having named custom boxes and a modal of options will allow users to better manage product and boxes when requesting a shipping label in a future update.
+			* For example, if products need to be repackaged into different boxes before label creation.
+	* Redo of the Custom Packages options.
+		* New options for Weight Only
+		* New options for Stacked Vertically
+		* New Box Price field.
+		* New Package Presets.
+			* These are pulled from static JSON files + known values.
+			* Support: UPS, FedEx, USPS.
+	* New default product weight field.
+
+* Code Updates
+	* Filter hook `iqlrss/zone/settings`
+		* Expects array of setting fields.
+		* This hook is useful to manage custom Product Packing options.
+		* core\shipping-method-shipstation.php LN 543
+	* Filter hook `iqlrss/zone/package_presets`
+		* Expects an array of specific key value pairs.
+		* This hook is useful to manage the Custom Package Options when a zone uses this setting.
+		* The carrier_code is important to correctly get One rates from supported carriers.
+		* core\shipping-method-shipstation.php LN 1569
+	* Filter hook `iqlrss/shipping/packages`
+		* Expects an array of ShipStation API v2 /rates/estimate API args.
+			* https://docs.shipstation.com/openapi/rates/estimate_rates
+		* Useful for custom shipping / package rules. This gives developers the cart items to repackage and retrieve rates from.
+		* core\shipping-method-shipstation.php LN 742
+	* Lots of code rearranging, better comments, and better methods to prepare for future updates, features, and functionalty.
+
 = 1.0.8 =
 
 Relase Date: October 10, 2025

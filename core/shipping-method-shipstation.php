@@ -408,7 +408,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 */
 	protected function init_instance_form_fields() {
 
-		$this->instance_form_fields = array(
+		$settings = array(
 			'title' => array(
 				'title'			=> esc_html__( 'Title', 'live-rates-for-shipstation' ),
 				'type'			=> 'text',
@@ -448,6 +448,20 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				'type' => 'services', // See self::generate_services_html()
 			),
 		);
+
+
+		/**
+		 * Allow filtering the Shipping Zone settings
+		 * 
+		 * @hook filter
+		 * 
+		 * @param Array $settings
+		 * @param \IQLRSS\Core\Shipping_Method_Shipstation $this
+		 * 
+		 * @return Array $settings
+		 */
+		$settings = apply_filters( 'iqlrss/zone/settings', $settings, $this );
+		$this->instance_form_fields = $settings;
 
 	}
 
@@ -503,7 +517,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 				$boxes[] = array(
 					'active' => absint( $json['active'] ),
-					'preset' => sanitize_text_field( $json['preset'] ),
+					'preset' => ( isset( $json['preset'] ) ) ? sanitize_text_field( $json['preset'] ) : '',
 					'nickname' => sanitize_text_field( $json['nickname'] ),
 					'outer' => array(
 						'length'	=> floatval( $json['outer']['length'] ),
@@ -667,7 +681,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	/**
 	 * Calculate shipping costs
 	 *
-	 * @param Array $package
+	 * @param Array $packages
 	 *
 	 * @return void
 	 */
@@ -718,17 +732,67 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			'address_residential_indicator' => 'unknown',
 		);
 
-		// Pack items
-		$item_requests = call_user_func( array( $this, sprintf( 'group_requestsby_%s', str_replace( '-', '_', $packing_type ) ) ), $packages['contents'] );
+		$item_requests = array();
+		$callback = sprintf( 'group_requestsby_%s', str_replace( '-', '_', $packing_type ) );
+		if( method_exists( $this, $callback ) ) {
+			$item_requests = call_user_func( array( $this, $callback ), $packages['contents'] );
+		}
+
 
 		/**
-		 * This has to be done per package as the other rates endpoint
-		 * requires the customers address1 for verification and really
-		 * it's not much faster.
-		 * Group rates.
+		 * Allow filtering the packages before requesting estimates.
+		 * 
+		 * The returned array should follow this format:
+		 * Multi-dimensional Array
+		 * 
+		 * $item_requests = Array( Array(
+		 * ~ Required Fields:
+		 * 		'_name' => '$productID|$productName', - This format makes it easy to show the Shop Manager what's packed into the box.
+		 * 		'dimensions' => array(
+		 * 			'length => 123,
+		 * 			'width' => 123,
+		 * 			'height' => 123,
+		 * 			'unit' => 'inch', - ShipStation expects a specific string. See \IQLRSS\Core\Api\Shipstation::convert_unit_term( $unit )
+		 * 		),
+		 * 		'weight' => array(
+		 * 			'value' => 123,
+		 * 			'unit' => 'pound',  - ShipStation expects a specific string. See \IQLRSS\Core\Api\Shipstation::convert_unit_term( $unit )
+		 * 		),
+		 * 
+		 * ~ Entirely optional, but the system will try to read them if available. 
+		 * 		'packed' => Array( '$productID|$productName', '$productID|$productName' ),
+		 *		'price'	 => 123,
+		 *		'nickname' => 'String' - Displayed to the Shop Owner on the Edit Order page.
+		 *		'box_weight' => 123,
+		 *		'box_max_weight'=> 123,
+		 *		'package_code' => 'ups_ground',
+		 *		'carrier_code' => 'ups', - Carrier Code should match what ShipStation expects. I.E. fedex_walleted. This is to group packages with carriers for discounts.
+		 * ) )
+		 * 
+		 * @hook filter
+		 * 
+		 * @param Array $item_requests - Array of Package dimensions that the API will use to get rates on. Multidimensional Array.
+		 * @param Array $packages - The cart contents. See $packages['contents'] for items. 
+		 * @param \IQLRSS\Core\Shipping_Method_Shipstation $this
+		 * 
+		 * @return Array $settings
+		 */
+		$filtered_requests = apply_filters( 'iqlrss/shipping/packages', $item_requests, $packages, $packing_type, $this );
+
+		// IF the hash doesn't match what was given to the filter, note it in the logs so the store owner will know.
+		$item_req_hash 		= ( ! empty( $item_requests ) ) ? md5( maybe_serialize( $item_requests ) ) : '';
+		$filtered_req_hash 	= ( ! empty( $filtered_requests ) ) ? md5( maybe_serialize( $filtered_requests ) ) : '';
+		if( $item_req_hash !== $filtered_req_hash ) {
+			$this->log( esc_html__( 'The Shipping packages were modified by a 3rd party using the `iqlrss/shipping/packages` filter hook.', 'live-rates-for-shipstation' ), 'notice' );
+		}
+
+		/**
+		 * We have to return reates per package.
+		 * The /rates/estimate endpoint requires less info
+		 * and /rates endpoint is way slower.
 		 */
 		$rates = array();
-		foreach( $item_requests as $item_id => $req ) {
+		foreach( $filtered_requests as $item_id => $req ) {
 
 			// Create the API request combining the package (weight, dimensions), general request data, and the carrier info.
 			$api_request = array_merge(
@@ -814,7 +878,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				}
 
 				// Maybe a package price
-				if( 'wc-box-packer' == $packing_type && ! empty( $req['price'] ) ) {
+				if( 'wc-box-packer' == $packing_type && isset( $req['price'] ) && ! empty( $req['price'] ) ) {
 					$cost += floatval( $req['price'] );
 					$ratemeta['other_costs']['box_price'] = $req['price'];
 				}
@@ -935,7 +999,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 *
 	 * @return Array $requests
 	 */
-	protected function group_requestsby_individual( $items ) {
+	public function group_requestsby_individual( $items ) {
 
 		$item_requests 	= array();
 		$default_weight = $this->get_option( 'minweight', '' );
@@ -1014,7 +1078,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 *
 	 * @return Array $requests
 	 */
-	protected function group_requestsby_onebox( $items ) {
+	public function group_requestsby_onebox( $items ) {
 
 		$default_weight = $this->get_option( 'minweight', 0 );
 		$subtype 		= $this->get_option( 'packing_sub', 'weightonly' );
@@ -1130,7 +1194,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 *
 	 * @return Array $requests
 	 */
-	protected function group_requestsby_wc_box_packer( $items ) {
+	public function group_requestsby_wc_box_packer( $items ) {
 
 		$item_requests 	= array();
 		$boxes 			= $this->get_option( 'customboxes', array() );
@@ -1426,6 +1490,18 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 
 	/**
+	 * Convert a WooCommerce unit to a ShipStation unit.
+	 * 
+	 * @param String $unit
+	 * 
+	 * @return String $new_unit
+	 */
+	public function convert_unit_term( $unit ) {
+		return $this->shipStationApi->convert_unit_term( $unit );
+	}
+
+
+	/**
 	 * Return an array of package options.
 	 *
 	 * @return Array
@@ -1504,6 +1580,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		 * 			'width'  => 0,
 		 * 			'height' => 0,
 		 * 			'weight_max' => 0,
+		 * 			'carrier_code' => '',
 		 * 		)
 		 * ) )
 		 * @param \IQLRSS\Core\Shipping_Method_Shipstation $this
