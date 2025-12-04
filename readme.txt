@@ -3,7 +3,7 @@ Contributors: iqcomputing
 Tags: woocommerce, shipstation, usps, ups, fedex
 Requires at least: 5.9
 Tested up to: 6.8
-Stable tag: 1.1.0
+Stable tag: 1.1.1
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -50,6 +50,9 @@ Don't have a ShipStation account? [Open a ShipStation account today!](https://ww
 
 == Changelog ==
 
+= 1.1.1 (2025-12-04) =
+* Fixed JS conflict with WordPress 6.9 (nice!)
+
 = 1.1.0 (2025-12-01) =
 * Redux the Custom Packaging screen and options.
 * Packing option for Weight Only.
@@ -67,11 +70,3 @@ Don't have a ShipStation account? [Open a ShipStation account today!](https://ww
 * Added caching layer to prevent multiple requests and logs - this should speed up frontend per-page shop requests.
 * Fixed issue of duplicate logs when debugging.
 * Fixed issue where API Log would lose formatting during certain requests.
-
-= 1.0.7 (2025-10-08) =
-* Better rate reporting on the Edit Order screen.
-* Patches WP_Error misnomer on Shipping Zone screen.
-* Adds deactivate and uninstall hooks for data management and cleanup.
-
-= 1.0.6 (2025-09-22) =
-* Updates to the general readme.

@@ -2,6 +2,14 @@
 
 This is a brief text document keeping track of changes to the plugin. For a full history, see the Github Repository.
 
+= 1.1.1 =
+
+Relase Date: December 04, 2025
+
+* Overview
+	* Changes in how WordPress handles Modules means we cannot define jQuery as a dependency.
+		* Removes dependency and add additional check in module JS for it's existence.
+
 = 1.1.0 =
 
 Relase Date: December 01, 2025
