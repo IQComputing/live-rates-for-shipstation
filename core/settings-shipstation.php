@@ -64,10 +64,9 @@ Class Settings_Shipstation {
 		wp_register_script_module(
 			\IQLRSS\Driver::plugin_prefix( 'admin', '-' ),
 			\IQLRSS\Driver::get_asset_url( 'js/admin.js' ),
-			array( 'jquery' ),
+			array(),
 			\IQLRSS\Driver::get( 'version', '1.0.0' )
 		);
-
 
 	}
 
@@ -167,12 +166,20 @@ Class Settings_Shipstation {
 	 */
 	public function enqueue_admin_assets() {
 
+		global $wp_scripts;
+
 		if( ! $this->maybe_enqueue( 'admin' ) ) {
 			return;
 		}
 
 		wp_enqueue_style( \IQLRSS\Driver::plugin_prefix( 'admin', '-' ) );
 		wp_enqueue_script_module( \IQLRSS\Driver::plugin_prefix( 'admin', '-' ) );
+
+		// if( current_user_can( 'list_users' ) ) {
+		// 	$foo = wp_script_modules();
+		// 	printf( '<pre>%s</pre>', print_r( $foo, 1 ) );
+		// 	die( 'end' );
+		// }
 
 	}
 
