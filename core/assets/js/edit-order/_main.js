@@ -17,21 +17,33 @@ export class editOrderSettings {
 	 */
 	constructor() {
 
-		this.createShippingLabel();
+		this.setupPageEvents();
+		this.setModalEvents();
 
 	}
 
 
 	/**
-	 * Create Shipping Label
+	 * Setup page events
 	 */
-	createShippingLabel() {
+	setupPageEvents() {
 
+		/* Open Label Creation Modal */
 		document.querySelector( '[data-iqlrss-modal="shipstationLabelModal"]' ).addEventListener( 'click', ( e ) => {
 			e.stopImmediatePropagation();
 			e.preventDefault();
-			util.loadModule( 'modal', e.target, { 'modal': e.target.dataset.iqlrssModal } );
+			util.loadModule( 'modal', e.target, { 'modal': e.target.dataset.iqlrssModal } ).then( ( m ) => m.open() );
 		} );
+
+	}
+
+
+	/**
+	 * Setup modal window events
+	 */
+	setModalEvents() {
+
+		
 
 	}
 
