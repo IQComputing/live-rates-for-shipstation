@@ -364,6 +364,76 @@ class Shipstation  {
 
 
 	/**
+	 * Return a single package by ID.
+	 *
+	 * @param String $package_id - Shipstation specific reference code.
+	 *
+	 * @return Array|WP_Error
+	 */
+	public function get_package( $package_id ) {
+
+		$packages = $this->get_packages();
+		if( is_wp_error( $packages ) || empty( $packages ) ) {
+			return $packages;
+		}
+
+		return ( isset( $packages[ $package_id ] ) ) ? $packages[ $package_id ] : array();
+
+	}
+
+
+	/**
+	 * Return an array of Packages
+	 *
+	 * @link https://docs.shipstation.com/openapi/package_types/list_package_types
+	 *
+	 * @return Array|WP_Error
+	 */
+	public function get_packages() {
+
+		$trans_key  = $this->prefix_key( 'packages' );
+		$packages = get_transient( $trans_key );
+
+		if( empty( $packages ) || $this->skip_cache ) {
+
+			$body = $this->make_request( 'get', 'packages' );
+
+			// Return Early - API Request error - see logs.
+			if( is_wp_error( $body ) ) {
+				return $body;
+			}
+
+			// Return Early - No Custom Packages to work with.
+			if( empty( $body['packages'] ) ) {
+				return array();
+			}
+
+			// We do need most the Package data, just id, name, dimensions - ezpz.
+			$packages = array();
+			foreach( $body['packages'] as $package_data ) {
+
+				$package = array_intersect_key( $package_data, array_flip( array(
+					'package_id',
+					'name',
+					'dimensions',
+				) ) );
+
+				$packages[ $package['package_id'] ] = $package;
+
+			}
+
+			// Cache Warehouse data.
+			if( ! empty( $packages ) ) {
+				set_transient( $trans_key, $packages, $this->cache_time );
+			}
+		}
+
+		return $packages;
+
+	}
+
+
+	/**
 	 * Purchase a shipping label by a carrier.
 	 *
 	 * @link https://docs.shipstation.com/openapi/labels/create_label
