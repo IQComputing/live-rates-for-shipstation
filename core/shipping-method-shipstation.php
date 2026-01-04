@@ -408,6 +408,34 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 */
 	protected function init_instance_form_fields() {
 
+		$warehouses = array(
+			'' => esc_html__( 'Website Store Address', 'live-rates-for-shipstation' ),
+		);
+
+		if( ! empty( \IQLRSS\Driver::get_ss_opt( 'api_key' ) ) ) {
+
+			$og_warehouse = \IQLRSS\Driver::get_ss_opt( 'global_warehouse' );
+			$api = new Api\Shipstation();
+
+			// Grab Warehouse options
+			$api_warehouses = $api->get_warehouses();
+			if( is_a( $api_warehouses, 'WP_Error' ) ) {
+				$warehouses = array( '' => $api_warehouses->get_error_message() );
+			} else if( is_array( $api_warehouses ) && ! empty( $api_warehouses ) ) {
+				$warehouses = array_merge( $warehouses, array_combine(
+					array_keys( $api_warehouses ),
+					array_column( $api_warehouses, 'name' ),
+				) );
+			}
+
+			// A little switcharoo?
+			if( ! empty( $og_warehouse ) && isset( $warehouses[ $og_warehouse ] ) ) {
+				$warehouses[''] = $warehouses[ $og_warehouse ];
+				unset( $warehouses[ $og_warehouse ] );
+				$warehouses['_woo_default'] = esc_html__( 'Website Store Address', 'live-rates-for-shipstation' );
+			}
+		}
+
 		$settings = array(
 			'title' => array(
 				'title'			=> esc_html__( 'Title', 'live-rates-for-shipstation' ),
@@ -415,6 +443,12 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				'description'	=> esc_html__( 'This controls the title which the user sees during checkout.', 'live-rates-for-shipstation' ),
 				'default'		=> esc_html__( 'ShipStation Rates', 'live-rates-for-shipstation' ),
 				'desc_tip'		=> true,
+			),
+			'warehouse' => array(
+				'title'			=> esc_html__( 'Shipping Location', 'live-rates-for-shipstation' ),
+				'type'			=> 'select',
+				'options'		=> $warehouses,
+				'description'	=> esc_html__( 'Select to ship from a different location than the default.', 'live-rates-for-shipstation' ),
 			),
 			'minweight' => array(
 				'title'			=> esc_html__( 'Product Weight Fallback', 'live-rates-for-shipstation' ),
@@ -452,12 +486,12 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 		/**
 		 * Allow filtering the Shipping Zone settings
-		 * 
+		 *
 		 * @hook filter
-		 * 
+		 *
 		 * @param Array $settings
 		 * @param \IQLRSS\Core\Shipping_Method_Shipstation $this
-		 * 
+		 *
 		 * @return Array $settings
 		 */
 		$settings = apply_filters( 'iqlrss/zone/settings', $settings, $this );
@@ -659,6 +693,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					}
 				}
 
+
 				/**
 				 * We don't want to array_filter() since
 				 * Global Adjust could be populated, and
@@ -702,38 +737,67 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			return;
 		}
 
+		// Return Early - No enabled services.
 		$enabled_services = $this->get_enabled_services();
 		if( empty( $enabled_services ) ) {
 			$this->log( esc_html__( 'No enabled carrier services found. Please enable carrier services within the shipping zone.', 'live-rates-for-shipstation' ) );
 			return;
 		}
 
+		// Setup the request.
+		$request = array(
+			'to_country_code'	 => $packages['destination']['country'],
+			'to_postal_code'	 => $packages['destination']['postcode'],
+			'to_city_locality'	 => $packages['destination']['city'],
+			'to_state_province'	 => $packages['destination']['state'],
+			'from_country_code'	 => WC()->countries->get_base_country(),
+			'from_postal_code'	 => WC()->countries->get_base_postcode(),
+			'from_city_locality' => WC()->countries->get_base_city(),
+			'from_state_province'=> WC()->countries->get_base_state(),
+			'address_residential_indicator' => 'unknown',
+		);
+
+		// Grab the Warehouse / shipping from location.
+		$global_warehouse = \IQLRSS\Driver::get_ss_opt( 'global_warehouse' );
+		$zone_warehouse   = $this->get_option( 'warehouse', $global_warehouse );
+
+		// Maybe grab it from a ShipStation known address.
+		if( ! empty( $zone_warehouse ) && '_woo_default' !== $zone_warehouse ) {
+
+			$warehouse 	= $this->shipStationApi->get_warehouse( $zone_warehouse );
+			$request 	= array_merge( $request, array(
+				'from_country_code'	 => $warehouse['origin_address']['country_code'],
+				'from_postal_code'	 => $warehouse['origin_address']['postal_code'],
+				'from_city_locality' => $warehouse['origin_address']['city_locality'],
+				'from_state_province'=> $warehouse['origin_address']['state_province'],
+				'address_residential_indicator' => $warehouse['origin_address']['address_residential_indicator'],
+			) );
+
+		}
+
+		// Return Early - Did not have all the necessary fields to run a
+		if( empty( $request['from_country_code'] ) && empty( $request['from_postal_code'] ) ) {
+			$this->log( esc_html__( 'Request missing a From Country Code and/or From Postal Code.', 'live-rates-for-shipstation' ) );
+			return;
+		}
+
+		// Grab the global adjustments.
+		$global_adjustment 		= floatval( \IQLRSS\Driver::get_ss_opt( 'global_adjustment', 0 ) );
+		$global_adjustment_type = \IQLRSS\Driver::get_ss_opt( 'global_adjustment_type' );
+		$global_adjustment_type = ( empty( $global_adjustment_type ) && ! empty( $global_adjustment ) ) ? 'percentage' : $global_adjustment_type;
+
+		// Grab the saved carriers.
 		$saved_carriers = array_keys( $enabled_services );
 		if( ! empty( $saved_carriers ) && ! empty( $this->carriers ) ) {
 			$saved_carriers = array_values( array_intersect( $saved_carriers, $this->carriers ) );
 		}
 
-		$global_adjustment 		= floatval( \IQLRSS\Driver::get_ss_opt( 'global_adjustment', 0 ) );
-		$global_adjustment_type = \IQLRSS\Driver::get_ss_opt( 'global_adjustment_type','' );
-		$global_adjustment_type = ( empty( $global_adjustment_type ) && ! empty( $global_adjustment ) ) ? 'percentage' : $global_adjustment_type;
+		// Grab the packing method type.
+		$packing_type 	= $this->get_option( 'packing', 'individual' );
+		$callback		= sprintf( 'group_requestsby_%s', str_replace( '-', '_', $packing_type ) );
 
-		$packing_type = $this->get_option( 'packing', 'individual' );
-		$request = array(
-			'from_country_code'	 => WC()->countries->get_base_country(),
-			'from_postal_code'	 => WC()->countries->get_base_postcode(),
-			'from_city_locality' => WC()->countries->get_base_city(),
-			'from_state_province'=> WC()->countries->get_base_state(),
-
-			'to_country_code'	=> $packages['destination']['country'],
-			'to_postal_code'	=> $packages['destination']['postcode'],
-			'to_city_locality'	=> $packages['destination']['city'],
-			'to_state_province'	=> $packages['destination']['state'],
-
-			'address_residential_indicator' => 'unknown',
-		);
-
+		// Call the packing method
 		$item_requests = array();
-		$callback = sprintf( 'group_requestsby_%s', str_replace( '-', '_', $packing_type ) );
 		if( method_exists( $this, $callback ) ) {
 			$item_requests = call_user_func( array( $this, $callback ), $packages['contents'] );
 		}
@@ -741,10 +805,10 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 		/**
 		 * Allow filtering the packages before requesting estimates.
-		 * 
+		 *
 		 * The returned array should follow this format:
 		 * Multi-dimensional Array
-		 * 
+		 *
 		 * $item_requests = Array( Array(
 		 * ~ Required Fields:
 		 * 		'_name' => '$productID|$productName', - This format makes it easy to show the Shop Manager what's packed into the box.
@@ -758,8 +822,8 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		 * 			'value' => 123,
 		 * 			'unit' => 'pound',  - ShipStation expects a specific string. See \IQLRSS\Core\Api\Shipstation::convert_unit_term( $unit )
 		 * 		),
-		 * 
-		 * ~ Entirely optional, but the system will try to read them if available. 
+		 *
+		 * ~ Entirely optional, but the system will try to read them if available.
 		 * 		'packed' => Array( '$productID|$productName', '$productID|$productName' ),
 		 *		'price'	 => 123,
 		 *		'nickname' => 'String' - Displayed to the Shop Owner on the Edit Order page.
@@ -768,13 +832,13 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		 *		'package_code' => 'ups_ground',
 		 *		'carrier_code' => 'ups', - Carrier Code should match what ShipStation expects. I.E. fedex_walleted. This is to group packages with carriers for discounts.
 		 * ) )
-		 * 
+		 *
 		 * @hook filter
-		 * 
+		 *
 		 * @param Array $item_requests - Array of Package dimensions that the API will use to get rates on. Multidimensional Array.
-		 * @param Array $packages - The cart contents. See $packages['contents'] for items. 
+		 * @param Array $packages - The cart contents. See $packages['contents'] for items.
 		 * @param \IQLRSS\Core\Shipping_Method_Shipstation $this
-		 * 
+		 *
 		 * @return Array $settings
 		 */
 		$filtered_requests = apply_filters( 'iqlrss/shipping/packages', $item_requests, $packages, $packing_type, $this );
@@ -785,6 +849,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		if( $item_req_hash !== $filtered_req_hash ) {
 			$this->log( esc_html__( 'The Shipping packages were modified by a 3rd party using the `iqlrss/shipping/packages` filter hook.', 'live-rates-for-shipstation' ), 'notice' );
 		}
+
 
 		/**
 		 * We have to return reates per package.
@@ -830,6 +895,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 				// Apply service upcharge
 				if( isset( $service_arr['adjustment'] ) ) {
+
 
 					/**
 					 * Adjustment type could be '' to skip global adjustment.
@@ -953,7 +1019,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			}
 
 		// Find the single lowest shipping rate
-		} else if( 'yes' == $single_lowest ) {
+		} else if( 'yes' == $single_lowest && ! empty( $rates ) ) {
 
 			$lowest = 0;
 			$lowest_service = array_key_first( $rates );
@@ -1491,9 +1557,9 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 	/**
 	 * Convert a WooCommerce unit to a ShipStation unit.
-	 * 
+	 *
 	 * @param String $unit
-	 * 
+	 *
 	 * @return String $new_unit
 	 */
 	public function convert_unit_term( $unit ) {

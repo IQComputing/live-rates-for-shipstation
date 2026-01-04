@@ -166,20 +166,12 @@ Class Settings_Shipstation {
 	 */
 	public function enqueue_admin_assets() {
 
-		global $wp_scripts;
-
 		if( ! $this->maybe_enqueue( 'admin' ) ) {
 			return;
 		}
 
 		wp_enqueue_style( \IQLRSS\Driver::plugin_prefix( 'admin', '-' ) );
 		wp_enqueue_script_module( \IQLRSS\Driver::plugin_prefix( 'admin', '-' ) );
-
-		// if( current_user_can( 'list_users' ) ) {
-		// 	$foo = wp_script_modules();
-		// 	printf( '<pre>%s</pre>', print_r( $foo, 1 ) );
-		// 	die( 'end' );
-		// }
 
 	}
 
@@ -210,6 +202,7 @@ Class Settings_Shipstation {
 	public function clear_cache() {
 
 		global $wpdb;
+
 
 		/**
 		 * The API Class creates various transients to cache carrier services.
@@ -296,24 +289,37 @@ Class Settings_Shipstation {
 		$carriers = array(
 			'' => esc_html__( 'ShipStation carriers may still be loading...', 'live-rates-for-shipstation' ),
 		);
+		$warehouses = array(
+			'' => esc_html__( 'Website Store Address', 'live-rates-for-shipstation' ),
+		);
 		$appended_fields = array();
 
 		if( ! empty( \IQLRSS\Driver::get_ss_opt( 'api_key' ) ) ) {
 
-			$carrier_desc = esc_html__( 'Select which ShipStation carriers you would like to see live shipping rates from.', 'live-rates-for-shipstation' );
-			$response = ( new Api\Shipstation() )->get_carriers();
+			$api = new Api\Shipstation();
 
+			// Grab Warehouse options
+			$api_warehouses = $api->get_warehouses();
+			if( is_a( $api_warehouses, 'WP_Error' ) ) {
+				$warehouses = array( '' => $api_warehouses->get_error_message() );
+			} else if( is_array( $api_warehouses ) && ! empty( $api_warehouses ) ) {
+				$warehouses = array_merge( $warehouses, array_combine(
+					array_keys( $api_warehouses ),
+					array_column( $api_warehouses, 'name' ),
+				) );
+			}
+
+			// Grab Carrier options
 			$carriers = array();
-			if( is_a( $response, 'WP_Error' ) ) {
-				$carriers[''] = $response->get_error_message();
-			} else if( is_array( $response ) ) {
-				foreach( $response as $carrier ) {
+			$api_carriers = $api->get_carriers();
+			if( is_a( $api_carriers, 'WP_Error' ) ) {
+				$carriers[''] = $api_carriers->get_error_message();
+			} else if( is_array( $api_carriers ) && ! empty( $api_carriers ) ) {
+				foreach( $api_carriers as $carrier ) {
 					$carriers[ $carrier['carrier_id'] ] = $carrier['name'];
 				}
 			}
 
-		} else {
-			$carrier_desc = esc_html__( 'Please set and verify your ShipStation API key. Then, click the Save button at the bottom of this page.', 'live-rates-for-shipstation' );
 		}
 
 		// Backwards compatibility for v1.0.3 when only percentage was supported by default.
@@ -339,8 +345,27 @@ Class Settings_Shipstation {
 					'type'			=> 'multiselect',
 					'class'			=> 'chosen_select',
 					'options'		=> $carriers,
-					'description'	=> $carrier_desc,
+					'description'	=> ( function() {
+						if( ! empty( \IQLRSS\Driver::get_ss_opt( 'api_key' ) ) ) {
+							return esc_html__( 'Select which ShipStation carriers you would like to see live shipping rates from.', 'live-rates-for-shipstation' );
+						}
+						return esc_html__( 'Please set and verify your ShipStation API key. Then, click the Save button at the bottom of this page.', 'live-rates-for-shipstation' );
+					} )(),
 					'desc_tip'		=> esc_html__( 'Services from selected carriers will be available when setting up Shipping Zones.', 'live-rates-for-shipstation' ),
+					'default'		=> '',
+				);
+
+				$appended_fields[ \IQLRSS\Driver::plugin_prefix( 'global_warehouse' ) ] = array(
+					'title'			=> esc_html__( 'Shipping From', 'live-rates-for-shipstation' ),
+					'type'			=> 'select',
+					'options'		=> $warehouses,
+					'description'	=> ( function() {
+						if( ! empty( \IQLRSS\Driver::get_ss_opt( 'api_key' ) ) ) {
+							return esc_html__( 'Select to ship from a different location than what is set as your WooCommerce website default location.', 'live-rates-for-shipstation' );
+						}
+						return esc_html__( 'Please set and verify your ShipStation API key. Then, click the Save button at the bottom of this page.', 'live-rates-for-shipstation' );
+					} )(),
+					'desc_tip'		=> esc_html__( 'This can be overridden per Shipping Zone.', 'live-rates-for-shipstation' ),
 					'default'		=> '',
 				);
 

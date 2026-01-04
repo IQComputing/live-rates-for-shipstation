@@ -288,6 +288,82 @@ class Shipstation  {
 
 
 	/**
+	 * Return a single warehouse as a flat array of key value pairs.
+	 *
+	 * @param String $warehouse_id - Shipstation specific reference code.
+	 *
+	 * @return Array|WP_Error
+	 */
+	public function get_warehouse( $warehouse_id ) {
+
+		$warehouses = $this->get_warehouses();
+		if( is_wp_error( $warehouses ) || empty( $warehouses ) ) {
+			return $warehouses;
+		}
+
+		return ( isset( $warehouses[ $warehouse_id ] ) ) ? $warehouses[ $warehouse_id ] : array();
+
+	}
+
+
+	/**
+	 * Return an array of Warehouses.
+	 *
+	 * @link https://docs.shipstation.com/openapi/warehouses/list_warehouses
+	 *
+	 * @return Array|WP_Error
+	 */
+	public function get_warehouses() {
+
+		$trans_key  = $this->prefix_key( 'warehouses' );
+		$warehouses = get_transient( $trans_key );
+
+		if( empty( $warehouses ) || $this->skip_cache ) {
+
+			$body = $this->make_request( 'get', 'warehouses' );
+
+			// Return Early - API Request error - see logs.
+			if( is_wp_error( $body ) ) {
+				return $body;
+			}
+
+			// Return Early - No Warehouses to work with.
+			if( empty( $body['warehouses'] ) ) {
+				return array();
+			}
+
+			// We do need most the Warehouse data, but not all.
+			$warehouses = array();
+			foreach( $body['warehouses'] as $warehouse_data ) {
+
+				$warehouse = array_intersect_key( $warehouse_data, array_flip( array(
+					'warehouse_id',
+					'is_default',
+					'name',
+					'origin_address',
+					'return_address',
+				) ) );
+
+				if( $warehouse['is_default'] ) {
+					$warehouse['name'] .= ' (' . esc_html__( 'ShipStation Default', 'live-rates-for-shipstation' ) . ')';
+				}
+
+				$warehouses[ $warehouse['warehouse_id'] ] = $warehouse;
+
+			}
+
+			// Cache Warehouse data.
+			if( ! empty( $warehouses ) ) {
+				set_transient( $trans_key, $warehouses, $this->cache_time );
+			}
+		}
+
+		return $warehouses;
+
+	}
+
+
+	/**
 	 * Purchase a shipping label by a carrier.
 	 *
 	 * @link https://docs.shipstation.com/openapi/labels/create_label
