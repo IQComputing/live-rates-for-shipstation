@@ -656,7 +656,7 @@ class Shipstationv1 extends Shipstation  {
 		$this->log( sprintf( esc_html__( '[v1] ShipStation API Request to %s', 'live-rates-for-shipstation' ), $endpoint ), 'info', array(
 			'args'		=> $args,
 			'code'		=> $code,
-			'reponse'	=> $body,
+			'response'	=> $body,
 		) );
 
 		return $body;

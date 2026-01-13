@@ -19,7 +19,7 @@ Class Stallation {
 
 
 	/**
-	 * Unintsall Plugin
+	 * Uninstall Plugin
 	 */
 	public static function uninstall() {
 

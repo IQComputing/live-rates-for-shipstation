@@ -505,7 +505,7 @@ class Shipstation  {
 				'advanced_options'	=> array(), // Advanced options - might need settings for this.
 			);
 
-			// Defeault ShipStation Shipment Array
+			// Default ShipStation Shipment Array
 			$shipment = array(
 				'external_order_id' => $wc_order->get_id(),
 				'order_source_code'=> 'woocommerce',

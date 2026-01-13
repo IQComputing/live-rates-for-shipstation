@@ -178,7 +178,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 	/**
 	 * Increase the HTTP Request Timeout
-	 * Sometimes ShipStation takes awhile to responde with rates.
+	 * Sometimes ShipStation takes awhile to respond with rates.
 	 * Presumably, the more services enabled, the longer it takes.
 	 *
 	 * @param Integer $timeout
@@ -727,13 +727,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			return;
 		}
 
-		// Return Early - No enabled services.
-		$enabled_services = $this->get_enabled_services();
-		if( empty( $enabled_services ) ) {
-			$this->log( esc_html__( 'No enabled carrier services found. Please enable carrier services within the shipping zone.', 'live-rates-for-shipstation' ) );
-			return;
-		}
-
+		// Grab the calculator to be filtered.
 		$calculator = new Utility\Shipping_Calculator( $packages, array(
 			'method' => $this,
 		) );
@@ -767,7 +761,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			} else {
 
 				$this->log( sprintf( '%s [%s]',
-					esc_html__( 'Shipping Calcualtions Object override failed. Class does not inherit "\IQLRSS\Core\Utility\Shipping_Calculator".', 'live-rates-for-shipstation' ),
+					esc_html__( 'Shipping Calculations Object override failed. Class does not inherit "\IQLRSS\Core\Utility\Shipping_Calculator".', 'live-rates-for-shipstation' ),
 					get_class( $maybe_calc )
 				) );
 

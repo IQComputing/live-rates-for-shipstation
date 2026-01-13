@@ -4,7 +4,7 @@
  * Plugin URI: https://iqcomputing.com/contact/
  * Description: ShipStation shipping method with live rates.
  * Version: 1.1.1
- * Requries at least: 6.2
+ * Requires at least: 6.2
  * Author: IQComputing
  * Author URI: https://iqcomputing.com/
  * License: GPLv3 or later

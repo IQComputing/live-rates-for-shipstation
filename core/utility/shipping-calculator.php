@@ -1,12 +1,21 @@
 <?php
 /**
  * Calculate Shipping based on...
+ * Cart Data
+ * or Array of Product IDs
+ * or Array of WC_Products
  *
- * @todo This needs a 2nd pass to clean up and organize.
+ * This can be used with or without a Shipping Method.
+ * See the constructor arguments to see arguments that
+ * you can either override, or help create a mock cart.
  *
- * :: Base API Request Allocation
- * :: Packages / Packing
- * :: API Request Fulfillment
+ * get_rates() to run setup and returns rates.
+ *
+ * :: Construct
+ * :: Base API Request Args
+ * :: Packing / Packages
+ * :: Run API Requests
+ * :: Return Rates
  * :: Utility
  */
 namespace IQLRSS\Core\Utility;
@@ -33,11 +42,11 @@ Class Shipping_Calculator {
 
 
     /**
-     * Array of packed products.
+     * Array of args to augment object.
      *
-     * @var Array
+     * @var Array - See __construct
      */
-    protected $packed = array();
+    protected $args = array();
 
 
     /**
@@ -46,40 +55,17 @@ Class Shipping_Calculator {
      * @var Array
      */
     protected $requests = array(
-        'base'      => array(),
-        'requests'  => array(),
+        'base'  => array(),
+        'reqs'  => array(),
     );
 
 
     /**
-     * Array of args to augment object.
-     *
-     * @var Array(
-     *      'method' => WC_Shipping_Zone
-     *
-     *      // Cart Specifics
-     *      'weight_dim' => 'Store Weight Unit String'
-     *      'dim_unit'   => 'Store Dimensions Unit String'
-     *      'cart'       => array( 'quantity' => 2 ), // See WC_Cart cart_contens (Entirely optional, quantity always defaults to 1)
-     *      'items'      => array( // See WC_Cart cart_contens (Entirely optional, quantity always defaults to 1)
-     *          product_id => array(
-     *              'quantity' => 1,
-     *          )
-     *      ),
-     *      'customboxes' => array(),
-     *      'minweight'   => '',
-     *      'packing_sub' => 'weightonly',
-     * )
-     */
-    protected $args = array();
-
-
-    /**
-     * Array of cart_contents (mocked).
+     * Array of packed products.
      *
      * @var Array
      */
-    protected $cart = array();
+    protected $packed = array();
 
 
     /**
@@ -91,12 +77,29 @@ Class Shipping_Calculator {
 
 
     /**
+     * Array of cart_contents (mocked).
+     *
+     * @var Array
+     */
+    protected $cart = array();
+
+
+    /**
+     * Shipping Method Object
+     *
+     * @var WC_Shipping_Method
+     */
+    protected $method = null;
+
+
+    /**
      * Set the data we need for calculations.
      *
      * @param Array $dataset - Cart Contents or an Array of Products.
      * @param Array $args - Array(
      *      'method'     => WC_Shipping_Zone
-     *      'weight_dim' => 'Store Weight Unit String'
+     *      'instance_id'=> WC_Shipping_Zone ID
+     *      'weight_unit'=> 'Store Weight Unit String'
      *      'dim_unit'   => 'Store Dimensions Unit String'
      *      'cart'       => array( 'quantity' => 2 ), // See WC_Cart cart_contens (Entirely optional, quantity always defaults to 1) [Acts as a Global]
      *      'items'      => array( // See WC_Cart cart_contens (Entirely optional, quantity always defaults to 1) [Acts as a "Specific" or Global Override]
@@ -104,45 +107,16 @@ Class Shipping_Calculator {
      *              'quantity' => 1,
      *          )
      *      ),
+     *      'customboxes' => array(),
+     *      'minweight'   => '',
+     *      'packing_sub' => 'weightonly',
      * )
      */
     public function __construct( $dataset, $args = array() ) {
 
-        $this->args = array_merge( array(
-            'weight_dim'    => get_option( 'woocommerce_weight_unit', '' ),
-            'dim_unit'      => get_option( 'woocommerce_dimension_unit', '' ),
-            'cart'          => array(),
-            'items'         => array(),
-        ), (array)$args );
-
+        $this->process_args( $args );
         $this->determine_dataset( $dataset );
         $this->associate_cart_content( $dataset );
-
-    }
-
-
-    /**
-     * Magic Call for chained methods.
-     *
-     * All setup_*() methods should return $this for ez chaining.
-     * This ensures that they do even if they don't.
-     *
-     * @param String $method
-     * @param Mixed $args - Array(
-     *   'instance_id' => 123 - The Shipping Method Instance ID (Usually associated with an Order Item).
-     *   'method' => WC_Shipping_Method - Uses instance_id to create IQLRSS Shipping Method instance.
-     * )
-     *
-     * @return Mixed
-     */
-    public function __call( $method, $args ) {
-
-        if( 0 === strpos( $method, 'setup_' ) ) {
-            $this->$method( ...$args );
-            return $this;
-        }
-
-        return $this->$method( ...$args );
 
     }
 
@@ -157,11 +131,6 @@ Class Shipping_Calculator {
      * @return Mixed
      */
     public function get( $key, $default = '' ) {
-
-        // Maybe set the shipping method object.
-        if( isset( $this->args['instance_id'] ) && ! isset( $this->args['method'] ) ) {
-            $this->args['method'] = \WC_Shipping_Zones::get_shipping_method( $this->args['instance_id'] );
-        }
 
         // Friendly deep array traversal.
         if( false !== strpos( $key, '.' ) || false !== strpos( $key, '/' ) ) {
@@ -183,16 +152,18 @@ Class Shipping_Calculator {
                 if( $default === $value ) return;
                 $value = ( is_array( $value ) && isset( $value[ $slug ] ) ) ? $value[ $slug ] : $default;
             } );
+
+            return $value;
         }
 
         // Arg key.
         if( isset( $this->args[ $key ] ) ) {
             return $this->args[ $key ];
 
-        // Shipping Method optoin maybe?
-        } else if( isset( $this->args['method'] ) && is_a( $this->args['method'], 'WC_Shipping_Method' ) ) {
+        // Shipping Method option maybe?
+        } else if( $this->method ) {
 
-            if( 'serivces_enabled' === $key ) {
+            if( 'services_enabled' === $key ) {
 
                 $enabled  = array();
                 $services = $this->get( 'services', array() );
@@ -208,7 +179,7 @@ Class Shipping_Calculator {
 
             }
 
-            return $this->args['method']->get_option( $key, $default );
+            return $this->method->get_option( $key, $default );
         }
 
         return $default;
@@ -216,47 +187,196 @@ Class Shipping_Calculator {
     }
 
 
+
+    /**------------------------------------------------------------------------------------------------ **/
+	/** :: Construct :: **/
+	/**------------------------------------------------------------------------------------------------ **/
     /**
-     * Return an array of rates
+     * Process and set the calculator args.
+     * Set the Shipping Method if it exists
+     * and remove it from args to save on [debug] space.
      *
-     * @return Array
+     * @param Array $args
+     *
+     * @return void
      */
-    public function get_rates() {
+    protected function process_args( $args ) {
 
-        $this->setup_base()		// Setup base request args.
-			->setup_packages()  // Pack items.
-			->setup_rates();	// Run API requests.
+        // Maybe set the shipping method object.
+        if( isset( $args['method'] ) && is_a( $args['method'], 'WC_Shipping_Method' ) ) {
+            $this->method = $args['method'];
+        } else if( isset( $args['instance_id'] ) ) {
+            $this->method = \WC_Shipping_Zones::get_shipping_method( $args['instance_id'] );
+        }
 
-        return $this->prepare_rates( $this->rates );
+        $args = array_diff_key( $args, array(
+            'method' => '',
+            'instance_id' => '',
+        ) );
+
+        $this->args = array_merge( array(
+            'weight_unit'    => get_option( 'woocommerce_weight_unit', '' ),
+            'dim_unit'      => get_option( 'woocommerce_dimension_unit', '' ),
+            'cart'          => array(),
+            'items'         => array(),
+        ), (array)$args );
+
+    }
+
+
+    /**
+     * Determine the calculator type by given dataset.
+     * Associate the cart contents.
+     * Otherwise, get the product objects.
+     *
+     * @param Array $dataset
+     *
+     * @return void
+     */
+    protected function determine_dataset( $dataset ) {
+
+        // Return Early - Not an Array
+        if( ! is_array( $dataset ) ) return;
+
+        // Return Early - Dataset is a full Cart Array (probably)
+        if( is_array( $dataset ) && isset( $dataset['contents'], $dataset['destination'] ) ) {
+
+            $this->datatype = 'cart';
+            $this->cart = $dataset['contents'];
+            return; //!
+
+        }
+
+        // Dataset is [hopefully] an Array of Products.
+        $this->datatype = 'products';
+        $dataval    = array_shift( $dataset );
+        $products   = array();
+
+        // Array of Product IDs.
+        if( is_numeric( $dataval ) ) {
+
+            $products = wc_get_products( array(
+                'include' => array_map( 'absint', $dataset ),
+            ) );
+
+        // Array of WC_Products.
+        } else if( is_a( $dataval, '\WC_Product' ) ) {
+            $products = array_filter( $dataset, fn( $obj ) => is_a( $obj, '\WC_Product' ) );
+        }
+
+        // Set Cart
+        if( ! empty( $products ) ) {
+            foreach( $products as $product ) {
+                $this->cart['data'][ $product->get_id() ] = $product;
+            }
+        }
+
+    }
+
+
+    /**
+     * Try to mock the WC_Cart cart_contents with the
+     * given set of products, 'cart' as the base set
+     * of cart_content keys, then 'items' as overrides.
+     *
+     * Mainly used for quantity. Always optional.
+     * Quantity will default to 1.
+     *
+     * @param Array $dataset
+     *
+     * @return void
+     */
+    protected function associate_cart_content( $dataset ) {
+
+        if( empty( $this->cart ) ) return;
+
+        // Return Early - Associate Cart Content, except some array keys.
+        if( 'cart' === $this->datatype ) {
+
+            $this->args = array_merge( array_diff_key( $dataset, array(
+                'contents'  => array(),
+                'rates'     => array(),
+            ) ), $this->args );
+            return; // !
+
+        // Return Early - What?
+        } else if( 'products' !== $this->datatype ) {
+            return;
+        }
+
+        // Associate cart args with products.
+        $cart   = $this->get( 'cart', array() );   // These act as order item globals. Every item will have theses.
+        $items  = $this->get( 'items', array() );  // These override globals using product_id as the key association.
+
+        // Items and Cart
+        if( ! empty( $items ) && is_array( $items ) ) {
+
+            foreach( $this->cart as $cart_item ) {
+
+                if( ! is_a( $cart_item['data'], 'WC_Product' ) ) continue;
+                if( ! isset( $items[ $cart_item['data']->get_id() ] ) ) continue;
+
+                $product = $cart_item['data'];
+                $this->cart[ $product->get_id() ] = array_merge(
+                    array( 'quantity' => 1 ),
+                    (array)$cart,
+                    (array)$items[ $product->get_id() ],
+                    array( 'data' => $product ) // Ensure the product isn't overridable.
+                );
+
+            }
+
+        // Just Cart
+        } else if( ! empty( $cart ) && is_array( $cart ) ) {
+
+            foreach( $this->cart as $cart_item ) {
+
+                if( ! is_a( $cart_item['data'], 'WC_Product' ) ) continue;
+                $this->cart[ $cart_item['data']->get_id() ] = array_merge(
+                    array( 'quantity' => 1 ),
+                    (array)$cart,
+                    array( 'data' => $cart_item['data'] ) // Ensure the product isn't overridable.
+                );
+            }
+
+        } else {
+
+            foreach( $this->cart as $cart_item ) {
+
+                if( ! is_a( $cart_item['data'], 'WC_Product' ) ) continue;
+                $this->cart[ $cart_item['data']->get_id() ] = array(
+                    'quantity' => 1,
+                    'data' => $cart_item['data']
+                );
+            }
+        }
 
     }
 
 
 
     /**------------------------------------------------------------------------------------------------ **/
-	/** :: Base API Request Allocation :: **/
+	/** :: Base API Request Args :: **/
 	/**------------------------------------------------------------------------------------------------ **/
     /**
      * Setup Array of API requests.
      * This will bring in warehouses and
-     * any other globals or defautls.
+     * any other globals or defaults.
      *
-     * @return $this
+     * @return void
      */
-    public function setup_requests() {
+    public function setup_base() {
 
         $to_arr   = $this->get_requestval( 'to', array() );
         $from_arr = $this->get_requestval( 'from', array() );
 
-        // Return Early - Did not have all the necessary fields to run an API request on.
-        if( empty( $to_arr['to_country_code'] ) && empty( $to_arr['to_postal_code'] ) ) {
+        // Maybe Return Early - Did not have all the necessary fields to run an API request on. This may trigger often on cart, so skip it.
+        if( 'cart' !== $this->datatype && empty( $to_arr['to_country_code'] ) && empty( $to_arr['to_postal_code'] ) ) {
             $this->log( esc_html__( 'Request missing a To Country Code and/or To Postal Code.', 'live-rates-for-shipstation' ) );
-			return $this;
 
         // Return Early - Did not have all the necessary fields to run an API request on.
         } else if( empty( $from_arr['from_country_code'] ) && empty( $to_arr['from_postal_code'] ) ) {
 			$this->log( esc_html__( 'Request missing a From Country Code and/or From Postal Code.', 'live-rates-for-shipstation' ) );
-			return $this;
 		}
 
         $this->requests['base'] = array_merge(
@@ -265,29 +385,28 @@ Class Shipping_Calculator {
             $from_arr,
         );
 
-        return $this;
-
     }
 
 
 
     /**------------------------------------------------------------------------------------------------ **/
-	/** :: Packages / Packing :: **/
+	/** :: Packing / Packages :: **/
 	/**------------------------------------------------------------------------------------------------ **/
     /**
      * Pack items into the custom packages.
      *
-     * @return $this
+     * @return void
      */
     public function setup_packages() {
 
         // Call the packing method
-        $packtype = $this->get( 'packing', 'individual' );
 		$requests = array();
-        $callback = sprintf( 'get_requestsby_%s', str_replace( '-', '_', $packtype ) );
-		if( method_exists( $this, $callback ) ) {
-			$requests = call_user_func( array( $this, $callback ) );
-		}
+        $packtype = $this->get( 'packing', 'individual' );
+        switch( $packtype ) {
+            case 'individual'   : $requests = $this->get_requestsby_individual(); break;
+            case 'onebox'       : $requests = $this->get_requestsby_onebox(); break;
+            case 'wc-box-packer': $requests = $this->get_requestsby_wc_box_packer(); break;
+        }
 
 
         /**
@@ -303,7 +422,7 @@ Class Shipping_Calculator {
 		 * 			'length => 123,
 		 * 			'width' => 123,
 		 * 			'height' => 123,
-		 * 			'unit' => 'inch', - ShipStation expects a specific string. See \IQLRSS\Core\Api\Shipstation::convert_unit_term( $unit )
+		 * 			'unit' => 'in', - ShipStation expects a specific string. See \IQLRSS\Core\Api\Shipstation::convert_unit_term( $unit )
 		 * 		),
 		 * 		'weight' => array(
 		 * 			'value' => 123,
@@ -357,7 +476,7 @@ Class Shipping_Calculator {
         $products = $this->get_products();
         $default_weight = $this->get( 'minweight', '' );
 
-        foreach( $products as $key => $product ) {
+        foreach( $products as $product ) {
 
 			// Continue - No shipping needed for product.
 			if( ! $product->needs_shipping() ) continue;
@@ -515,7 +634,7 @@ Class Shipping_Calculator {
 
 		}
 
-		// Default - Stacked Verticially
+		// Default - Stacked Vertically
 		return array( array(
 			'weight' => array(
 				'unit'	=> $this->api()->convert_unit_term( $this->get( 'weight_unit' ) ),
@@ -551,28 +670,29 @@ Class Shipping_Calculator {
 		/* Return Early - No custom boxes found. */
 		if( empty( $boxes ) ) {
 			$this->log( esc_html__( 'Custom Boxes selected, but no boxes found. Items packed individually', 'live-rates-for-shipstation' ), 'warning' );
-			return $this->group_requestsby_individual();
+			return $this->get_requestsby_individual();
 		}
 
 		if( ! class_exists( '\IQLRSS\Core\WC_Box_Packer\WC_Boxpack' ) ) {
-			include_once '../wc-box-packer/class-wc-boxpack.php';
-		} else {
-            $wc_boxpack = new \IQLRSS\Core\WC_Box_Packer\WC_Boxpack();
-        }
+			include_once plugin_dir_path( __DIR__ ) . 'wc-box-packer/class-wc-boxpack.php';
+		}
 
 		// Setup the WC_Boxpack boxes based on user submitted custom boxes.
+        $wc_boxpack = new \IQLRSS\Core\WC_Box_Packer\WC_Boxpack();
 		foreach( $boxes as $box ) {
 			if( empty( $box['active'] ) ) continue;
 			$wc_boxpack->add_box( $box );
 		}
 
-		// Loop the items, grabs their dimensions, and assocaite them with WC_Boxpack for future packing.
-		foreach( $this->cart as $key => $product ) {
+		// Loop the items, grabs their dimensions, and associates them with WC_Boxpack for future packing.
+		foreach( $this->cart as $key => $cart_item ) {
 
-			if( ! $product->needs_shipping() ) continue;
+            if( ! isset( $cart_item['data'] ) || ! is_a( $cart_item['data'], 'WC_Product' ) ) continue;
+			if( ! $cart_item['data']->needs_shipping() ) continue;
 
-			$weight	= ( ! empty( $product->get_weight() ) ) ? $product->get_weight() : $default_weight;
-			$data	= array(
+            $product = $cart_item['data'];
+			$weight	 = ( ! empty( $product->get_weight() ) ) ? $product->get_weight() : $default_weight;
+			$data	 = array(
 				'weight' => (float)round( wc_get_weight( $weight, $this->get( 'weight_unit' ) ), 2 ),
 			);
 			$physicals = array_filter( array(
@@ -606,7 +726,7 @@ Class Shipping_Calculator {
 			);
 
 			// Pack Products
-			for( $i = 0; $i < $item['quantity']; $i++ ) {
+			for( $i = 0; $i < $cart_item['quantity']; $i++ ) {
 				$wc_boxpack->add_item(
 					$data['length'],
 					$data['width'],
@@ -629,7 +749,7 @@ Class Shipping_Calculator {
 		$box_log = array();
 
 		// Delivery!
-		foreach( $wc_box_packages as $key => $package ) {
+		foreach( $wc_box_packages as $package ) {
 
 			$packed_items = ( is_array( $package->packed ) ) ? array_map( function( $item ) { return $item->meta['_name']; }, $package->packed ) : array();
 			$requests[] = array(
@@ -681,108 +801,93 @@ Class Shipping_Calculator {
 
 
     /**------------------------------------------------------------------------------------------------ **/
-	/** :: API Request Fulfillment :: **/
+	/** :: Run API Requests :: **/
 	/**------------------------------------------------------------------------------------------------ **/
     /**
      * Pack items into the custom packages.
      *
-     * @return $this
+     * @return void
      */
     public function setup_rates() {
 
         // Return Early - No items to work with.
         if( empty( $this->packed ) ) {
             $this->log( esc_html__( 'Setup Rates tried to run with no packed items to work with.', 'live-rates-for-shipstation' ), 'warning' );
-            return $this;
+            return;
 
         // Return Early - No base API arguments.
         } else if( empty( $this->requests['base'] ) || ! isset( $this->requests['base']['to_country_code'] ) ) {
             $this->log( esc_html__( 'Setup Rates tried to run with no base API args set.', 'live-rates-for-shipstation' ), 'warning' );
-            return $this;
+            return;
         }
 
         // Return Early - No enabled carriers.
         $carrier_ids = $this->get_requestval( 'carrier_ids', array() );
         if( empty( $carrier_ids ) ) {
             $this->log( esc_html__( 'Setup Rates tried to run but could not determine enabled carriers.', 'live-rates-for-shipstation' ), 'warning' );
-            return $this;
+            return;
         }
 
         // item_id is a unique identifier, not a WP/WC ID.
-        $rates = array();
-        foreach( $this->packed as $item_id => $request ) {
+        foreach( $this->packed as $idx => $package ) {
 
             // API Request!
-            $available_rates = $this->api()->get_shipping_estimates( array_merge(
-                $request,
+            $this->requests['reqs'][ $idx ] = array_merge(
+                $package,
                 $this->requests['base'],
                 array( 'carrier_ids' => $carrier_ids ),
-            ) );
+            );
+            $available_rates = $this->api()->get_shipping_estimates( $this->requests['reqs'][ $idx ] );
 
             // Continue - Something's wrong with rates.
             if( is_wp_error( $available_rates ) || empty( $available_rates ) ) {
                 $this->log( sprintf( '%s [%s]',
                     esc_html__( 'Could not retrieve rates for packed item while processing rates.', 'live-rates-for-shipstation' ),
-                    $item_id,
+                    $idx,
                 ), 'warning' );
                 continue;
             }
 
-            $rate_name = ( isset( $request['_name'] ) ) ? $request['_name'] : '';
-            $rate_name = ( empty( $rate_name ) && isset( $request['nickname'] ) ) ? $request['nickname'] : $rate_name;
-            $rateObj   = $this->create_rate_reference( array(
-                'hash'      => null,
-                'item_id'   => $item_id,
-                'name'      => $rate_name, // Item Product (ID|Name) or Box Nickname.
-                'cost'      => 0,
-                'meta'      => array(),
-                'request'   => $request,
-                'rates_available' => $available_rates,
-            ) );
+            // Set Rates from the available rates.
+            foreach( $available_rates as $shiprate ) {
 
-            // A Reference Rabbit Hole, Alice.
-            $this->process_available_rates( $rateObj, $available_rates );
+                $hash = $this->get_rate_hash( array( 'shiprate' => $shiprate ) );
+                $rate = $this->process_available_rate( $shiprate, array( $idx => $package ) );
 
-            // Hash n Cache.
-            if( ! isset( $rates[ $rateObj->hash ] ) ) {
+                if( empty( $rate ) ) continue;
+                if( ! isset( $rate['id'] ) ) $rate['id'] = $hash;
 
-                $rates[ $rateObj->hash ] = array(
-                    'id'		=> $rateObj->hash,
-                    'label'		=> ( ! empty( $service_arr['nickname'] ) ) ? $service_arr['nickname'] : $rateObj->meta['name'],
-                    'package'	=> $request,
-                    'cost'		=> array( $rateObj->cost ),
-                    'meta_data' => (array)$rateObj->meta,
-                    'rates'     => array(),
-                    'boxes'     => array(),
-                );
+                // Set rate
+                if( ! isset( $this->rates[ $hash ] ) ) {
+                    $this->rates[ $hash ] = $rate;
 
-            } else {
-                $rates[ $rateObj->hash ]['cost'][] = $rateObj->cost;
+                // Append cost, merge rates, merge boxes.
+                } else {
+
+                    // Cost
+                    $this->rates[ $hash ]['cost'][] = $rate['cost'];
+
+                    if( ! empty( $this->rates[ $hash ]['meta_data'] ) ) {
+
+                        // Rates
+                        if( isset( $this->rates[ $hash ]['meta_data']['rates'] ) && $rate['meta_data']['rates'] ) {
+                            $this->rates[ $hash ]['meta_data']['rates'] = array_merge(
+                                (array)$this->rates[ $hash ]['meta_data']['rates'],
+                                (array)$rate['meta_data']['rates']
+                            );
+                        }
+
+                        // Boxes
+                        if( isset( $this->rates[ $hash ]['meta_data']['boxes'] ) && $rate['meta_data']['boxes'] ) {
+                            $this->rates[ $hash ]['meta_data']['boxes'] = array_merge(
+                                (array)$this->rates[ $hash ]['meta_data']['boxes'],
+                                (array)$rate['meta_data']['boxes']
+                            );
+                        }
+                    }
+                }
             }
-
-            // Merge in the item rates so they persist.
-            $rates[ $rateObj->hash ]['meta_data']['rates'] = $rates[ $rateObj->hash ]['meta_data']['rates'] ?? array();
-            $rates[ $rateObj->hash ]['meta_data']['rates'] = array_merge(
-                $rates[ $rateObj->hash ]['meta_data']['rates'],
-                array(
-                    'qty'           => $rateObj->meta['qty'] ?? 1,
-                    '_name'         => $rateObj->meta['_name'] ?? '',
-                    'adjustment'    => (array)( $rateObj->meta['adjustments'] ?? array() ),
-                    'other_costs'   => (array)( $rateObj->meta['other_costs'] ?? array() ),
-                )
-            );
-
-            // Merge in the boxes so they persist.
-            $rates[ $rateObj->hash ]['meta_data']['boxes'] = $rates[ $rateObj->hash ]['meta_data']['boxes'] ?? array();
-            $rates[ $rateObj->hash ]['meta_data']['boxes'] = array_merge(
-                $rates[ $rateObj->hash ]['meta_data']['boxes'],
-                array( $request ),
-            );
-
         }
-
-        // Set rates for whatever.
-        $this->rates = $rates;
 
     }
 
@@ -790,83 +895,87 @@ Class Shipping_Calculator {
     /**
      * Process the available rates and return the WC Rate metadata.
      *
-     * @param Object rateObj - Custom reference object.
-     * @param Array $rates - ShipStation API results.
+     * @param Array $shiprate     - ShipStation API Result
+     * @param Array $package_arr  - Array( $idx => $package )
      *
-     * @return Array $shiprates
+     * @param Array $wc_rate - WC_Cart compatible rate.
      */
-    protected function process_available_rates( &$rateObj, $rates ) {
+    protected function process_available_rate( $shiprate, $package_arr ) {
 
-        $services = $this->get( 'serivces_enabled', array() );
+        // Return Early - The available rates has a carrier which is not enabled on this shipping method instance.
+        $services = $this->get( 'services_enabled', array() );
+        if( ! isset( $services[ $shiprate['carrier_id'] ][ $shiprate['code'] ] ) ) {
+            return array();
+        }
 
-        // Loop the returned API estimates.
-        foreach( $rates as $shiprate ) {
+        $package     = array_first( $package_arr );
+        $rate_name	 = ( isset( $shiprate['_name'] ) ) ? $shiprate['_name'] : '';
+		$rate_name	 = ( empty( $rate_name ) && isset( $package['nickname'] ) ) ? $package['nickname'] : $rate_name;
+        $service_arr = $services[ $shiprate['carrier_id'] ][ $shiprate['code'] ];
 
-            // Continue - The available rates has a carrier which is not enabled on this shipping method instance.
-            if( ! isset( $services[ $shiprate['carrier_id'] ][ $shiprate['code'] ] ) ) {
-                $this->log( sprintf( '%s [%s]',
-                    esc_html__( 'Wrong shipping carrier found while processing rates.', 'live-rates-for-shipstation' ),
-                    $rateObj->item_id,
-                ), 'warning' );
-                continue;
-            }
-
-            $rateObj->cost = floatval( $shiprate['cost'] );
-            $rateObj->hash = $this->get_rate_hash( array( 'shiprate' => $shiprate ) );
-
-            // Append shiprate specific metadata.
-            // @todo Reconsider this whole plugin_prefix method / accessor idea [everywhere].
-            $rateObj->meta = array_merge( (array)$rateObj->meta, array(
+        $wc_rate = array(
+            'label'		=> ( ! empty( $service_arr['nickname'] ) ) ? $service_arr['nickname'] : $shiprate['name'],
+            'cost'		=> floatval( $shiprate['cost'] ),
+            'meta_data' => array(
                 'carrier' => $shiprate['carrier_name'],
                 'service' => $shiprate['name'],
+                'rates'   => array(
+                    '_name'=> $rate_name, // Item products(ID|Name) or box nickname.
+					'rate' => floatval( $shiprate['cost'] ),
+                ),
+                'boxes'   => array( $package ),
                 sprintf( '_%s', \IQLRSS\Driver::plugin_prefix( 'carrier_id' ) )   => $shiprate['carrier_id'],
                 sprintf( '_%s', \IQLRSS\Driver::plugin_prefix( 'carrier_code' ) ) => $shiprate['carrier_code'],
                 sprintf( '_%s', \IQLRSS\Driver::plugin_prefix( 'service_code' ) ) => $shiprate['code'],
-            ) );
+            )
+        );
 
-            // Individual Items get quantities applied.
-            if( 'individual' === $this->get( 'packing', 'individual' ) ) {
-                $quantity = absint( $this->get_cartitem_val( $rateObj->item_id, 'quantity', 1 ) );
-                $rateObj->cost *= $quantity;
-				$rateObj->meta['qty'] = $quantity;
-            }
-
-            // Add the Service Adjustment.
-            $this->process_service_adjustments( $rateObj, $shiprate );
-
-            // Add any Other Costs.
-            $this->process_other_adjustments( $rateObj, $shiprate );
-
+        // Individual items get quantities applied.
+        if( 'individual' === $this->get( 'packing', 'individual' ) ) {
+            $quantity = $this->get_cartitem_val( array_key_first( $package ), 'quantity', 1 );
+            $wc_rate['cost'] = floatval( $shiprate['cost'] ) * absint( $quantity );
+            $wc_rate['meta_data']['rates']['qty'] = $quantity;
         }
+
+        // Add the Service Adjustment.
+        $this->process_service_adjustments( $wc_rate, $shiprate, $package );
+
+        // Add any Other Costs.
+        $this->process_other_adjustments( $wc_rate, $shiprate, $package );
+
+        // Ensure the cost is an array.
+        $wc_rate['cost'] = (array)$wc_rate['cost'];
+
+        return $wc_rate;
 
     }
 
 
     /**
-     * Return an array of service costs metadata.
-     * 'cost' key is required more or less.
+     * Process any service specific rate adjustments.
      *
-     * @param Object rateObj - Custom reference object.
-     * @param Array $shiprate
+     * @param Array $wc_rate     - WC compatible rate array.
+     * @param Array $shiprate    - ShipStation API rate.
+     * @param Array $package_arr - Array( $idx => $package )
      *
      * @return void
      */
-    protected function process_service_adjustments( &$rateObj, $shiprate ) {
+    protected function process_service_adjustments( &$wc_rate, $shiprate, $package_arr ) {
 
-        $services    = $this->get( 'serivces_enabled', array() );
+        $services = $this->get( 'services_enabled', array() );
         $service_arr = ( isset( $services[ $shiprate['carrier_id'] ] ) ) ? $services[ $shiprate['carrier_id'] ][ $shiprate['code'] ] : array();
 
         // Service Specific
         if( isset( $service_arr['adjustment'] ) ) {
 
-            $adjustment 	 = floatval( $service_arr['adjustment'] );
+            $adjustment = floatval( $service_arr['adjustment'] );
             $adjustment_type = ( isset( $service_arr['adjustment_type'] ) ) ? $service_arr['adjustment_type'] : 'percentage';
 
             if( ! empty( $adjustment_type ) && $adjustment > 0 ) {
 
-                $adjustment_cost = ( 'percentage' == $adjustment_type ) ? ( $rateObj->cost * ( floatval( $adjustment ) / 100 ) ) : floatval( $adjustment );
-                $rateObj->cost   = $adjustment_cost;
-                $rateObj->meta['adjustment'] = array(
+                $adjustment_cost = ( 'percentage' == $adjustment_type ) ? ( floatval( $shiprate['cost'] ) * ( floatval( $adjustment ) / 100 ) ) : floatval( $adjustment );
+                $wc_rate['cost'] = $adjustment_cost;
+                $wc_rate['meta_data']['rates']['adjustment'] = array(
                     'type' => $adjustment_type,
                     'rate' => $adjustment,
                     'cost' => $adjustment_cost,
@@ -883,9 +992,9 @@ Class Shipping_Calculator {
 
             if( ! empty( $global_adjustment_type ) && $global_adjustment > 0 ) {
 
-                $adjustment_cost = ( 'percentage' == $global_adjustment_type ) ? ( $rateObj->cost * ( floatval( $global_adjustment ) / 100 ) ) : floatval( $global_adjustment );
-                $rateObj->cost   = $adjustment_cost;
-                $rateObj->meta['adjustment'] = array(
+                $adjustment_cost = ( 'percentage' === $global_adjustment_type ) ? ( floatval( $shiprate['cost'] ) * ( floatval( $global_adjustment ) / 100 ) ) : floatval( $global_adjustment );
+                $wc_rate['cost'] = $adjustment_cost;
+                $wc_rate['meta_data']['rates']['adjustment'] = array(
                     'type' => $global_adjustment_type,
                     'rate' => $global_adjustment,
                     'cost' => $adjustment_cost,
@@ -898,35 +1007,37 @@ Class Shipping_Calculator {
 
 
     /**
-     * Return an array of other costs metadata.
-     * 'cost' key is required more or less.
+     * Process any other adjustments.
      *
-     * @param Object rateObj - Custom reference object.
-     * @param Array $shiprate
+     * @param Array $wc_rate     - WC compatible rate array.
+     * @param Array $shiprate    - ShipStation API rate.
+     * @param Array $package_arr - Array( $idx => $package )
      *
      * @return void
      */
-    protected function process_other_adjustments( &$rateObj, $shiprate ) {
+    protected function process_other_adjustments( &$wc_rate, $shiprate, $package_arr ) {
+
+        $other = array();
+        $package = array_first( $package_arr );
 
         // Loop and add any other shipment amounts.
         if( ! empty( $shiprate['other_costs'] ) ) {
             foreach( $shiprate['other_costs'] as $slug => $cost_arr ) {
-
                 if( empty( $cost_arr['amount'] ) ) continue;
-
-                $rateObj->cost += floatval( $cost_arr['amount'] );
-                if( ! is_array( $rateObj->meta['other_costs'] ) ) {
-                    $rateObj->meta['other_costs'] = array();
-                }
-
-                $rateObj->meta['other_costs'][ $slug ] = $cost_arr['amount'];
+                $wc_rate['cost'] += floatval( $cost_arr['amount'] );
+                $other[ $slug ] = $cost_arr['amount'];
             }
         }
 
         // Maybe a package price
-        if( 'wc-box-packer' == $this->get( 'packing', 'individual' ) && isset( $rateObj->request['price'] ) && ! empty( $rateObj->request['price'] ) ) {
-            $rateObj->cost += floatval( $rateObj->request['price'] );
-            $rateObj->meta['other_costs']['box_price'] = $rateObj->request['price'];
+        if( 'wc-box-packer' === $this->get( 'packing', 'individual' ) && isset( $package['price'] ) && ! empty( $package['price'] ) ) {
+            $wc_rate['cost'] += floatval( $package['price'] );
+            $other['box_price'] = $package['price'];
+        }
+
+        // Set metadata in rates.
+        if( ! empty( $other ) && isset( $wc_rate['meta_data']['rates'] ) ) {
+            $wc_rate['meta_data']['rates']['other_costs'] = $other;
         }
 
     }
@@ -954,138 +1065,27 @@ Class Shipping_Calculator {
 
 
     /**------------------------------------------------------------------------------------------------ **/
-	/** :: Utility :: **/
+	/** :: Return Rates :: **/
 	/**------------------------------------------------------------------------------------------------ **/
     /**
-     * Return a hashed rate key.
-     *
-     * @param Array $args - Helps determine keyvals.
-     *
-     * @return String
-     */
-    public function get_rate_hash( $args = array() ) {
-        return md5( sprintf( '%s%s', $args['shiprate']['code'], $args['shiprate']['carrier_id'] ) );
-    }
-
-
-    /**
-     * Return an array of Products in the cart.
+     * Return an array of rates
      *
      * @return Array
      */
-    public function get_products() {
-        if( empty( $this->cart ) ) return array();
-        return array_column( $this->cart, 'data' );
-    }
+    public function get_rates() {
 
+		// Return Early - No enabled services.
+		$services_enabled = $this->get( 'services_enabled' );
+		if( empty( $services_enabled ) ) {
+			$this->log( esc_html__( 'No enabled carrier services found. Please enable carrier services within the shipping zone.', 'live-rates-for-shipstation' ) );
+			return;
+		}
 
-    /**
-     * Return a cart item value by key.
-     *
-     * @param Mixed $id (hash or product_id)
-     * @param String $slug
-     * @param Mixed $default
-     *
-     * @return Mixed
-     */
-    public function get_cartitem_val( $id, $slug, $default = '' ) {
+        $this->setup_base();
+        $this->setup_packages();
+        $this->setup_rates();
 
-        // Neat.
-        if( empty( $this->cart ) ) return $default;
-        if( ! isset( $this->cart[ $id ] ) ) return $default;
-        if( ! isset( $this->cart[ $id ][ $slug ] ) ) return $default;
-        return $this->cart[ $id ][ $slug ];
-
-    }
-
-
-    /**
-     * This should return ShipStation API compatible values.
-     *
-     * @param String $key
-     * @param Mixed $default
-     *
-     * @return Mixed
-     */
-    public function get_requestval( $key, $default = '' ) {
-
-        $value = $this->get( $key, $default );
-        switch( $key ) {
-
-            // destination.* are WC_Cart data
-            // to.* are custom args for custom calculations.
-            case 'to':
-                if( ! ( is_array( $value ) && isset( $value['to_country_code'] ) ) ) {
-                    $value = array(
-                        'to_country_code'	 => $this->get( 'to.country', $this->get( 'destination.country' ) ),
-                        'to_postal_code'	 => $this->get( 'to.postcode', $this->get( 'destination.postcode' ) ),
-                        'to_city_locality'	 => $this->get( 'to.city', $this->get( 'destination.city' ) ),
-                        'to_state_province'	 => $this->get( 'to.state', $this->get( 'destination.state' ) ),
-                    );
-                }
-            break;
-
-            // to.* are custom args for custom calculations.
-            // Check for a warehouse override as well.
-            case 'from':
-
-                $value = $this->get_requestval( 'warehouse', $value );
-                if( ! ( is_array( $value ) && isset( $value['from_country_code'] ) ) ) {
-                    $value = array(
-                        'from_country_code'	 => $this->get( 'from.country', WC()->countries->get_base_country() ),
-                        'from_postal_code'	 => $this->get( 'from.postcode', WC()->countries->get_base_postcode() ),
-                        'from_city_locality' => $this->get( 'from.city', WC()->countries->get_base_city() ),
-                        'to_state_province'	 => $this->get( 'from.state', WC()->countries->get_base_state() ),
-                    );
-                }
-            break;
-
-            // Warehouse
-            case 'warehouse':
-                 // Grab the Warehouse / shipping from location.
-                $global_warehouse = $this->get( 'ssopt.global_warehouse' );
-                $zone_warehouse   = $this->get( 'warehouse', $global_warehouse );
-
-                // Maybe grab it from a ShipStation known address.
-                if( ! empty( $zone_warehouse ) && '_woo_default' !== $zone_warehouse ) {
-
-                    $warehouse = $this->api()->get_warehouse( $zone_warehouse );
-                    if( ! is_wp_error( $warehouse ) && isset( $warehouse['origin_address'] ) ) {
-                        $value = array(
-                            'from_country_code'	 => $warehouse['origin_address']['country_code'],
-                            'from_postal_code'	 => $warehouse['origin_address']['postal_code'],
-                            'from_city_locality' => $warehouse['origin_address']['city_locality'],
-                            'from_state_province'=> $warehouse['origin_address']['state_province'],
-                            'address_residential_indicator' => $warehouse['origin_address']['address_residential_indicator'],
-                        );
-                    }
-                }
-
-                // Carriers
-                case 'carrier_ids':
-
-                    $enabled  = array();
-                    $carriers = $this->get( 'ssopt.carriers', array() );
-                    $saved_services = $this->get( 'services', array() );
-
-                    if( ! empty( $saved_services ) ) {
-                        foreach( $saved_services as $c => $sa ) {
-                            foreach( $sa as $sk => $s ) {
-                                if( ! isset( $s['enabled'] ) || ! $s['enabled'] ) continue;
-                                $enabled[] = $c;
-                            }
-                        }
-
-                        if( ! empty( $carriers ) && ! empty( $enabled ) ) {
-                            $value = array_values( array_intersect( $enabled, $carriers ) );
-                        }
-                    }
-
-                break;
-            break;
-        }
-
-        return $value;
+        return $this->prepare_rates( $this->rates );
 
     }
 
@@ -1176,138 +1176,140 @@ Class Shipping_Calculator {
     }
 
 
+
+    /**------------------------------------------------------------------------------------------------ **/
+	/** :: Utility :: **/
+	/**------------------------------------------------------------------------------------------------ **/
     /**
-     * Determine the calcualtor type by given dataset.
-     * Associate the cart contents.
-     * Otherwise, get the product objects.
+     * Return a hashed rate key.
      *
-     * @param Array $dataset
+     * @param Array $args - Helps determine keyvals.
      *
-     * @return void
+     * @return String
      */
-    protected function determine_dataset( $dataset ) {
+    public function get_rate_hash( $args = array() ) {
+        return md5( sprintf( '%s%s', $args['shiprate']['code'], $args['shiprate']['carrier_id'] ) );
+    }
 
-        // Return Early - Not an Array
-        if( ! is_array( $dataset ) ) return;
 
-        // Return Early - Dataset is a full Cart Array (probably)
-        if( is_array( $dataset ) && isset( $dataset['contents'], $dataset['destination'] ) ) {
+    /**
+     * Return an array of Products in the cart.
+     *
+     * @return Array
+     */
+    public function get_products() {
+        if( empty( $this->cart ) ) return array();
+        return array_column( $this->cart, 'data' );
+    }
 
-                $this->datatype = 'cart';
-                $this->cart = $dataset['contents'];
-                return; //!
 
-        // Return Early - WC_Cart Dataset - first key is a hash, not numeric.
-        } else if( ! is_numeric( array_key_first( $dataset ) ) ) {
+    /**
+     * Return a cart item value by key.
+     *
+     * @param Mixed $id (hash or product_id)
+     * @param String $slug
+     * @param Mixed $default
+     *
+     * @return Mixed
+     */
+    public function get_cartitem_val( $id, $slug, $default = '' ) {
 
-            $this->datatype = 'cart';
-            $this->cart = $dataset;
-            return; // !
-
-        }
-
-        // Dataset is [hopefully] an Array of Products.
-        $this->datatype = 'products';
-        $dataval    = array_shift( $dataset );
-        $products   = array();
-
-        // Array of Product IDs.
-        if( is_numeric( $dataval ) ) {
-
-            $products = wc_get_products( array(
-                'include' => array_map( 'absint', $dataset ),
-            ) );
-
-        // Array of WC_Products.
-        } else if( is_a( $dataval, '\WC_Product' ) ) {
-            $products = array_filter( $dataset, fn( $obj ) => is_a( $obj, '\WC_Product' ) );
-        }
-
-        // Set Cart
-        if( ! empty( $products ) ) {
-            foreach( $products as $product ) {
-                $this->cart[ $product->get_id() ] = $product;
-            }
-        }
+        // Neat.
+        if( empty( $this->cart ) ) return $default;
+        if( ! isset( $this->cart[ $id ] ) ) return $default;
+        if( ! isset( $this->cart[ $id ][ $slug ] ) ) return $default;
+        return $this->cart[ $id ][ $slug ];
 
     }
 
 
     /**
-     * Try to mock the WC_Cart cart_contents with the
-     * given set of products, 'cart' as the base set
-     * of cart_content keys, then 'items' as overrides.
+     * This should return ShipStation API compatible values.
      *
-     * Mainly used for quantity. Always optional.
-     * Quantity will default to 1.
+     * @param String $key
+     * @param Mixed $default
      *
-     * @param Array $dataset
-     *
-     * @return void
+     * @return Mixed
      */
-    protected function associate_cart_content( $dataset ) {
+    public function get_requestval( $key, $default = '' ) {
 
-        if( empty( $this->cart ) ) return;
+        $value = $this->get( $key, $default );
+        switch( $key ) {
 
-        // Return Early - Assocate Cart Content, except some array keys.
-        if( 'cart' === $this->datatype ) {
+            // destination.* are WC_Cart data
+            // to.* are custom args for custom calculations.
+            case 'to':
+                if( ! ( is_array( $value ) && isset( $value['to_country_code'] ) ) ) {
+                    $value = array(
+                        'to_country_code'	 => $this->get( 'to.country', $this->get( 'destination.country' ) ),
+                        'to_postal_code'	 => $this->get( 'to.postcode', $this->get( 'destination.postcode' ) ),
+                        'to_city_locality'	 => $this->get( 'to.city', $this->get( 'destination.city' ) ),
+                        'to_state_province'	 => $this->get( 'to.state', $this->get( 'destination.state' ) ),
+                    );
+                }
+            break;
 
-            $this->args = array_merge( array_diff_key( $dataset, array(
-                'contents'  => array(),
-                'rates'     => array(),
-            ) ), $this->args );
-            return; // !
+            // to.* are custom args for custom calculations.
+            // Check for a warehouse override as well.
+            case 'from':
 
-        // Return Early - What?
-        } else if( 'products' !== $this->datatype ) {
-            return;
+                $value = $this->get_requestval( 'warehouse', $value );
+                if( ! ( is_array( $value ) && isset( $value['from_country_code'] ) ) ) {
+                    $value = array(
+                        'from_country_code'	 => $this->get( 'from.country', WC()->countries->get_base_country() ),
+                        'from_postal_code'	 => $this->get( 'from.postcode', WC()->countries->get_base_postcode() ),
+                        'from_city_locality' => $this->get( 'from.city', WC()->countries->get_base_city() ),
+                        'from_state_province'=> $this->get( 'from.state', WC()->countries->get_base_state() ),
+                    );
+                }
+            break;
+
+            // Warehouse
+            case 'warehouse':
+                 // Grab the Warehouse / shipping from location.
+                $global_warehouse = $this->get( 'ssopt.global_warehouse' );
+                $zone_warehouse   = $this->get( 'warehouse', $global_warehouse );
+
+                // Maybe grab it from a ShipStation known address.
+                if( ! empty( $zone_warehouse ) && '_woo_default' !== $zone_warehouse ) {
+
+                    $warehouse = $this->api()->get_warehouse( $zone_warehouse );
+                    if( ! is_wp_error( $warehouse ) && isset( $warehouse['origin_address'] ) ) {
+                        $value = array(
+                            'from_country_code'	 => $warehouse['origin_address']['country_code'],
+                            'from_postal_code'	 => $warehouse['origin_address']['postal_code'],
+                            'from_city_locality' => $warehouse['origin_address']['city_locality'],
+                            'from_state_province'=> $warehouse['origin_address']['state_province'],
+                            'address_residential_indicator' => $warehouse['origin_address']['address_residential_indicator'],
+                        );
+                    }
+                }
+
+                // Carriers
+                case 'carrier_ids':
+
+                    $enabled  = array();
+                    $carriers = $this->get( 'ssopt.carriers', array() );
+                    $saved_services = $this->get( 'services', array() );
+
+                    if( ! empty( $saved_services ) ) {
+                        foreach( $saved_services as $c => $sa ) {
+                            foreach( $sa as $sk => $s ) {
+                                if( ! isset( $s['enabled'] ) || ! $s['enabled'] ) continue;
+                                $enabled[] = $c;
+                            }
+                        }
+
+                        if( ! empty( $carriers ) && ! empty( $enabled ) ) {
+                            $value = array_values( array_intersect( $enabled, $carriers ) );
+                        }
+                    }
+
+                break;
+            break;
         }
 
-        // Associate cart args with products.
-        $cart   = $this->get( 'cart', array() );   // These act as cart globals.
-        $items  = $this->get( 'items', array() );  // These override globals using product_id as the key assocation.
-
-        // Items and Cart
-        if( ! empty( $items ) && is_array( $items ) ) {
-
-            foreach( $this->cart as $product ) {
-
-                if( ! is_a( $product, 'WC_Product' ) ) continue;
-                if( ! isset( $items[ $product->get_id() ] ) ) continue;
-
-                $this->cart[ $product->get_id() ] = array_merge(
-                    array( 'quantity' => 1 ),
-                    (array)$cart,
-                    (array)$items[ $product->get_id() ],
-                    array( 'data' => $product )
-                );
-
-            }
-
-        // Just Cart
-        } else if( ! empty( $cart ) && is_array( $cart ) ) {
-
-            foreach( $this->cart as $product ) {
-
-                if( ! is_a( $product, 'WC_Product' ) ) continue;
-                $this->cart[ $product->get_id() ] = array_merge(
-                    array( 'quantity' => 1 ),
-                    (array)$cart,
-                    array( 'data' => $product )
-                );
-            }
-
-        } else {
-
-            foreach( $this->cart as $product ) {
-
-                if( ! is_a( $product, 'WC_Product' ) ) continue;
-                $this->cart[ $product->get_id() ] = array(
-                    'quantity' => 1,
-                    'data' => $product
-                );
-            }
-        }
+        return $value;
 
     }
 

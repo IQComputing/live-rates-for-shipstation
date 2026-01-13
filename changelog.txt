@@ -4,7 +4,7 @@ This is a brief text document keeping track of changes to the plugin. For a full
 
 = 1.1.1 =
 
-Relase Date: December 04, 2025
+Release Date: December 04, 2025
 
 * Overview
 	* Changes in how WordPress handles Modules means we cannot define jQuery as a dependency.
@@ -12,7 +12,7 @@ Relase Date: December 04, 2025
 
 = 1.1.0 =
 
-Relase Date: December 01, 2025
+Release Date: December 01, 2025
 
 * Overview
 	* Custom Packages really needed to be redone to better support label creation.
@@ -47,7 +47,7 @@ Relase Date: December 01, 2025
 
 = 1.0.8 =
 
-Relase Date: October 10, 2025
+Release Date: October 10, 2025
 
 * Overview
 	* Fixes an issue where some carriers return additional costs that were not being added to the rate estimate.
@@ -63,8 +63,8 @@ Relase Date: October 10, 2025
 	* Adds a layer of caching for Shipping Calculations.
 		* Ugh, the Block Editor + WooCommerce makes _multiple_ async requests to shipping calculations which would re-trigger things unnecessarily.
 		* The new methodology uses the WC()->session to automatically return the known rates if the cart has not changed.
-		* This is a noticable increase in speed when browsing the shop when your cart hasn't necessarily changed.
-	* Caching layer also prevents multiple / duplciate API requests being logged which is nice.
+		* This is a noticeable increase in speed when browsing the shop when your cart hasn't necessarily changed.
+	* Caching layer also prevents multiple / duplicate API requests being logged which is nice.
 
 * Code Updates
 	* I don't think I'm going to do code updating moving forward unless it's for Developer Hook updates.
@@ -72,13 +72,13 @@ Relase Date: October 10, 2025
 
 = 1.0.7 =
 
-Relase Date: October 08, 2025
+Release Date: October 08, 2025
 
 * Overview
 	* Better Shipping Rate information on the Order screen.
 		* This denotes what items got what rates, the adjustments, where the adjustments come from.
 	* Patches issue on Shipping Zone where WP_Error was treated as an Exception
-	* Starts to noramlize code for carrier_id and carrier_code.
+	* Starts to normalize code for carrier_id and carrier_code.
 		* Doing this makes it easier to integrate the v1 API.
 		* The Carrier ID is the ShipStation `se-` code.
 		* The Carrier Code is `usps` or `stamps` depending.
@@ -91,14 +91,14 @@ Relase Date: October 08, 2025
 
 = 1.0.6 =
 
-Relase Date: September 22, 2025
+Release Date: September 22, 2025
 
 * Overview
 	* Updated ShipStation links in the readme.md
 
 = 1.0.5 =
 
-Relase Date: September 16, 2025
+Release Date: September 16, 2025
 
 * Overview
 	* Patches an issue where shipping rates would come back much higher than expected
@@ -124,7 +124,7 @@ Relase Date: September 16, 2025
 
 = 1.0.4 =
 
-Relase Date: September 15, 2025
+Release Date: September 15, 2025
 
 * Overview
 	* Patches an issue where the exports would not take the Stores set product units.
@@ -142,7 +142,7 @@ Relase Date: September 15, 2025
 
 = 1.0.3 =
 
-Relase Date: August 05, 2025
+Release Date: August 05, 2025
 
 * Overview
 	* Patches an issue where the Shipping Method would not display due to not being supported.
@@ -154,7 +154,7 @@ Relase Date: August 05, 2025
 
 = 1.0.2 =
 
-Relase Date: August 04, 2025
+Release Date: August 04, 2025
 
 * Overview
 	* Automatically clears the API caching whenever Integration settings or Shipping Zone settings are saved.
@@ -166,7 +166,7 @@ Relase Date: August 04, 2025
 
 = 1.0.1 =
 
-Relase Date: August 01, 2025
+Release Date: August 01, 2025
 
 * Overview
 	* Patches an issue where the individual requests method would not return their requests back to the shipping method.
