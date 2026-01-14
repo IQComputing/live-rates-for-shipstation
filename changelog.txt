@@ -2,9 +2,185 @@
 
 This is a brief text document keeping track of changes to the plugin. For a full history, see the Github Repository.
 
+= 1.1.1 =
+
+Release Date: December 04, 2025
+
+* Overview
+	* Changes in how WordPress handles Modules means we cannot define jQuery as a dependency.
+		* Removes dependency and add additional check in module JS for it's existence.
+
+= 1.1.0 =
+
+Release Date: December 01, 2025
+
+* Overview
+	* Custom Packages really needed to be redone to better support label creation.
+		* Having modal support will make creating custom options / screens easier in future updates.
+		* Having named custom boxes and a modal of options will allow users to better manage product and boxes when requesting a shipping label in a future update.
+			* For example, if products need to be repackaged into different boxes before label creation.
+	* Redo of the Custom Packages options.
+		* New options for Weight Only
+		* New options for Stacked Vertically
+		* New Box Price field.
+		* New Package Presets.
+			* These are pulled from static JSON files + known values.
+			* Support: UPS, FedEx, USPS.
+	* New default product weight field.
+
+* Code Updates
+	* Filter hook `iqlrss/zone/settings`
+		* Expects array of setting fields.
+		* This hook is useful to manage custom Product Packing options.
+		* core\shipping-method-shipstation.php LN 543
+	* Filter hook `iqlrss/zone/package_presets`
+		* Expects an array of specific key value pairs.
+		* This hook is useful to manage the Custom Package Options when a zone uses this setting.
+		* The carrier_code is important to correctly get One rates from supported carriers.
+		* core\shipping-method-shipstation.php LN 1569
+	* Filter hook `iqlrss/shipping/packages`
+		* Expects an array of ShipStation API v2 /rates/estimate API args.
+			* https://docs.shipstation.com/openapi/rates/estimate_rates
+		* Useful for custom shipping / package rules. This gives developers the cart items to repackage and retrieve rates from.
+		* core\shipping-method-shipstation.php LN 742
+	* Lots of code rearranging, better comments, and better methods to prepare for future updates, features, and functionalty.
+
+= 1.0.8 =
+
+Release Date: October 10, 2025
+
+* Overview
+	* Fixes an issue where some carriers return additional costs that were not being added to the rate estimate.
+		* This gets reflected for new orders when outputting the rate information.
+		* Thanks to @centuryperf for reporting this issue on the WordPress.org forums!
+	* Fixes Shipping Zone WP_Error Fatal Error.
+		* Shoutout to @sarawill as well for reporting the WP_Error issue on the WordPress.org forums!
+	* Fixes WC Status Logs formatting.
+		* Carrier API responses would break the WC Status formatting due to double quotes.
+		* This has been fixed by replacing double quotes with double single quotes because for logging, it doesn't matter.
+	* Adds better formatting for rates and packages.
+		* This applies to packed individually, but mostly for custom packages.
+	* Adds a layer of caching for Shipping Calculations.
+		* Ugh, the Block Editor + WooCommerce makes _multiple_ async requests to shipping calculations which would re-trigger things unnecessarily.
+		* The new methodology uses the WC()->session to automatically return the known rates if the cart has not changed.
+		* This is a noticeable increase in speed when browsing the shop when your cart hasn't necessarily changed.
+	* Caching layer also prevents multiple / duplicate API requests being logged which is nice.
+
+* Code Updates
+	* I don't think I'm going to do code updating moving forward unless it's for Developer Hook updates.
+		* See Github for code, commits, changes, branches.
+
+= 1.0.7 =
+
+Release Date: October 08, 2025
+
+* Overview
+	* Better Shipping Rate information on the Order screen.
+		* This denotes what items got what rates, the adjustments, where the adjustments come from.
+	* Patches issue on Shipping Zone where WP_Error was treated as an Exception
+	* Starts to normalize code for carrier_id and carrier_code.
+		* Doing this makes it easier to integrate the v1 API.
+		* The Carrier ID is the ShipStation `se-` code.
+		* The Carrier Code is `usps` or `stamps` depending.
+	* Adds a Deactivate and Uninstall hooks for data removal.
+		* IQLRSS removes settings on uninstall, but not Shipping Zones.
+		* On Deativate, the cache gets cleared.
+
+	* Code Updates
+		* See Github, too many to track here.
+
+= 1.0.6 =
+
+Release Date: September 22, 2025
+
+* Overview
+	* Updated ShipStation links in the readme.md
+
+= 1.0.5 =
+
+Release Date: September 16, 2025
+
+* Overview
+	* Patches an issue where shipping rates would come back much higher than expected
+		* This was due to rates with multiple package types, but used the same service code.
+		* Now, only the generic 'package' rate is returned.
+	* Patches issue where disabled services would display during checkout.
+	* Patches issue where service nickname would not apply.
+		* This patch also ensures that during export/import to ShipStation it does not
+			use the nickname, but service name for clarify.
+	* Order item metadata added that breaks down:
+		* Service (sevice_code)
+		* Carrier (carrier_code)
+		* Rate [Found shipping rate]
+		* Adjustment [Any price adjustments made and whehter it's Global or Specific]
+
+* Code Updates
+	* \IQLRSS\Core\Shipping_Method_Shipstation::labelify_meta_keys()
+		* Translatable Order Item metadata keys.
+	* \IQLRSS\Core\Shipping_Method_Shipstation::calculate_shipping()
+		* Updates to store metadata
+	* \IQLRSS\Core\Shipstation_Api::get_shipping_estimates()
+		* Adds conditional to exclude any rates that are not for generic 'package' types.
+
+= 1.0.4 =
+
+Release Date: September 15, 2025
+
+* Overview
+	* Patches an issue where the exports would not take the Stores set product units.
+	* Adds functionality for Flat Rate Adjustments on a global scale.
+	* Adds functionality for Flat Rate Adjustments on a per service scale.
+	* Shoutouts to both @centuryperf and @jkmail120 for reporting these issues!
+
+* Code Updates
+	* \IQLRSS\Core\Settings_Shipstation::export_shipstation_shipping_method()
+		* Hopefully better ShipStation integration when orders export.
+	* \IQLRSS\Core\Shipping_Method_Shipstation::get_individual_requests()
+		* Updates to garb the store dimensions.
+	* \IQLRSS\Core\Shipping_Method_Shipstation::calculate_shipping()
+		* Updates for flatrate calculations.
+
+= 1.0.3 =
+
+Release Date: August 05, 2025
+
+* Overview
+	* Patches an issue where the Shipping Method would not display due to not being supported.
+		* Shoutout to .org user @sportswreathshop for reporting this issue!
+
+* Code Updates
+	* \IQLRSS\Core\Shipping_Method_Shipstation::__construct()
+		* Shipping Method support conditional has been updated to check against the objects carriers.
+
+= 1.0.2 =
+
+Release Date: August 04, 2025
+
+* Overview
+	* Automatically clears the API caching whenever Integration settings or Shipping Zone settings are saved.
+		* Shoutout to .org user @dpkonofa for their assistance in debugging this issue!
+
+* Code Updates
+	* Moves the \IQLRSS\Core\Settings_Shipstation::api_actions_endpoint() clearcache action into it's own method.
+		* In a future release, the caching will be in it's own class definition.
+
+= 1.0.1 =
+
+Release Date: August 01, 2025
+
+* Overview
+	* Patches an issue where the individual requests method would not return their requests back to the shipping method.
+		* Shoutout to .org user @dpkonofa for their assistance in debugging this issue!
+	* Tries another method to discern ShipStation Core Carriers from Manually Connected Carriers using the `primary` carrier property.
+		* ShipStation suggests the `balance` flag should be empty for Manually Connected Carriers, but we find that this is not always the case.
+
+* Code Updates
+	* \IQLRSS\Core\Shipping_Method_Shipstation::get_individual_requests() now returns it's request array.
+	* \IQLRSS\Core\Shipstation_Api::get_carriers() `is_shipstation` value discerned using `primary` Carrier API property.
+
 = 1.0.0 =
 
-Release Date: X 00, 0000
+Release Date: July 28, 2025
 
 * Overview
 	* Initial release.

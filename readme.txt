@@ -3,7 +3,7 @@ Contributors: iqcomputing
 Tags: woocommerce, shipstation, usps, ups, fedex
 Requires at least: 5.9
 Tested up to: 6.8
-Stable tag: 1.0.0
+Stable tag: 1.1.1
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -15,27 +15,29 @@ Pulls live shipping rates from your favorite carriers connected to 3rd party pro
 
 This plugin connects to the ShipStation API using an authentication key to display shipping rates from various common carriers supported by ShipStation. This allows store owners to group all their shipping carriers under one umbrella which makes management easier and allows customers to choose the best shipping method for them which leads to happier customers.
 
-In order to use the Live Rates for ShipStation plugin, you must have a [premium ShipStation account](https://www.shipstation.com/pricing/), and purchased the [ShipStation for WooCommerce](https://woocommerce.com/products/shipstation-integration/) plugin. This plugin **will not work** without access to the ShipStation API which is tied to your premium ShipStation account.
+In order to use the Live Rates for ShipStation plugin, you must have a [premium ShipStation account](https://www.kqzyfj.com/click-101532691-15733876), and purchased the [ShipStation for WooCommerce](https://woocommerce.com/products/shipstation-integration/) plugin. This plugin **will not work** without access to the ShipStation API which is tied to your premium ShipStation account.
 
 Please review [ShipStations Terms of Service](https://www.shipstation.com/terms-of-service/) and [ShipStations Privacy Policy](https://auctane.com/legal/privacy-policy/) for more information about how your data is managed.
 
+Don't have a ShipStation account? [Open a ShipStation account today!](https://www.kqzyfj.com/click-101532691-15733876)
+
 == Plugin Requirements ==
 
-1. [A Premium ShipStation Account](https://www.shipstation.com/pricing/)
+1. [A Premium ShipStation Account](https://www.kqzyfj.com/click-101532691-15733876)
 1. [The WooCommerce Plugin](https://wordpress.org/plugins/woocommerce/)
 1. [The ShipStation for WooCommerce Plugin](https://woocommerce.com/products/shipstation-integration/)
 1. The Live Rates for ShipStation Plugin
 
 == IQComputing ==
 
-* Like us on [Facebook](https://www.facebook.com/iqcomputing/ "IQComputing on Facebook")
-* Follow us on [Twitter](https://twitter.com/iqcomputing/ "IQComputing on Twitter")
-* Fork on [Github](https://github.com/IQComputing/live-rates-for-shipstation "IQComputing on Github")
+* Like us on [Facebook](https://www.facebook.com/iqcomputing)
+* Follow us on [Twitter](https://twitter.com/iqcomputing/)
+* Fork on [Github](https://github.com/IQComputing/live-rates-for-shipstation)
 
 == Installation ==
 
-[ShipStation for WooCommerce](https://woocommerce.com/products/shipstation-integration/) "ShipStation for WooCommerce plugin page") is a required plugin.
-[WooCommerce](https://wordpress.org/plugins/woocommerce/ "WooCommerce plugin page") is a required plugin.
+[ShipStation for WooCommerce](https://woocommerce.com/products/shipstation-integration/) is a required plugin.
+[WooCommerce](https://wordpress.org/plugins/woocommerce/) is a required plugin.
 
 1. Ensure that the WooCommerce plugin is installed and active.
 1. Ensure that the ShipStation for WooCommerce plugin is installed and active.
@@ -48,5 +50,23 @@ Please review [ShipStations Terms of Service](https://www.shipstation.com/terms-
 
 == Changelog ==
 
-= 1.0.0 (0000-00-00) =
-* Initial release
+= 1.1.1 (2025-12-04) =
+* Fixed JS conflict with WordPress 6.9 (nice!)
+
+= 1.1.0 (2025-12-01) =
+* Redux the Custom Packaging screen and options.
+* Packing option for Weight Only.
+* Packing option for Stacked Vertically.
+* Packing option for default product weight.
+* Custom Package Presets from UPS, FedEx, and USPS.
+* New filter hook for Shipping Zone Settings `iqlrss/zone/settings`. Useful for managing Product Packing options.
+* New filter hook for Shipping Zone Settings `iqlrss/zone/package_presets`. Useful for managing Custom Package presets.
+* New filter hook for Shipping Estimates `iqlrss/shipping/packages`. Useful for modifying what gets sent to ShipStation API for retrieving shipping estimates.
+
+= 1.0.8 (2025-10-10) =
+* Patches issue of missing `other_amount` when applying shipping rates (thanks @centuryperf)!
+* Shout out to @sarawill for reporting the WP_Error error.
+* Better formatting for rate reporting on Edit Order screen when dealing with custom packages.
+* Added caching layer to prevent multiple requests and logs - this should speed up frontend per-page shop requests.
+* Fixed issue of duplicate logs when debugging.
+* Fixed issue where API Log would lose formatting during certain requests.

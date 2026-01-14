@@ -3,22 +3,25 @@
 <img src=".wordpress-org/icon-256x256.png" align="right" width="100" height="100">
 
 [![IQComputing](https://img.shields.io/badge/Computing-0067ae?label=IQ)](https://iqcomputing.com)
+[![Plugin Version](https://img.shields.io/wordpress/plugin/v/live-rates-for-shipstation.svg?style=flat-square)](https://wordpress.org/plugins/live-rates-for-shipstation/)
 
-Live Rates for ShipStation is a free Open Source plugin that works with [ShipStation](https://www.shipstation.com/) and [WooCommerce](https://woocommerce.com/) to pull in shipping estimates from the most common shipping providers.
+Live Rates for ShipStation is a free Open Source plugin that works with [ShipStation](https://www.kqzyfj.com/click-101532691-15733876) and [WooCommerce](https://woocommerce.com/) to pull in shipping estimates from the most common shipping providers.
 
 **ShipStation** is a 3rd party provider helping WooCommerce store owners compare shipping carrier rates, automate shipping processes, print labels, sync order data, and group tracking information, among other features.
 
 This plugin connects to the ShipStation API using an authentication key to display shipping rates from various common carriers supported by ShipStation. This allows store owners to group all their shipping carriers under one umbrella which makes management easier and allows customers to choose the best shipping method for them which leads to happier customers.
 
-In order to use the Live Rates for ShipStation plugin, you must have a [premium ShipStation account](https://www.shipstation.com/pricing/), and purchased the [ShipStation for WooCommerce](https://woocommerce.com/products/shipstation-integration/) plugin. This plugin **will not work** without access to the ShipStation API which is tied to your premium ShipStation account.
+In order to use the Live Rates for ShipStation plugin, you must have a [premium ShipStation account](https://www.kqzyfj.com/click-101532691-15733876), and purchased the [ShipStation for WooCommerce](https://woocommerce.com/products/shipstation-integration/) plugin. This plugin **will not work** without access to the ShipStation API which is tied to your premium ShipStation account.
 
 Please review [ShipStations Terms of Service](https://www.shipstation.com/terms-of-service/) and [ShipStations Privacy Policy](https://auctane.com/legal/privacy-policy/) for more information about how your data is managed.
+
+Don't have a ShipStation account? [Open a ShipStation account today!](https://www.kqzyfj.com/click-101532691-15733876)
 
 ## Requirements
 
 Live Rates for ShipStation is free to use, but it does require a premium ShipStation account to access their REST API. In addition, there are plugin requirements as well. Here's a list of requirements in order to use this plugin properly:
 
-1. [A Premium ShipStation Account](https://www.shipstation.com/pricing/) (Gold+)
+1. [A Premium ShipStation Account](https://www.kqzyfj.com/click-101532691-15733876) (Gold+)
 1. [WooCommerce Plugin](https://wordpress.org/plugins/woocommerce/)
 1. [ShipStation for WooCommerce Plugin](https://woocommerce.com/products/shipstation-integration/)
 1. [Live Rates for ShipStation Plugin](https://wordpress.org/plugins/live-rates-for-shipstation/)

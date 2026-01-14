@@ -1,0 +1,213 @@
+/**
+* :: Utility
+* :: Modules
+* :: Specific
+* :: Integration Settings
+* :: Shipping Zones
+* :: Media Queries
+**/
+/**
+ * :: Utility
+**/
+/* Flexbox */
+.iqlrss-flex                {display: flex;}
+.iqlrss-flex.--flexwrap     {flex-wrap: wrap;}
+.iqlrss-flex.--valign-center{align-items: center;}
+.iqlrss-flex > .--w50,
+.iqlrss-flex.--cols2 > *    {width: calc( 50% - 20px );}
+.iqlrss-flex > .--w33,
+.iqlrss-flex.--cols3 > *    {width: calc( 33.33% - 20px );}
+.iqlrss-flex > .--w20,
+.iqlrss-flex.--cols4 > *    {width: calc( 25% - 20px );}
+.iqlrss-flex > .--w25,
+.iqlrss-flex.--cols5 > *    {width: calc( 20% - 20px );}
+.iqlrss-flex[class*="--cols"]       {margin-right: -10px; margin-left: -10px;}
+.iqlrss-flex[class*="--cols"] > *   {margin: 10px;}
+.iqlrss-flex > .--w66       {width: calc( 66.66% - 20px );}
+.iqlrss-flex > .--w22       {width: calc( 22.22% - 20px );}
+
+.iqlrss-field label[for]                {display: block; margin-bottom: 4px;}
+.iqlrss-field:not(.--complex) input,
+.iqlrss-field:not(.--complex) select    {width: 100%;}
+.iqlrss-field[data-enabledby]           {display: none;}
+.iqlrss-field .description              {margin-top: 0; letter-spacing: 0.01em; font-style: italic; font-size: 13px;}
+
+.iqlrss-field.--required > label:first-child::after    {content: '*'; display: inline-block; transform: translate( 1px, 0 );}
+.iqlrss-field.iqlrss-flex.--complex > label:first-child{margin-right: 20px;}
+
+.iqlrss-field-switch            {position: relative; display: inline-block; margin-top: 4px; cursor: pointer; font-size: 13px;}
+.iqlrss-field-switch input      {display: block; width: 0; height: 0; border: 0; overflow: hidden;}
+.iqlrss-field-switch > span     {position: relative; display: flex; width: 60px; border: 1px solid; border-radius: 20px; overflow: hidden;}
+.iqlrss-field-switch > span > span                  {display: block; border-radius: 20px; transition: all 0.3s; overflow: hidden;}
+.iqlrss-field-switch > span > .text-active          {text-align: left;}
+.iqlrss-field-switch > span > .text-inactive        {text-align: right;}
+.iqlrss-field-switch > span > :last-child           {position: absolute; width: 100%;}
+.iqlrss-field-switch > span > :last-child:after     {content: ''; display: block; width: 10px; aspect-ratio: 1; border-radius: 100%; transition: all 0.3s;}
+.iqlrss-field-switch input + span > .text-active    {width: 0%; margin: 0 0 0 -14px;}
+.iqlrss-field-switch input + span > .text-inactive  {width: 100%; margin: 0 -2px 0 0; padding: 4px 12px;}
+.iqlrss-field-switch input + span > :last-child     {transform: translate( 8px, 75% );}
+.iqlrss-field-switch input:checked + span > .text-active    {width: 100%; margin: 0 0 0 -2px; padding: 4px 12px;}
+.iqlrss-field-switch input:checked + span > .text-inactive  {width: 0%; margin: 0 -28px 0 0;}
+.iqlrss-field-switch input:checked + span > :last-child     {transform: translate( calc( 100% - 18px ), 75% );}
+.iqlrss-field-switch input:focus        {outline: none; box-shadow: none;}
+
+.wp-core-ui .iqlrss-field .iqlrss-errortext,
+.wp-core-ui .iqlrss-field.--required > label:first-child::after {color: #d63638;}
+.wp-core-ui .iqlrss-field-switch > span {border-color: #0a4b78;}
+.wp-core-ui .iqlrss-field-switch > span > .text-active      {color: #fff; background: #248A3D;}
+.wp-core-ui .iqlrss-field-switch > span > .text-inactive    {color: #0a4b78; background: #f0f0f1;}
+.wp-core-ui .iqlrss-field-switch input + span > :last-child:after           {background: #1d2327;}
+.wp-core-ui .iqlrss-field-switch input:checked + span > :last-child:after   {background: #fff;}
+.wp-core-ui .iqlrss-field-switch input:focus + span {box-shadow: 0 0 0 1px #fff, 0 0 0 3px #2271b1;}
+
+/* Specific */
+.iqlrss-field:not(.--noninput) input    {width: 100% !important;}
+.iqcss-err		{font-style: italic; color: #d63638 !important;}
+.iqlrss-hide	{display: none;}
+.iqlrss-show	{display: block;}
+tr.iqlrss-show	{display: table-row;}
+
+table.nottoofat th,
+table.nottoofat td	{padding: 9px 7px;}
+th.no-padleft		{padding-left: 0;}
+
+.modal-toast    {position: relative; width: 100%; margin: -14px 0 0 -14px; padding: 5px 20px 5px 14px; box-sizing: border-box; border-radius: 6px 0 0 0; letter-spacing: 0.2px; font-style: italic; font-size: 13px; color: #fff;}
+.modal-timer    {position: absolute; bottom: 0; left: 0; width: 0; height: 2px;}
+
+.modal-toast.toast-error    {background: #d63638;}
+.toast-error .modal-timer   {background: #8f1f21;}
+
+.modal-toast.toast-success  {background: #248A3D;}
+.toast-success .modal-timer {background: #145523;}
+
+
+
+/**
+ * :: Modules
+**/
+/**
+ * Module: Modal
+**/
+.iqlrss-modal               {position: fixed; width: 100%; max-width: 80%; max-height: 80vh; border-color: var( --wp-admin-theme-color ); border-radius: 10px;}
+.iqlrss-modal > button      {position: absolute; top: 0; right: 0; padding: 3px 12px; border: 0; border-radius: 0 0 0 10px; cursor: pointer;}
+
+.iqlrss-modal-title         {margin: 0 0 12px;}
+.iqlrss-modal-title.--tab   {position: absolute; top: -30px; left: 4px; z-index: 2; display: block; width: 100%; max-width: 350px; margin: 0; padding: 4px 10px 0; border-radius: 10px 10px 0 0; text-align: center;}
+.iqlrss-modal-content       {height: 100%;}
+
+.wp-core-ui .iqlrss-modal > button          {background: #2271b1; color: #fff;}
+.wp-core-ui .iqlrss-modal > button:hover    {background: #135e96; color: #fff;}
+.wp-core-ui .iqlrss-modal > button:focus    {box-shadow: 0 0 0 1px #fff,0 0 0 3px #2271b1}
+.wp-core-ui .iqlrss-modal-title.--tab       {color: #fff; background: #2271b1;}
+
+
+
+/**
+ * :: Inegration Settings
+**/
+.iqlrss-api-row fieldset						{position: relative; display: block; width: fit-content;}
+.iqlrss-api-row .button-primary				    {position: relative; margin-top: -1px; margin-left: 8px;}
+.iqlrss-api-row .button-primary:after			{content: ''; position: absolute; top: 3px; right: -24px; display: block; width: 20px; aspect-ratio: 1; background: url( '../images/spinner.gif' ) no-repeat center/contain; opacity: 0; transition: opacity 0.3s;}
+.iqlrss-api-row .button-primary.active:after	{opacity: 1;}
+.iqlrss-api-row fieldset .iqlrss-success		{position: relative; top: 5px; margin-left: 4px; border-radius: 100%; color: #248A3D;}
+
+.iqlrss-api-row #iqlrssClearCacheButton:after			{content: ''; display: inline-block; position: relative; top: 4px; margin-left: 4px;}
+.iqlrss-api-row #iqlrssClearCacheButton.working:after	{background: url( '../images/spinner.gif' ) no-repeat center/contain;}
+.iqlrss-api-row #iqlrssClearCacheButton.complete:after	{content: "\f12a"; top: 3px; font-size: 16px; line-height: 1; font-family: dashicons; font-weight: 400; font-style: normal;}
+
+
+
+/**
+ * :: Shipping Zones
+**/
+/* Custom Boxes */
+#customBoxActions button        {min-height: 0; padding: 2px 8px 3px; line-height: normal; font-size: 12px; transition: background 0.3s;}
+#customBoxRemove                {opacity: 1; transition: opacity 0.3s;}
+
+#customBoxesRow[data-count="0"] #customBoxRemove {opacity: 0; visibility: hidden;}
+#iqlrssCustomBoxes                  {width: 100%; max-width: fit-content; min-width: 404px; max-width: 415px; margin-top: 8px; border-collapse: collapse;}
+#iqlrssCustomBoxes tr:last-child    {display: none;}
+#iqlrssCustomBoxes td               {border-bottom: 1px solid #8c8f94; padding: 8px; max-width: 300px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; transition: all 0.3s;}
+#iqlrssCustomBoxes td:first-child   {padding-left: 4px; text-align: center;}
+#iqlrssCustomBoxes td:last-child    {padding-right: 4px; text-align: right;}
+#iqlrssCustomBoxes tr:hover td      {background: #e0e1e3;}
+#iqlrssCustomBoxes .iqlrss-field-switch > span  {width: 80px; font-size: 12px;}
+#iqlrssCustomBoxes .iqlrss-field-switch > span > :last-child:after  {width: 8px;}
+#iqlrssCustomBoxes .iqlrss-field-switch input + span > .text-inactive,
+#iqlrssCustomBoxes .iqlrss-field-switch input:checked + span > .text-active    {padding: 2px 12px;}
+
+#customBoxesFormModal .description      {margin-top: 0; letter-spacing: 0.01em; font-style: italic; font-size: 13px;}
+#customBoxesFormModal #saveCustomBox    {display: block; margin-top: 4px; margin-right: 0; margin-left: auto;}
+html:has( #customBoxesFormModal:modal ) {overflow: hidden;}
+#customBoxesFormModal .iqlrss-field select  {width: 100%; max-width: none;}
+
+/* Services */
+.iqrlsserviceprice-flex       {display: flex;}
+.iqrlsserviceprice-flex > *   {flex: 1 1 calc( 50% - 8px );}
+.iqrlsserviceprice-flex > :first-child    {flex-basis: fit-content; padding-right: 4px;}
+.iqrlsserviceprice-flex > :last-child     {padding-left: 4px;}
+
+#carrierServices input[type=text]	{width: 100%;}
+
+
+/**
+ * :: Media Queries
+**/
+/**
+ * Max Width 728px
+**/
+@media( max-width: 782px ) {
+
+    /**
+    * :: Utility
+    **/
+    .iqlrss-flex > .--w66,
+    .iqlrss-flex > .--w22,
+    .iqlrss-flex > .--w33,
+    .iqlrss-flex.--cols3 > *,
+    .iqlrss-flex > .--w20,
+    .iqlrss-flex.--cols4 > *,
+    .iqlrss-flex > .--w25,
+    .iqlrss-flex.--cols5 > *    {width: calc( 50% - 20px );}
+
+
+    /**
+    * :: Shipping Zones
+    **/
+    /* Custom Boxes */
+    #iqlrssCustomBoxes      {max-width: none;}
+    #iqlrssCustomBoxes tr   {display: block; margin-bottom: 20px;}
+    #iqlrssCustomBoxes td   {max-width: none;}
+    #iqlrssCustomBoxes td[data-label]:before{content: attr( data-label ) ':'; display: inline-block; margin-right: 4px; font-weight: 700;}
+    #iqlrssCustomBoxes td:empty             {display: none;}
+    #iqlrssCustomBoxes td:last-child,
+    #iqlrssCustomBoxes td:first-child       {text-align: left;}
+
+    /* Services */
+    #carrierServices thead          {display: none;}
+    #carrierServices tbody tr       {display: block; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid;}
+    #carrierServices tbody tr:last-child    {border-bottom: 0;}
+    #carrierServices tbody td[data-label]:before{content: attr( data-label ) ':'; display: inline-block; margin-right: 4px; font-weight: 700;}
+    #carrierServices tbody td:empty {display: none;}
+
+}
+
+
+/**
+ * Max Width 425px
+**/
+@media( max-width: 425px ) {
+
+    /**
+    * :: Utility
+    **/
+    .iqlrss-flex > .--w66,
+    .iqlrss-flex > .--w22,
+    .iqlrss-flex > .--w33,
+    .iqlrss-flex.--cols3 > *,
+    .iqlrss-flex > .--w20,
+    .iqlrss-flex.--cols4 > *,
+    .iqlrss-flex > .--w25,
+    .iqlrss-flex.--cols5 > *    {width: 100%;}
+
+}
