@@ -6,7 +6,7 @@
  */
 namespace IQLRSS\Tests\Mockeries;
 
-class ShipStationApi extends \IQLRSS\Core\Api\Shipstation_Api {
+class ShipStationApi extends \IQLRSS\Core\Api\Shipstation {
 
 	/**
 	 * The API Key
@@ -104,6 +104,7 @@ class ShipStationApi extends \IQLRSS\Core\Api\Shipstation_Api {
 					'account_number'=> '123',
 					'nickname'		=> 'ShipStation',
 					'friendly_name'	=> 'Ship Station',
+					'requires_funded_amount' => '',
 					'services'		=> array( array(
 
 						// Faux API values that should be removed by the API method.

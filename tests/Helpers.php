@@ -7,6 +7,6 @@
  * @return Object.
  */
 function make_mockery( $of ) {
-    require sprintf( 'Mockeries/%s.php', $of );
-    return new ( 'Mockeries\\' . $of )();
+    require_once sprintf( 'Mockeries/%s.php', $of );
+    return new ( '\IQLRSS\Tests\Mockeries\\' . $of )();
 }

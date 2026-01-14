@@ -3,6 +3,7 @@
  * ShipStation v2 Tests
  *
  * @todo Update api cache / trans tests.
+ * @todo Consider the helpfulness of the "No API Key" tests. Just one test should suffice?
  *
  * :: Mock API Tests
  * :: No API Key
@@ -81,7 +82,7 @@ class ApiVTwo extends PHPUnit\TestCase {
 		$result = $this->api->get_carrier( 'foo' );
 
 		$this->assertInstanceOf( \WP_Error::class, $result );
-		$this->assertEquals( 400, $result->get_error_code() );
+		$this->assertEquals( 401, $result->get_error_code() );
 
 		$this->api->set_defaults();
 
@@ -97,7 +98,7 @@ class ApiVTwo extends PHPUnit\TestCase {
 		$result = $this->api->get_carriers();
 
 		$this->assertInstanceOf( \WP_Error::class, $result );
-		$this->assertEquals( 400, $result->get_error_code() );
+		$this->assertEquals( 401, $result->get_error_code() );
 
 		$this->api->set_defaults();
 
@@ -113,7 +114,7 @@ class ApiVTwo extends PHPUnit\TestCase {
 		$result = $this->api->get_shipping_estimates( array() );
 
 		$this->assertInstanceOf( \WP_Error::class, $result );
-		$this->assertEquals( 400, $result->get_error_code() );
+		$this->assertEquals( 401, $result->get_error_code() );
 
 		$this->api->set_defaults();
 
@@ -146,30 +147,6 @@ class ApiVTwo extends PHPUnit\TestCase {
 
 
 	/**
-	 * Ensure that array key intersection works as expected.
-	 */
-	public function test_getIntersection() {
-
-		$given = array(
-			'foo' => 'bar',
-
-			'expected1' => 'value',
-			'expected2' => 'value',
-			'expected3' => 'value',
-		);
-
-		$expected = array(
-			'expected1' => 'value',
-			'expected2' => 'value',
-			'expected3' => 'value',
-		);
-
-		$this->assertSame( $expected, $this->api->get_intersection( $given, array_keys( $expected ) ) );
-
-	}
-
-
-	/**
 	 * Ensure the Endpoint URL is what we know it currently to be.
 	 */
 	public function test_getEndpointUrl() {
@@ -185,9 +162,8 @@ class ApiVTwo extends PHPUnit\TestCase {
 		$this->assertSame( 'mockiqlrss_foo', $this->api->prefix_key( 'foo' ) );
 		$this->assertSame( 'mockiqlrss-foo', $this->api->prefix_key( 'foo', '-' ) );
 
-		$coreApi = new \IQLRSS\Core\Shipstation_Api();
+		$coreApi = new \IQLRSS\Core\Api\Shipstation();
 		$mirrorMock = new \ReflectionMethod( $coreApi, 'prefix_key' );
-		$mirrorMock->setAccessible( true );
 		$this->assertSame( 'iqlrss_foo', $mirrorMock->invoke( $coreApi, 'foo' ) );
 		$this->assertSame( 'iqlrss-foo', $mirrorMock->invoke( $coreApi, 'foo', '-' ) );
 
