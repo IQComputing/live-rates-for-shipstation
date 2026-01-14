@@ -2,17 +2,17 @@
 /**
  * Ensure the shipping method works as expected.
  */
-namespace IQLRSS\Tests;
+namespace IQLRSS\Tests\WordPress;
 use PHPUnit\Framework as PHPUnit;
 
-class TestShippingMethod extends PHPUnit\TestCase {
+class ShippingMethod extends PHPUnit\TestCase {
 
 	/**
 	 * Core Shipping Method
 	 *
 	 * @var \IQLRSS\Core\Shipping_Method_Shipstation
 	 */
-	protected $coreShip;
+	protected $coreMethod;
 
 
 	/**
@@ -22,7 +22,7 @@ class TestShippingMethod extends PHPUnit\TestCase {
 	 */
 	protected function setUp(): void {
 
-		$this->coreShip = new \IQLRSS\Core\Shipping_Method_Shipstation();
+		$this->coreMethod = new \IQLRSS\Core\Shipping_Method_Shipstation();
 
 	}
 

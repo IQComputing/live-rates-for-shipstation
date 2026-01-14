@@ -1,8 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit bootstrap="tests/Bootstrap.php">
-	<testsuites>
-		<testsuite name="iqlrss">
-			<directory prefix="Test" suffix=".php">./tests/</directory>
-		</testsuite>
-	</testsuites>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/11.4/phpunit.xsd"
+         bootstrap="tests/Bootstrap.php">
+    <testsuites>
+        <testsuite name="unit">
+            <directory suffix=".php">./tests/Unit</directory>
+        </testsuite>
+
+        <testsuite name="wordpress">
+            <directory suffix=".php">./tests/WordPress</directory>
+        </testsuite>
+
+        <testsuite name="shipstation">
+            <directory suffix=".php">./tests/ShipStation</directory>
+        </testsuite>
+    </testsuites>
 </phpunit>
