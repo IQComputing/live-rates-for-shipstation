@@ -1,0 +1,7 @@
+{
+    "woocommerce_weight_unit": "lbs",
+    "woocommerce_dimension_unit": "in",
+    "woocommerce_shipstation_settings": {
+        "logging_enabled": 0
+    }
+}

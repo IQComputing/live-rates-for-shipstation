@@ -1,0 +1,78 @@
+[
+    {
+        "active": 1,
+        "preset": "ups__express_box_large",
+        "nickname": "UPS Express Box - Large",
+        "outer": {
+            "length": 18,
+            "width": 13,
+            "height": 3
+        },
+        "inner": {
+            "length": 0,
+            "width": 0,
+            "height": 0
+        },
+        "weight": 0,
+        "weight_max": 50,
+        "price": 5,
+        "carrier_code": "ups"
+    },
+    {
+        "active": 1,
+        "preset": "ups_express_box_medium",
+        "nickname": "UPS Express Box - Medium",
+        "outer": {
+            "length": 15,
+            "width": 11,
+            "height": 3
+        },
+        "inner": {
+            "length": 0,
+            "width": 0,
+            "height": 0
+        },
+        "weight": 0,
+        "weight_max": 40,
+        "price": 4,
+        "carrier_code": "ups"
+    },
+    {
+        "active": 1,
+        "preset": "ups_express_box_small",
+        "nickname": "UPS Express Box - Small",
+        "outer": {
+            "length": 13,
+            "width": 11,
+            "height": 2
+        },
+        "inner": {
+            "length": 0,
+            "width": 0,
+            "height": 0
+        },
+        "weight": 0,
+        "weight_max": 30,
+        "price": 3,
+        "carrier_code": "ups"
+    },
+    {
+        "active": 1,
+        "preset": "ups_tube",
+        "nickname": "UPS Tube",
+        "outer": {
+            "length": 38,
+            "width": 6,
+            "height": 6
+        },
+        "inner": {
+            "length": 0,
+            "width": 0,
+            "height": 0
+        },
+        "weight": 0,
+        "weight_max": 0,
+        "price": 0,
+        "carrier_code": "ups"
+    }
+]

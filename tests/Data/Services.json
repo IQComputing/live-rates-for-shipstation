@@ -1,0 +1,54 @@
+{
+    "se-123": {
+        "ups_standard_international": {
+            "enabled": true,
+            "service_name": "UPS Standard",
+            "service_code": "ups_standard_international",
+            "carrier_name": "UPS",
+            "carrier_code": "ups",
+            "carrier_id": "se-123"
+        },
+        "ups_ground_international": {
+            "enabled": true,
+            "service_name": "UPS Ground (International)",
+            "service_code": "ups_ground_international",
+            "carrier_name": "UPS",
+            "carrier_code": "ups",
+            "carrier_id": "se-123"
+        },
+        "ups_ground": {
+            "enabled": true,
+            "service_name": "UPS Ground",
+            "service_code": "ups_ground",
+            "carrier_name": "UPS",
+            "carrier_code": "ups",
+            "carrier_id": "se-123"
+        }
+    },
+    "se-890": {
+        "fedex_ground": {
+            "enabled": true,
+            "service_name": "FedEx Ground",
+            "service_code": "fedex_ground",
+            "carrier_name": "FedEx One Balance",
+            "carrier_code": "fedex_walleted",
+            "carrier_id": "se-890"
+        },
+        "fedex_standard_overnight_one_rate": {
+            "enabled": true,
+            "service_name": "FedEx Standard Overnight One Rate",
+            "service_code": "fedex_standard_overnight_one_rate",
+            "carrier_name": "FedEx One Balance",
+            "carrier_code": "fedex_walleted",
+            "carrier_id": "se-890"
+        },
+        "fedex_ground_international": {
+            "enabled": true,
+            "service_name": "FedEx International Ground",
+            "service_code": "fedex_ground_international",
+            "carrier_name": "FedEx One Balance",
+            "carrier_code": "fedex_walleted",
+            "carrier_id": "se-890"
+        }
+    }
+}
