@@ -11,6 +11,8 @@
 function is_wp_error( $obj ) { return ( is_object( $obj ) && ( is_a( $obj, 'WP_Error' ) || is_a( $obj, 'Exception' ) ) ); }
 function wp_json_encode( $data ) { return json_encode( $data ); }
 function get_option( $key, $default = '' ) { return get_data( 'Options' )[ $key ] ?? $default; }
+function wp_normalize_path( $path ) { return str_replace( array( '/', '\\', '\\\\', ), '/', $path ); }
+function plugin_dir_path( $file ) { return rtrim( dirname( $file ), '\\/' ) . '/'; }
 
 
 
