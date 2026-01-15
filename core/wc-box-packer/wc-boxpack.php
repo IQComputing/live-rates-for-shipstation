@@ -3,7 +3,7 @@
  * Box Packing class found in woocommerce-shipping-ups
  * Updated by IQComputing
  *
- * @version 2.0.1
+ * @version 2.0.2
  * @author WooThemes / Mike Jolley
  *
  */
@@ -22,17 +22,6 @@ class WC_Boxpack {
 	private $items;
 	private $packages;
 	private $cannot_pack;
-
-	/**
-	 * __construct function.
-	 *
-	 * @access public
-	 * @return void
-	 */
-	public function __construct() {
-		include_once 'class-wc-boxpack-box.php';
-		include_once 'class-wc-boxpack-item.php';
-	}
 
 	/**
 	 * clear_items function.

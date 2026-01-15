@@ -177,9 +177,14 @@ Class Shipping_Calculator {
 
                 return ( ! empty( $enabled ) ) ? $enabled : $default;
 
+            } else if( 'method' === $key ) {
+                return $this->method;
             }
 
             return $this->method->get_option( $key, $default );
+
+        } else if( 'method' === $key ) {
+            return $this->method;
         }
 
         return $default;
@@ -215,7 +220,7 @@ Class Shipping_Calculator {
         ) );
 
         $this->args = array_merge( array(
-            'weight_unit'    => get_option( 'woocommerce_weight_unit', '' ),
+            'weight_unit'   => get_option( 'woocommerce_weight_unit', '' ),
             'dim_unit'      => get_option( 'woocommerce_dimension_unit', '' ),
             'cart'          => array(),
             'items'         => array(),
@@ -673,11 +678,6 @@ Class Shipping_Calculator {
 			return $this->get_requestsby_individual();
 		}
 
-		if( ! class_exists( '\IQLRSS\Core\WC_Box_Packer\WC_Boxpack' ) ) {
-			include_once plugin_dir_path( __DIR__ ) . 'wc-box-packer/class-wc-boxpack.php';
-		}
-
-		// Setup the WC_Boxpack boxes based on user submitted custom boxes.
         $wc_boxpack = new \IQLRSS\Core\WC_Box_Packer\WC_Boxpack();
 		foreach( $boxes as $box ) {
 			if( empty( $box['active'] ) ) continue;

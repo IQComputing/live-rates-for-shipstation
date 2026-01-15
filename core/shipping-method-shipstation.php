@@ -844,6 +844,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				$key,
 				$package['quantity'],
 				$package['line_total'],
+				$packages['destination'],
 			);
 		}
 

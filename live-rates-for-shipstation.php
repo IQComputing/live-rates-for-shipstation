@@ -259,6 +259,7 @@ spl_autoload_register( function( $class ) {
 	}
 
 } );
+require_once rtrim( __DIR__, '\\/' ) . '/_autoload.php';
 add_action( 'plugins_loaded', array( '\IQLRSS\Driver', 'drive' ), 8 );
 
 
