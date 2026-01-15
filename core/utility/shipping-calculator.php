@@ -177,9 +177,14 @@ Class Shipping_Calculator {
 
                 return ( ! empty( $enabled ) ) ? $enabled : $default;
 
+            } else if( 'method' === $key ) {
+                return $this->method;
             }
 
             return $this->method->get_option( $key, $default );
+
+        } else if( 'method' === $key ) {
+            return $this->method;
         }
 
         return $default;
