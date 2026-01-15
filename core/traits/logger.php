@@ -27,7 +27,7 @@ trait Logger {
 			return $error;
 		}
 
-		$error_msg = esc_html__( 'Unepxected data in when logging error.', 'live-rates-for-shipstation' );
+		$error_msg = esc_html__( 'Unepxected data type found when logging error.', 'live-rates-for-shipstation' );
 		if( is_wp_error( $error ) ) {
 			$error_msg = sprintf( '(%s) %s', $error->get_error_code(), $error->get_error_message() );
 		} else if( is_string( $error ) ) {
