@@ -3,7 +3,7 @@ Contributors: iqcomputing
 Tags: woocommerce, shipstation, usps, ups, fedex
 Requires at least: 5.9
 Tested up to: 6.8
-Stable tag: 1.1.1
+Stable tag: 1.1.2
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -50,6 +50,13 @@ Don't have a ShipStation account? [Open a ShipStation account today!](https://ww
 
 == Changelog ==
 
+= 1.1.2 (2026-01-19) =
+* Patched an issue where rate caching would not account for a destination change.
+* Fixed a JS bug for Shipping Adjustment would not display on API Verified.
+* Moved autolaod to separate file.
+* Added verification to logs to prevent edge-case errors.
+* Big Shipping Method changes coming in next version to account for Unit Tests. Calculations will move to their own class instance. See the experimental branch for more info.
+
 = 1.1.1 (2025-12-04) =
 * Fixed JS conflict with WordPress 6.9 (nice!)
 
@@ -62,11 +69,3 @@ Don't have a ShipStation account? [Open a ShipStation account today!](https://ww
 * New filter hook for Shipping Zone Settings `iqlrss/zone/settings`. Useful for managing Product Packing options.
 * New filter hook for Shipping Zone Settings `iqlrss/zone/package_presets`. Useful for managing Custom Package presets.
 * New filter hook for Shipping Estimates `iqlrss/shipping/packages`. Useful for modifying what gets sent to ShipStation API for retrieving shipping estimates.
-
-= 1.0.8 (2025-10-10) =
-* Patches issue of missing `other_amount` when applying shipping rates (thanks @centuryperf)!
-* Shout out to @sarawill for reporting the WP_Error error.
-* Better formatting for rate reporting on Edit Order screen when dealing with custom packages.
-* Added caching layer to prevent multiple requests and logs - this should speed up frontend per-page shop requests.
-* Fixed issue of duplicate logs when debugging.
-* Fixed issue where API Log would lose formatting during certain requests.

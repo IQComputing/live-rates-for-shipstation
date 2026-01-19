@@ -2,6 +2,16 @@
 
 This is a brief text document keeping track of changes to the plugin. For a full history, see the Github Repository.
 
+= 1.1.2 =
+
+Relase Date: January 19, 2026
+
+* Overview
+	* Minor update that patches a caching issue and prepares for unit testing.
+	* Fixed issue when adding a verification key, the Shipping Price Adjustment would not initially appear.
+	* Moved autoload to it's own file for easier unit testing support.
+	* The next update will see ShipStation Warehouses, ShipStation Packages, and the Shipping Method calculations moved to it's own class for easier unit tests and management.
+
 = 1.1.1 =
 
 Relase Date: December 04, 2025
