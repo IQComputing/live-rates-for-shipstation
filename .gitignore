@@ -1,0 +1,4 @@
+# No need include these files/directies into the Github repository.
+# Run CLI `composer install` to retrieve vendor assets.
+/vendor/
+.phpunit*
