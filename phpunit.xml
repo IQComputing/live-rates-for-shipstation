@@ -1,4 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+== PHP Unit ==
+* Double dashes (param) replaced with ~~ for comment compatibility :(
+* The idea is to separate Unit Tests, WordPress Load Tests, and ShipStation API Tests.
+*
+* If no /vendor/ directory, run CLI: composer install
+* PHPUnit CLI: ./vendor/bin/phpunit ~~testsuite wordpress ~~bootstrap tests/BootstrapWordPress.php
+-->
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/11.4/phpunit.xsd"
          bootstrap="tests/Bootstrap.php">

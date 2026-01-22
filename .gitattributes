@@ -1,3 +1,4 @@
+# export-ignore ensures we don't zip these directories/files when packaged.
 /.github export-ignore
 /.wordpress-org export-ignore
 /vendor export-ignore
