@@ -102,7 +102,7 @@ class Shipstation  {
 
 		// Return Early - Something went wrong getting carriers.
 		} else if( ! isset( $carriers[ $carrier_code ] ) ) {
-			return $this->log( new \WP_Error( 404, esc_html__( 'Could not find carrier information.', 'live-rates-for-shipstation' ) ) );
+			return $this->log( new \WP_Error( 404, esc_html__( 'Could not find carrier information.', 'live-rates-for-shipstation' ) ), 'warning' );
 		}
 
 		$service_key = sprintf( '%s_%s_services', $trans_key, $carrier_code );
@@ -695,7 +695,7 @@ class Shipstation  {
 
 		// Return Early - API encountered an error.
 		if( is_wp_error( $request ) ) {
-			return $this->log( $request );
+			return $this->log( $request, 'error' );
 		} else if( 200 != $code || ! is_array( $body ) ) {
 
 			$err_code = $code;
@@ -713,12 +713,12 @@ class Shipstation  {
 
 			}
 
-			return $this->log( new \WP_Error( $err_code, $err_msg ) );
+			return $this->log( new \WP_Error( $err_code, $err_msg ), 'error' );
 		}
 
 		// Log API Request Result
 		/* translators: %s is the API endpoint (example: carriers/rates). */
-		$this->log( sprintf( esc_html__( 'ShipStation API Request to %s', 'live-rates-for-shipstation' ), $endpoint ), 'info', array(
+		$this->log( sprintf( esc_html__( 'ShipStation API Request to %s', 'live-rates-for-shipstation' ), $endpoint ), 'debug', array(
 			'args'		=> $args,
 			'code'		=> $code,
 			'response'	=> $body,

@@ -15,10 +15,10 @@
  * :: Base API Request Args
  * :: Packing / Packages
  * :: Run API Requests
- * :: Return Rates
+ * :: Return Rate Methods
  * :: Utility
  */
-namespace IQLRSS\Core\Utility;
+namespace IQLRSS\Core\Classes;
 use IQLRSS\Core\Traits;
 
 if( ! defined( 'ABSPATH' ) ) {
@@ -372,16 +372,16 @@ Class Shipping_Calculator {
      */
     public function setup_base() {
 
-        $to_arr   = $this->get_requestval( 'to', array() );
-        $from_arr = $this->get_requestval( 'from', array() );
+        $to_arr   = $this->get_ship_to();
+        $from_arr = $this->get_ship_from();
 
-        // Maybe Return Early - Did not have all the necessary fields to run an API request on. This may trigger often on cart, so skip it.
+        // Log - Did not have all the necessary fields to run an API request on. This may trigger often on cart, so skip it.
         if( 'cart' !== $this->datatype && empty( $to_arr['to_country_code'] ) && empty( $to_arr['to_postal_code'] ) ) {
-            $this->log( esc_html__( 'Request missing a To Country Code and/or To Postal Code.', 'live-rates-for-shipstation' ) );
+            $this->log( esc_html__( 'Request missing a To Country Code and/or To Postal Code.', 'live-rates-for-shipstation' ), 'error' );
 
-        // Return Early - Did not have all the necessary fields to run an API request on.
+        // Log - Did not have all the necessary fields to run an API request on.
         } else if( empty( $from_arr['from_country_code'] ) && empty( $to_arr['from_postal_code'] ) ) {
-			$this->log( esc_html__( 'Request missing a From Country Code and/or From Postal Code.', 'live-rates-for-shipstation' ) );
+			$this->log( esc_html__( 'Request missing a From Country Code and/or From Postal Code.', 'live-rates-for-shipstation' ), 'error' );
 		}
 
         $this->requests['base'] = array_merge(
@@ -389,6 +389,68 @@ Class Shipping_Calculator {
             $to_arr,
             $from_arr,
         );
+
+    }
+
+
+    /**
+     * Return an array of where to ship to.
+     *
+     * @return Array(
+     *   'to_country_code' => '',
+     *   'to_postal_code' => '',
+     *   'to_city_locality' => '',
+     *   'to_state_province' => '',
+     * )
+     */
+    public function get_ship_to() {
+
+        // destination.* come from WC_Cart data
+        // to.* come from instance $args
+        return array(
+            'to_country_code'	 => $this->get( 'to.country', $this->get( 'destination.country' ) ),
+            'to_postal_code'	 => $this->get( 'to.postcode', $this->get( 'destination.postcode' ) ),
+            'to_city_locality'	 => $this->get( 'to.city', $this->get( 'destination.city' ) ),
+            'to_state_province'	 => $this->get( 'to.state', $this->get( 'destination.state' ) ),
+        );
+
+    }
+
+
+    /**
+     * Return an array of where to ship from.
+     * This will also check against global warehouse.
+     * Then it will check against Zone warehouse.
+     *
+     * Zone > Global > WooCommer Store
+     *
+     * @return Array(
+     *   'from_country_code' => '',
+     *   'from_postal_code' => '',
+     *   'from_city_locality' => '',
+     *   'from_state_province' => '',
+     * )
+     */
+    public function get_ship_from() {
+
+        // from.* come from instance $args
+        $from_arr = array(
+            'from_country_code'	 => $this->get( 'from.country', WC()->countries->get_base_country() ),
+            'from_postal_code'	 => $this->get( 'from.postcode', WC()->countries->get_base_postcode() ),
+            'from_city_locality' => $this->get( 'from.city', WC()->countries->get_base_city() ),
+            'from_state_province'=> $this->get( 'from.state', WC()->countries->get_base_state() ),
+        );
+
+        $warehouse = $this->get_requestval( 'warehouse', array() );
+        if( ! empty( $warehouse ) && is_array( $warehouse ) && count( array_intersect_key( $from_arr, $warehouse ) ) <= 3 ) {
+            $this->log( esc_html__( 'Warehosue found, but was missing a required API parameter.', 'live-rates-for-shipstation' ), 'warning', array(
+                'warehouse' => $warehouse,
+            ) );
+        } else if( is_array( $warehouse ) ) {
+            $from_arr = $warehouse;
+        }
+
+        return $from_arr;
 
     }
 
@@ -449,7 +511,7 @@ Class Shipping_Calculator {
 		 * @param Array $requests - Array of Package dimensions that the API will use to get rates on. Multidimensional Array.
          * @param Array $cart - Array of cart_contents (or a mock of). Always check isset().
 		 * @param Array $packtype - The packaging type used.
-		 * @param \IQLRSS\Core\Utility\Shipping_Calculator $this
+		 * @param \IQLRSS\Core\Classes\Shipping_Calculator $this
 		 *
 		 * @return Array $settings
 		 */
@@ -512,7 +574,7 @@ Class Shipping_Calculator {
 						'height'	=> 'height',
 						'weight'	=> 'weight',
 					), $physicals + array( 'weight' => $request['weight'] ) ) )
-				) );
+				), 'error' );
 
 				return array();
 			}
@@ -584,7 +646,7 @@ Class Shipping_Calculator {
 					/* translators: %1$d is the Product ID. */
 					esc_html__( 'Product ID #%1$d missing weight. Shipping Zone weight fallback could not be used. Shipping calculations terminated.', 'live-rates-for-shipstation' ),
 					$product->get_id()
-				) );
+				), 'error' );
 
 				return array();
 
@@ -633,7 +695,7 @@ Class Shipping_Calculator {
 					'height'	=> 'height',
 					'weight'	=> 'weight',
 				), $physicals ) )
-			) );
+			), 'error' );
 
 			return array();
 
@@ -713,7 +775,7 @@ Class Shipping_Calculator {
 						'height'	=> 'height',
 						'length'	=> 'length',
 					), $physicals ) )
-				) );
+				), 'error' );
 				return array();
 			}
 
@@ -828,7 +890,7 @@ Class Shipping_Calculator {
             return;
         }
 
-        // item_id is a unique identifier, not a WP/WC ID.
+        // Run the API Requests.
         foreach( $this->packed as $idx => $package ) {
 
             // API Request!
@@ -893,7 +955,10 @@ Class Shipping_Calculator {
 
 
     /**
+     * Loop Method
      * Process the available rates and return the WC Rate metadata.
+     *
+     * @see Shipping_Calculator::setup_rates()
      *
      * @param Array $shiprate     - ShipStation API Result
      * @param Array $package_arr  - Array( $idx => $package )
@@ -965,7 +1030,7 @@ Class Shipping_Calculator {
         $services = $this->get( 'services_enabled', array() );
         $service_arr = ( isset( $services[ $shiprate['carrier_id'] ] ) ) ? $services[ $shiprate['carrier_id'] ][ $shiprate['code'] ] : array();
 
-        // Service Specific
+        // Service Specific - Could be 0.
         if( isset( $service_arr['adjustment'] ) ) {
 
             $adjustment = floatval( $service_arr['adjustment'] );
@@ -1077,7 +1142,7 @@ Class Shipping_Calculator {
 		// Return Early - No enabled services.
 		$services_enabled = $this->get( 'services_enabled' );
 		if( empty( $services_enabled ) ) {
-			$this->log( esc_html__( 'No enabled carrier services found. Please enable carrier services within the shipping zone.', 'live-rates-for-shipstation' ) );
+			$this->log( esc_html__( 'No enabled carrier services found. Please enable carrier services within the shipping zone.', 'live-rates-for-shipstation' ), 'error' );
 			return;
 		}
 
@@ -1233,40 +1298,17 @@ Class Shipping_Calculator {
      */
     public function get_requestval( $key, $default = '' ) {
 
-        $value = $this->get( $key, $default );
+        /* Maybe return from an instance $arg */
+        $found = $this->get( $key, null );
+        if( $found ) return $found;
+
+        /* Otherwise request it from the API */
+        $value = $default;
         switch( $key ) {
-
-            // destination.* are WC_Cart data
-            // to.* are custom args for custom calculations.
-            case 'to':
-                if( ! ( is_array( $value ) && isset( $value['to_country_code'] ) ) ) {
-                    $value = array(
-                        'to_country_code'	 => $this->get( 'to.country', $this->get( 'destination.country' ) ),
-                        'to_postal_code'	 => $this->get( 'to.postcode', $this->get( 'destination.postcode' ) ),
-                        'to_city_locality'	 => $this->get( 'to.city', $this->get( 'destination.city' ) ),
-                        'to_state_province'	 => $this->get( 'to.state', $this->get( 'destination.state' ) ),
-                    );
-                }
-            break;
-
-            // to.* are custom args for custom calculations.
-            // Check for a warehouse override as well.
-            case 'from':
-
-                $value = $this->get_requestval( 'warehouse', $value );
-                if( ! ( is_array( $value ) && isset( $value['from_country_code'] ) ) ) {
-                    $value = array(
-                        'from_country_code'	 => $this->get( 'from.country', WC()->countries->get_base_country() ),
-                        'from_postal_code'	 => $this->get( 'from.postcode', WC()->countries->get_base_postcode() ),
-                        'from_city_locality' => $this->get( 'from.city', WC()->countries->get_base_city() ),
-                        'from_state_province'=> $this->get( 'from.state', WC()->countries->get_base_state() ),
-                    );
-                }
-            break;
 
             // Warehouse
             case 'warehouse':
-                 // Grab the Warehouse / shipping from location.
+
                 $global_warehouse = $this->get( 'ssopt.global_warehouse' );
                 $zone_warehouse   = $this->get( 'warehouse', $global_warehouse );
 
@@ -1284,28 +1326,28 @@ Class Shipping_Calculator {
                         );
                     }
                 }
+            break;
 
-                // Carriers
-                case 'carrier_ids':
+            // Carriers
+            case 'carrier_ids':
 
-                    $enabled  = array();
-                    $carriers = $this->get( 'ssopt.carriers', array() );
-                    $saved_services = $this->get( 'services', array() );
+                $enabled  = array();
+                $carriers = $this->get( 'ssopt.carriers', array() );
+                $saved_services = $this->get( 'services', array() );
 
-                    if( ! empty( $saved_services ) ) {
-                        foreach( $saved_services as $c => $sa ) {
-                            foreach( $sa as $sk => $s ) {
-                                if( ! isset( $s['enabled'] ) || ! $s['enabled'] ) continue;
-                                $enabled[] = $c;
-                            }
-                        }
-
-                        if( ! empty( $carriers ) && ! empty( $enabled ) ) {
-                            $value = array_values( array_intersect( $enabled, $carriers ) );
+                if( ! empty( $saved_services ) ) {
+                    foreach( $saved_services as $c => $sa ) {
+                        foreach( $sa as $sk => $s ) {
+                            if( ! isset( $s['enabled'] ) || ! $s['enabled'] ) continue;
+                            $enabled[] = $c;
                         }
                     }
 
-                break;
+                    if( ! empty( $carriers ) && ! empty( $enabled ) ) {
+                        $value = array_values( array_intersect( $enabled, $carriers ) );
+                    }
+                }
+
             break;
         }
 

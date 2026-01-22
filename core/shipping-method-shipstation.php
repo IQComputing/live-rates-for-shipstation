@@ -398,9 +398,8 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 */
 	protected function init_instance_form_fields() {
 
-		$warehouses = array(
-			'' => esc_html__( 'Website Store Address', 'live-rates-for-shipstation' ),
-		);
+		$store_warehouse_label = '(' . esc_html__( 'Website Store Address', 'live-rates-for-shipstation' ) . ')';
+		$warehouses = array( '' => $store_warehouse_label );
 
 		if( ! empty( \IQLRSS\Driver::get_ss_opt( 'api_key' ) ) ) {
 
@@ -418,11 +417,13 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				) );
 			}
 
-			// A little switcharoo?
+			// Move the global warehouse to the top.
 			if( ! empty( $og_warehouse ) && isset( $warehouses[ $og_warehouse ] ) ) {
-				$warehouses[''] = $warehouses[ $og_warehouse ];
-				unset( $warehouses[ $og_warehouse ] );
-				$warehouses['_woo_default'] = esc_html__( 'Website Store Address', 'live-rates-for-shipstation' );
+				$tmp_houses = array_diff_key( $warehouses, array( '' => '' ) );
+				$warehouses = array_merge( array(
+					'' 				=> $warehouses[ $og_warehouse ] . ' (' . esc_html__( 'Store Global', 'live-rates-for-shipstation' ) . ')',
+					'_woo_default'	=> $store_warehouse_label,
+				), $tmp_houses );
 			}
 		}
 
@@ -728,18 +729,18 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		}
 
 		// Grab the calculator to be filtered.
-		$calculator = new Utility\Shipping_Calculator( $packages, array(
+		$calculator = new Classes\Shipping_Calculator( $packages, array(
 			'method' => $this,
 		) );
 
 
 		/**
 		 * Allow overriding the Shipping Calculator object.
-		 * Must inherit IQLRSS\Core\Utility\Shipping_Calculator
+		 * Must inherit IQLRSS\Core\Classes\Shipping_Calculator
 		 *
 		 * @hook filter
 		 *
-		 * @param \IQLRSS\Core\Utility\Shipping_Calculator $calculator
+		 * @param \IQLRSS\Core\Classes\Shipping_Calculator $calculator
 		 * @param Array $packages - The cart contents. See $packages['contents'] for items.
 		 * @param \IQLRSS\Core\Shipping_Method_Shipstation $this
 		 *
@@ -749,7 +750,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		if( is_object( $maybe_calc ) && $maybe_calc !== $calculator ) {
 
 			// Override calculator object and log it's change.
-			if( is_subclass_of( $maybe_calc, '\IQLRSS\Core\Utility\Shipping_Calculator' ) ) {
+			if( is_subclass_of( $maybe_calc, '\IQLRSS\Core\Classes\Shipping_Calculator' ) ) {
 
 				$calculator = $maybe_calc;
 				$this->log( sprintf( '%s [%s]',
@@ -761,8 +762,9 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			} else {
 
 				$this->log( sprintf( '%s [%s]',
-					esc_html__( 'Shipping Calculations Object override failed. Class does not inherit "\IQLRSS\Core\Utility\Shipping_Calculator".', 'live-rates-for-shipstation' ),
-					get_class( $maybe_calc )
+					esc_html__( 'Shipping Calculations Object override failed. Class does not inherit "\IQLRSS\Core\Classes\Shipping_Calculator".', 'live-rates-for-shipstation' ),
+					get_class( $maybe_calc ),
+					'warning'
 				) );
 
 			}
