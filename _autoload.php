@@ -20,6 +20,14 @@ spl_autoload_register( function( $class ) {
 		$class_path . '.php'
 	) );
 
+	/* Vroom! */
+	if( 'driver' === $class_path ) {
+		$file_path	= wp_normalize_path( sprintf( '%s/%s',
+			rtrim( plugin_dir_path( __FILE__ ), '\\/' ),
+			'live-rates-for-shipstation.php'
+		) );
+	}
+
 	if( file_exists( $file_path ) ) {
 		require_once $file_path;
 	}
