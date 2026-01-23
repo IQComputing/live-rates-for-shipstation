@@ -124,6 +124,7 @@ Class Shipping_Calculator {
     /**
      * Return an argument value.
      * 'method' - Returns the Shipping Zone Method if it exists.
+     * 'ssopt.$key' - Returns a ShipStation option value.
      *
      * @param String $key
      * @param Mixed $default
@@ -441,12 +442,12 @@ Class Shipping_Calculator {
             'from_state_province'=> $this->get( 'from.state', WC()->countries->get_base_state() ),
         );
 
-        $warehouse = $this->get_requestval( 'warehouse', array() );
+        $warehouse = $this->get_apival( 'warehouse', array() );
         if( ! empty( $warehouse ) && is_array( $warehouse ) && count( array_intersect_key( $from_arr, $warehouse ) ) <= 3 ) {
             $this->log( esc_html__( 'Warehosue found, but was missing a required API parameter.', 'live-rates-for-shipstation' ), 'warning', array(
                 'warehouse' => $warehouse,
             ) );
-        } else if( is_array( $warehouse ) ) {
+        } else if( ! empty( $warehouse ) && is_array( $warehouse ) ) {
             $from_arr = $warehouse;
         }
 
@@ -853,7 +854,7 @@ Class Shipping_Calculator {
 		}
 
 		if( ! empty( $box_log ) ) {
-			$this->log( esc_html__( 'Custom Boxes Packed', 'live-rates-for-shipstation' ), 'info', $box_log );
+			$this->log( esc_html__( 'Custom Boxes Packed', 'live-rates-for-shipstation' ), 'debug', $box_log );
 		}
 
 		return $requests;
@@ -884,7 +885,7 @@ Class Shipping_Calculator {
         }
 
         // Return Early - No enabled carriers.
-        $carrier_ids = $this->get_requestval( 'carrier_ids', array() );
+        $carrier_ids = $this->get_apival( 'carrier_ids', array() );
         if( empty( $carrier_ids ) ) {
             $this->log( esc_html__( 'Setup Rates tried to run but could not determine enabled carriers.', 'live-rates-for-shipstation' ), 'warning' );
             return;
@@ -1296,7 +1297,7 @@ Class Shipping_Calculator {
      *
      * @return Mixed
      */
-    public function get_requestval( $key, $default = '' ) {
+    public function get_apival( $key, $default = '' ) {
 
         /* Maybe return from an instance $arg */
         $found = $this->get( $key, null );
