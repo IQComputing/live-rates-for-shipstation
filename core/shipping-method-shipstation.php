@@ -803,6 +803,21 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 */
 	protected function check_packages_rate_cache( $packages ) {
 
+
+		/**
+		 * Maybe skip cart caches.
+		 * Do note that WooCommerce makes multiple calls to the cart / calculations.
+		 * Disabling this may result in many more API calls than expected.
+		 *
+		 * @hook filter
+		 *
+		 * @param Bolean TRUE
+		 *
+		 * @return Boolean
+		 */
+		// Return Early - Filter Skips Cache.
+		if( true !== apply_filters( 'iqlrss/cache/cart_rates', true ) ) return;
+
 		$session 	= WC()->session->get( $this->plugin_prefix . '_packages', array() );
 		$cleartime 	= get_transient( \IQLRSS\Driver::plugin_prefix( 'wcs_timeout' ) );
 		$cachehash 	= $this->generate_packages_cache_key( $packages );
@@ -819,13 +834,9 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		// Try to populate Rates.
 		$size = count( $packages );
 		for( $i = 0; $i < $size; $i++ ) {
-
 			$cache = WC()->session->get( 'shipping_for_package_' . $i, false );
-			if( empty( $cache ) || ! is_array( $cache ) ) {
-				break;
-			}
+			if( empty( $cache ) || ! is_array( $cache ) ) break;
 			$this->rates = array_merge( $cache['rates'], $this->rates );
-
 		}
 
 	}
