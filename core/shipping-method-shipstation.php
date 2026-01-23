@@ -762,7 +762,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			} else {
 
 				$this->log( sprintf( '%s [%s]',
-					esc_html__( 'Shipping Calculations Object override failed. Class does not inherit "\IQLRSS\Core\Classes\Shipping_Calculator".', 'live-rates-for-shipstation' ),
+					esc_html__( 'Shipping Calculations Object override failed. Class may not inherit "\IQLRSS\Core\Classes\Shipping_Calculator".', 'live-rates-for-shipstation' ),
 					get_class( $maybe_calc ),
 					'warning'
 				) );

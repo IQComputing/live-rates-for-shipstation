@@ -2,6 +2,32 @@
 
 This is a brief text document keeping track of changes to the plugin. For a full history, see the Github Repository.
 
+= 1.2.0 =
+
+Relase Date: Eventually.
+
+* Overview
+	* Shipping Calculations moved to it's own Class for better PHPUnit testing.
+		* See unit-tests branch; work-in-progress.
+	* ShipStation Warehouses are now supported Globally and per Shipping Zone.
+		* Defaults to WooCommerce Store. Global overrides Store. Zone overrides Global.
+	* Multiple new filter hooks added to manage caching, warehouses, and Shipping Calculator object.
+
+* Code Updates
+	* Filter Hook `iqlrss/cache/shipstation`
+		* Boolean to disable caching for API requests.
+	* Filter Hook `iqlrss/cache/shipstation_expires`
+		* Integer seconds for how long to cache package rates for a customer.
+		* 1 Week is the default.
+	* Filter Hook `iqlrss/cache/cart_rates`
+		* Boolean to diable caching at a cart level.
+		* This is not recommended to disable since WC (sometimes) makes multiple calls to the cart per page load, but the option is available if you have a usecase.
+	* Fitler Hook `iqlrss/shipping/calculator_object`
+		* Expects a \IQLRSS\Core\Classes\Shipping_Calculator Object.
+		* Must inherit the IQLRSS Calculator to be valid.
+		* The shipping method calculations had an overhaul and broken into multiple methods of the new Shipping Calculator object.
+		* This is for PHPUnit testing and to make it easier for developers to override specific calculator functionality for their usecases.
+
 = 1.1.2 =
 
 Relase Date: January 19, 2026

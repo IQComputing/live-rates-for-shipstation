@@ -41,3 +41,13 @@ For more information, please review our support article [Live Rates for ShipStat
 ## Support
 
 This is a free plugin entirely volunteer run. While we will ensure that the plugin is up-to-date for any security issues or breakfixes, we cannot commit to supporting any customizations to the plugin or feature requests, but welcome these questions and requests through the [WordPress Support Forums](https://wordpress.org/support/plugin/live-rates-for-shipstation/) for our team to consider in a future release of the plugin. We recommend using the WordPress Forums for all inquiries.
+
+## Filter Hooks
+
+- `iqlrss/cache/cart_rates`
+- `iqlrss/cache/shipstation`
+- `iqlrss/cache/shipstation_expires`
+- `iqlrss/shipping/calculator_object`
+- `iqlrss/shipping/packages`
+- `iqlrss/zone/package_presets`
+- `iqlrss/zone/settings`
