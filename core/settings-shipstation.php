@@ -290,7 +290,7 @@ Class Settings_Shipstation {
 			'' => esc_html__( 'ShipStation carriers may still be loading...', 'live-rates-for-shipstation' ),
 		);
 		$warehouses = array(
-			'' => esc_html__( 'Website Store Address', 'live-rates-for-shipstation' ),
+			'' => '(' . esc_html__( 'Website Store Address', 'live-rates-for-shipstation' ) . ')',
 		);
 		$appended_fields = array();
 

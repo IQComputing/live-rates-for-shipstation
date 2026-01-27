@@ -109,8 +109,10 @@ export class shipStationSettings {
 		} );
 
 		/* Eh, just trigger it */
-		if( $lowestcb.checked && 'none' == $lowestLabel.closest( 'tr' ).style.display ) {
-			$lowestcb.dispatchEvent( new Event( 'change' ) );
+		if( iqlrss.api_verified ) {
+			if( $lowestcb.checked && 'none' == $lowestLabel.closest( 'tr' ).style.display ) {
+				$lowestcb.dispatchEvent( new Event( 'change' ) );
+			}
 		}
 
 	}
@@ -294,11 +296,6 @@ class apiVerificationButton {
 
 				const $row = $elm.closest( 'tr' );
 				if( ! $row || 'none' != $row.style.display ) return;
-
-				/* Skip the Return Lowest Label if related isn't checked */
-				if( $elm.name.includes( 'global_adjustment' ) && '' == document.querySelector( 'select[name*=global_adjustment_type]' ).value ) {
-					return;
-				}
 
 				/* Skip the Return Lowest Label if related isn't checked */
 				if( $elm.name.includes( 'return_lowest_label' ) && ! document.querySelector( '[type=checkbox][name*=return_lowest]' ).checked ) {

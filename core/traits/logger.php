@@ -21,7 +21,7 @@ trait Logger {
 	 *
 	 * @return Mixed - Return the error back.
 	 */
-	protected function log( $error, $level = 'debug', $context = array() ) {
+	protected function log( $error, $level = 'info', $context = array() ) {
 
 		if( ! \IQLRSS\Driver::get_ss_opt( 'logging_enabled', 0, true ) ) {
 			return $error;
@@ -35,6 +35,14 @@ trait Logger {
 		}
 
 		if( class_exists( '\WC_Logger' ) ) {
+
+			/**
+			 * The WC_Logger does not handle double quotes well.
+			 * This will convert double quotes to faux: " -> ''
+			 */
+			array_walk_recursive( $context, function( &$val ) {
+				$val = ( is_string( $val ) ) ? str_replace( '"', "''", $val ) : $val;
+			} );
 
             $logger = \wc_get_logger();
             $logger->log( $level, $error_msg, array_merge( $context, array( 'source' => 'live-rates-for-shipstation' ) ) );

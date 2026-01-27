@@ -145,7 +145,7 @@ class Shipstationv1 extends Shipstation  {
 
 		// Return Early - Something went wrong getting carriers.
 		} else if( ! isset( $carriers[ $carrier_code ] ) ) {
-			return $this->log( new \WP_Error( 404, esc_html__( '[v1] Could not find carrier information.', 'live-rates-for-shipstation' ) ) );
+			return $this->log( new \WP_Error( 404, esc_html__( '[v1] Could not find carrier information.', 'live-rates-for-shipstation' ) ), 'warning' );
 		}
 
 		return array(
@@ -526,9 +526,9 @@ class Shipstationv1 extends Shipstation  {
 			return ( is_array( $order ) && isset( $order['orderNumber'], $order['orderKey'] ) );
 		} );
 
-		// Return Early - Skip the log but o
+		// Return Early - No orders to work with.
 		if( empty( $orders ) ) {
-			return $this->log( new \WP_Error( 400, esc_html__( '[v1] Empty Orders. Data may be missing orderNumber or orderKey.', 'live-rates-for-shipstation' ) ), 'warning', array(
+			return $this->log( new \WP_Error( 400, esc_html__( '[v1] Empty Orders. Data may be missing orderNumber or orderKey.', 'live-rates-for-shipstation' ) ), 'error', array(
 				'orders' => $order_arr,
 			) );
 		}
@@ -653,7 +653,7 @@ class Shipstationv1 extends Shipstation  {
 
 		// Log API Request Result
 		/* translators: %s is the API endpoint (example: carriers/rates). */
-		$this->log( sprintf( esc_html__( '[v1] ShipStation API Request to %s', 'live-rates-for-shipstation' ), $endpoint ), 'info', array(
+		$this->log( sprintf( esc_html__( '[v1] ShipStation API Request to %s', 'live-rates-for-shipstation' ), $endpoint ), 'debug', array(
 			'args'		=> $args,
 			'code'		=> $code,
 			'response'	=> $body,
@@ -691,7 +691,7 @@ class Shipstationv1 extends Shipstation  {
 	 * @return WP_Error
 	 */
 	public function get_shipping_estimates( $est_opts ) {
-		return $this->log( new \WP_Error( 400, esc_html__( 'Live Rates for ShipStation v1 API Class does not support this endpoint. Use the v2 API Class: \IQLRSS\Core\Api\Shipstation', 'live-rates-for-shipstation' ) ) );
+		return $this->log( new \WP_Error( 400, esc_html__( 'Live Rates for ShipStation v1 API Class does not support this endpoint. Use the v2 API Class: \IQLRSS\Core\Api\Shipstation', 'live-rates-for-shipstation' ) ), 'notice' );
 	}
 
 }

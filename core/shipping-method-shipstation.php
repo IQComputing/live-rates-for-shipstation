@@ -2,8 +2,6 @@
 /**
  * ShipStation Live Shipping Rates Method
  *
- * @todo Consider moving Shipping Calculations into it's own class.
- *
  * @link https://www.fedex.com/en-us/shipping/one-rate.html
  * @link https://www.usps.com/ship/priority-mail.htm#flatrate
  * @link https://www.ups.com/worldshiphelp/WSA/ENG/AppHelp/mergedProjects/CORE/Codes/Package_Type_Codes.htm
@@ -398,9 +396,8 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 */
 	protected function init_instance_form_fields() {
 
-		$warehouses = array(
-			'' => esc_html__( 'Website Store Address', 'live-rates-for-shipstation' ),
-		);
+		$store_warehouse_label = '(' . esc_html__( 'Website Store Address', 'live-rates-for-shipstation' ) . ')';
+		$warehouses = array( '' => $store_warehouse_label );
 
 		if( ! empty( \IQLRSS\Driver::get_ss_opt( 'api_key' ) ) ) {
 
@@ -418,11 +415,13 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				) );
 			}
 
-			// A little switcharoo?
+			// Move the global warehouse to the top.
 			if( ! empty( $og_warehouse ) && isset( $warehouses[ $og_warehouse ] ) ) {
-				$warehouses[''] = $warehouses[ $og_warehouse ];
-				unset( $warehouses[ $og_warehouse ] );
-				$warehouses['_woo_default'] = esc_html__( 'Website Store Address', 'live-rates-for-shipstation' );
+				$tmp_houses = array_diff_key( $warehouses, array( '' => '' ) );
+				$warehouses = array_merge( array(
+					'' 				=> $warehouses[ $og_warehouse ] . ' (' . esc_html__( 'Store Global', 'live-rates-for-shipstation' ) . ')',
+					'_woo_default'	=> $store_warehouse_label,
+				), $tmp_houses );
 			}
 		}
 
@@ -728,18 +727,18 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		}
 
 		// Grab the calculator to be filtered.
-		$calculator = new Utility\Shipping_Calculator( $packages, array(
+		$calculator = new Classes\Shipping_Calculator( $packages, array(
 			'method' => $this,
 		) );
 
 
 		/**
 		 * Allow overriding the Shipping Calculator object.
-		 * Must inherit IQLRSS\Core\Utility\Shipping_Calculator
+		 * Must inherit IQLRSS\Core\Classes\Shipping_Calculator
 		 *
 		 * @hook filter
 		 *
-		 * @param \IQLRSS\Core\Utility\Shipping_Calculator $calculator
+		 * @param \IQLRSS\Core\Classes\Shipping_Calculator $calculator
 		 * @param Array $packages - The cart contents. See $packages['contents'] for items.
 		 * @param \IQLRSS\Core\Shipping_Method_Shipstation $this
 		 *
@@ -749,7 +748,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		if( is_object( $maybe_calc ) && $maybe_calc !== $calculator ) {
 
 			// Override calculator object and log it's change.
-			if( is_subclass_of( $maybe_calc, '\IQLRSS\Core\Utility\Shipping_Calculator' ) ) {
+			if( is_subclass_of( $maybe_calc, '\IQLRSS\Core\Classes\Shipping_Calculator' ) ) {
 
 				$calculator = $maybe_calc;
 				$this->log( sprintf( '%s [%s]',
@@ -761,8 +760,9 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			} else {
 
 				$this->log( sprintf( '%s [%s]',
-					esc_html__( 'Shipping Calculations Object override failed. Class does not inherit "\IQLRSS\Core\Utility\Shipping_Calculator".', 'live-rates-for-shipstation' ),
-					get_class( $maybe_calc )
+					esc_html__( 'Shipping Calculations Object override failed. Class may not inherit "\IQLRSS\Core\Classes\Shipping_Calculator".', 'live-rates-for-shipstation' ),
+					get_class( $maybe_calc ),
+					'warning'
 				) );
 
 			}
@@ -801,6 +801,21 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 */
 	protected function check_packages_rate_cache( $packages ) {
 
+
+		/**
+		 * Maybe skip cart caches.
+		 * Do note that WooCommerce makes multiple calls to the cart / calculations.
+		 * Disabling this may result in many more API calls than expected.
+		 *
+		 * @hook filter
+		 *
+		 * @param Bolean TRUE
+		 *
+		 * @return Boolean
+		 */
+		// Return Early - Filter Skips Cache.
+		if( true !== apply_filters( 'iqlrss/cache/cart_rates', true ) ) return;
+
 		$session 	= WC()->session->get( $this->plugin_prefix . '_packages', array() );
 		$cleartime 	= get_transient( \IQLRSS\Driver::plugin_prefix( 'wcs_timeout' ) );
 		$cachehash 	= $this->generate_packages_cache_key( $packages );
@@ -817,13 +832,9 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		// Try to populate Rates.
 		$size = count( $packages );
 		for( $i = 0; $i < $size; $i++ ) {
-
 			$cache = WC()->session->get( 'shipping_for_package_' . $i, false );
-			if( empty( $cache ) || ! is_array( $cache ) ) {
-				break;
-			}
+			if( empty( $cache ) || ! is_array( $cache ) ) break;
 			$this->rates = array_merge( $cache['rates'], $this->rates );
-
 		}
 
 	}
@@ -950,9 +961,10 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			return $packages;
 		}
 
-		$global_carriers= $this->shipStationApi->get_carriers();
-		$carrier_codes	= wp_list_pluck( $global_carriers, 'carrier_code' );
-		$carrier_codes	= array_intersect_key( $carrier_codes, array_flip( $this->carriers ) );
+		$global_carriers  = $this->shipStationApi->get_carriers();
+		$carrier_codes	  = wp_list_pluck( $global_carriers, 'carrier_code' );
+		$carrier_codes 	  = array_intersect_key( $carrier_codes, array_flip( $this->carriers ) );
+		$carrier_packages = array();
 
 		$data = array(
 			'usps' => array(
@@ -969,8 +981,29 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			),
 		);
 
+		// Append ShipStation Packages
+		$sspackages = $this->shipStationApi->get_packages();
+		if( ! is_wp_error( $sspackages ) && ! empty( $sspackages ) ) {
+
+			$carrier_packages['shipstation'] = array(
+				'label' 	=> esc_html__( 'ShipStation' ),
+				'packages'	=> array(),
+			);
+
+			foreach( $sspackages as $package ) {
+				$carrier_packages['shipstation']['packages'][] = array(
+					'label'			=> $package['name'],
+					'code'			=> $package['package_id'],
+					'length'		=> $package['dimensions']['length'],
+					'width'			=> $package['dimensions']['width'],
+					'height'		=> $package['dimensions']['height'],
+					'weight_max'	=> '',
+					'carrier_code'	=> '',
+				);
+			}
+		}
+
 		// Append Translated Labels
-		$carrier_packages = array();
 		foreach( $data as $carrier_code => &$carriers ) {
 
 			// Match carrier slug with known carrier code.

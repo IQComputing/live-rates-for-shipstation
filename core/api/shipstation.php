@@ -11,12 +11,19 @@
  * :: Helper Methods
  */
 namespace IQLRSS\Core\Api;
+use \IQLRSS\Core\Traits;
 
 if( ! defined( 'ABSPATH' ) ) {
 	return;
 }
 
 class Shipstation  {
+
+	/**
+	 * Inherit logger traits
+	 */
+	use Traits\Logger;
+
 
 	/**
 	 * Skip cache check
@@ -68,8 +75,33 @@ class Shipstation  {
 
 		$this->prefix 	= \IQLRSS\Driver::get( 'slug' );
 		$this->key 		= \IQLRSS\Driver::get_ss_opt( 'api_key', '' );
-		$this->skip_cache = (boolean)$skip_cache;
-		$this->cache_time = defined( 'WEEK_IN_SECONDS' ) ? WEEK_IN_SECONDS : 604800;
+
+
+		/**
+		 * Skip caching for the API.
+		 *
+		 * @hook filter
+		 *
+		 * @param Bolean FALSE
+		 *
+		 * @return Boolean
+		 */
+		$this->skip_cache = (boolean)apply_filters( 'iqlrss/cache/shipstation', $skip_cache, $this );
+
+
+		/**
+		 * Allow filtering the cache time.
+		 *
+		 * @see https://codex.wordpress.org/Easier_Expression_of_Time_Constants
+		 *
+		 * @hook filter
+		 *
+		 * @param Integer $cache_time - Week in seconds.
+		 *
+		 * @return Boolean
+		 */
+		$cache_time = apply_filters( 'iqlrss/cache/shipstation_expires', $this->cache_time, $this );
+		$this->cache_time = ( is_numeric( $cache_time ) ) ? absint( $cache_time ) : $this->cache_time;
 
 	}
 
@@ -102,7 +134,7 @@ class Shipstation  {
 
 		// Return Early - Something went wrong getting carriers.
 		} else if( ! isset( $carriers[ $carrier_code ] ) ) {
-			return $this->log( new \WP_Error( 404, esc_html__( 'Could not find carrier information.', 'live-rates-for-shipstation' ) ) );
+			return $this->log( new \WP_Error( 404, esc_html__( 'Could not find carrier information.', 'live-rates-for-shipstation' ) ), 'warning' );
 		}
 
 		$service_key = sprintf( '%s_%s_services', $trans_key, $carrier_code );
@@ -695,7 +727,7 @@ class Shipstation  {
 
 		// Return Early - API encountered an error.
 		if( is_wp_error( $request ) ) {
-			return $this->log( $request );
+			return $this->log( $request, 'error' );
 		} else if( 200 != $code || ! is_array( $body ) ) {
 
 			$err_code = $code;
@@ -713,12 +745,12 @@ class Shipstation  {
 
 			}
 
-			return $this->log( new \WP_Error( $err_code, $err_msg ) );
+			return $this->log( new \WP_Error( $err_code, $err_msg ), 'error' );
 		}
 
 		// Log API Request Result
 		/* translators: %s is the API endpoint (example: carriers/rates). */
-		$this->log( sprintf( esc_html__( 'ShipStation API Request to %s', 'live-rates-for-shipstation' ), $endpoint ), 'info', array(
+		$this->log( sprintf( esc_html__( 'ShipStation API Request to %s', 'live-rates-for-shipstation' ), $endpoint ), 'debug', array(
 			'args'		=> $args,
 			'code'		=> $code,
 			'response'	=> $body,
@@ -761,51 +793,6 @@ class Shipstation  {
 			preg_replace( '/[^-_]/', '', $sep ),
 			$key
 		);
-
-	}
-
-
-	/**
-	 * Log error in WooCommerce
-	 * Passthru method - log what's given and give it back.
-	 *
-	 * @param Mixed $error 		- String or WP_Error
-	 * @param String $level 	- WooCommerce level (debug|info|notice|warning|error|critical|alert|emergency)
-	 * @param Array $context
-	 *
-	 * @return Mixed - Return the error back.
-	 */
-	protected function log( $error, $level = 'debug', $context = array() ) {
-
-		if( ! \IQLRSS\Driver::get_ss_opt( 'logging_enabled', 0, true ) ) {
-			return $error;
-		}
-
-		if( is_wp_error( $error ) ) {
-			$error_msg = sprintf( '(%s) %s', $error->get_error_code(), $error->get_error_message() );
-		} else {
-			$error_msg = $error;
-		}
-
-		if( class_exists( '\WC_Logger' ) ) {
-
-			if( null === $this->logger ) {
-				$this->logger = \wc_get_logger();
-			}
-
-			/**
-			 * The WC_Logger does not handle double quotes well.
-			 * This will conver double quotes to faux: " -> ''
-			 */
-			array_walk_recursive( $context, function( &$val ) {
-				$val = ( is_string( $val ) ) ? str_replace( '"', "''", $val ) : $val;
-			} );
-
-			$this->logger->log( $level, $error_msg, array_merge( $context, array( 'source' => 'live-rates-for-shipstation' ) ) );
-
-		}
-
-		return $error;
 
 	}
 
