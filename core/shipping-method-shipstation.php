@@ -2,8 +2,6 @@
 /**
  * ShipStation Live Shipping Rates Method
  *
- * @todo Consider moving Shipping Calculations into it's own class.
- *
  * @link https://www.fedex.com/en-us/shipping/one-rate.html
  * @link https://www.usps.com/ship/priority-mail.htm#flatrate
  * @link https://www.ups.com/worldshiphelp/WSA/ENG/AppHelp/mergedProjects/CORE/Codes/Package_Type_Codes.htm
