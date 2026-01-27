@@ -11,6 +11,7 @@ Relase Date: Eventually.
 		* See unit-tests branch; work-in-progress.
 	* ShipStation Warehouses are now supported Globally and per Shipping Zone.
 		* Defaults to WooCommerce Store. Global overrides Store. Zone overrides Global.
+	* ShipStation Packages are now integrated into Custom Packages.
 	* Multiple new filter hooks added to manage caching, warehouses, and Shipping Calculator object.
 
 * Code Updates
