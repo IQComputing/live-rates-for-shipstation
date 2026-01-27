@@ -963,9 +963,10 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			return $packages;
 		}
 
-		$global_carriers= $this->shipStationApi->get_carriers();
-		$carrier_codes	= wp_list_pluck( $global_carriers, 'carrier_code' );
-		$carrier_codes	= array_intersect_key( $carrier_codes, array_flip( $this->carriers ) );
+		$global_carriers  = $this->shipStationApi->get_carriers();
+		$carrier_codes	  = wp_list_pluck( $global_carriers, 'carrier_code' );
+		$carrier_codes 	  = array_intersect_key( $carrier_codes, array_flip( $this->carriers ) );
+		$carrier_packages = array();
 
 		$data = array(
 			'usps' => array(
@@ -982,8 +983,29 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			),
 		);
 
+		// Append ShipStation Packages
+		$sspackages = $this->shipStationApi->get_packages();
+		if( ! is_wp_error( $sspackages ) && ! empty( $sspackages ) ) {
+
+			$carrier_packages['shipstation'] = array(
+				'label' 	=> esc_html__( 'ShipStation' ),
+				'packages'	=> array(),
+			);
+
+			foreach( $sspackages as $package ) {
+				$carrier_packages['shipstation']['packages'][] = array(
+					'label'			=> $package['name'],
+					'code'			=> $package['package_id'],
+					'length'		=> $package['dimensions']['length'],
+					'width'			=> $package['dimensions']['width'],
+					'height'		=> $package['dimensions']['height'],
+					'weight_max'	=> '',
+					'carrier_code'	=> '',
+				);
+			}
+		}
+
 		// Append Translated Labels
-		$carrier_packages = array();
 		foreach( $data as $carrier_code => &$carriers ) {
 
 			// Match carrier slug with known carrier code.
