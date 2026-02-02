@@ -728,7 +728,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 		// Grab the calculator to be filtered.
 		$calculator = new Classes\Shipping_Calculator( $packages, array(
-			'method' => $this,
+			'shipping_method' => $this,
 		) );
 
 

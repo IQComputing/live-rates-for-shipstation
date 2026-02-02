@@ -97,7 +97,7 @@ Class Shipping_Calculator {
      *
      * @param Array $dataset - Cart Contents or an Array of Products.
      * @param Array $args - Array(
-     *      'method'     => WC_Shipping_Zone
+     *      'shipping_method' => WC_Shipping_Method
      *      'instance_id'=> WC_Shipping_Zone ID
      *      'weight_unit'=> 'Store Weight Unit String'
      *      'dim_unit'   => 'Store Dimensions Unit String'
@@ -123,7 +123,7 @@ Class Shipping_Calculator {
 
     /**
      * Return an argument value.
-     * 'method' - Returns the Shipping Zone Method if it exists.
+     * 'shipping_method' - Returns the Shipping Method.
      * 'ssopt.$key' - Returns a ShipStation option value.
      *
      * @param String $key
@@ -178,13 +178,13 @@ Class Shipping_Calculator {
 
                 return ( ! empty( $enabled ) ) ? $enabled : $default;
 
-            } else if( 'method' === $key ) {
+            } else if( 'shipping_method' === $key ) {
                 return $this->method;
             }
 
             return $this->method->get_option( $key, $default );
 
-        } else if( 'method' === $key ) {
+        } else if( 'shipping_method' === $key ) {
             return $this->method;
         }
 
@@ -209,15 +209,15 @@ Class Shipping_Calculator {
     protected function process_args( $args ) {
 
         // Maybe set the shipping method object.
-        if( isset( $args['method'] ) && is_a( $args['method'], 'WC_Shipping_Method' ) ) {
-            $this->method = $args['method'];
+        if( isset( $args['shipping_method'] ) && is_a( $args['shipping_method'], 'WC_Shipping_Method' ) ) {
+            $this->method = $args['shipping_method'];
         } else if( isset( $args['instance_id'] ) ) {
             $this->method = \WC_Shipping_Zones::get_shipping_method( $args['instance_id'] );
         }
 
         $args = array_diff_key( $args, array(
-            'method' => '',
-            'instance_id' => '',
+            'shipping_method' => '',
+            'instance_id'     => '',
         ) );
 
         $this->args = array_merge( array(
