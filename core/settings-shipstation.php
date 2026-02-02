@@ -286,6 +286,10 @@ Class Settings_Shipstation {
 	 */
 	public function append_shipstation_integration_settings( $fields ) {
 
+		if( ! ( isset( $_GET, $_GET['section'] ) && 'shipstation' === $_GET['section'] ) ) {
+			return;
+		}
+
 		$carriers = array(
 			'' => esc_html__( 'ShipStation carriers may still be loading...', 'live-rates-for-shipstation' ),
 		);
