@@ -3,7 +3,7 @@ Contributors: iqcomputing
 Tags: woocommerce, shipstation, usps, ups, fedex
 Requires at least: 5.9
 Tested up to: 6.8
-Stable tag: 1.2.0
+Stable tag: 1.2.1
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -50,6 +50,9 @@ Don't have a ShipStation account? [Open a ShipStation account today!](https://ww
 
 == Changelog ==
 
+= 1.2.1 (2026-02-02) =
+* Patches an issue with adjustments not adjusting. (Thanks @nextphase)!
+
 = 1.2.0 (2026-02-02) =
 * Adds Warehouse Support (Global and Zone based).
 * Adds ShipStation Packages into Custom Packages on a Shipping Zone.
@@ -65,6 +68,3 @@ Don't have a ShipStation account? [Open a ShipStation account today!](https://ww
 * Moved autolaod to separate file.
 * Added verification to logs to prevent edge-case errors.
 * Big Shipping Method changes coming in next version to account for Unit Tests. Calculations will move to their own class instance. See the experimental branch for more info.
-
-= 1.1.1 (2025-12-04) =
-* Fixed JS conflict with WordPress 6.9 (nice!)

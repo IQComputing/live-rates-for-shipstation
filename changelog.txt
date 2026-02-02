@@ -2,9 +2,17 @@
 
 This is a brief text document keeping track of changes to the plugin. For a full history, see the Github Repository.
 
+= 1.2.1 =
+
+Relase Date: February 02, 2026.
+
+* Overview
+	* Patches an issue where adjustments would overwrite the shipping cost.
+		* Thanks to use @nextphase for reporting this issue!
+
 = 1.2.0 =
 
-Relase Date: Eventually.
+Relase Date: February 02, 2026.
 
 * Overview
 	* Shipping Calculations moved to it's own Class for better PHPUnit testing.
