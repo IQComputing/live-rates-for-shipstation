@@ -3,7 +3,7 @@ Contributors: iqcomputing
 Tags: woocommerce, shipstation, usps, ups, fedex
 Requires at least: 5.9
 Tested up to: 6.8
-Stable tag: 1.1.2
+Stable tag: 1.2.0
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -50,6 +50,15 @@ Don't have a ShipStation account? [Open a ShipStation account today!](https://ww
 
 == Changelog ==
 
+= 1.2.0 (2026-02-02) =
+* Adds Warehouse Support (Global and Zone based).
+* Adds ShipStation Packages into Custom Packages on a Shipping Zone.
+* Moves shipping calculations into a dedicated class with filer hook to override.
+* New `iqlrss/cache/shipstation` filter hook.
+* New `iqlrss/cache/shipstation_expires` filter hook.
+* New `iqlrss/cache/cart_rates` filter hook.
+* New `iqlrss/shipping/calculator_object` filter hook.
+
 = 1.1.2 (2026-01-19) =
 * Patched an issue where rate caching would not account for a destination change.
 * Fixed a JS bug for Shipping Adjustment would not display on API Verified.
@@ -59,13 +68,3 @@ Don't have a ShipStation account? [Open a ShipStation account today!](https://ww
 
 = 1.1.1 (2025-12-04) =
 * Fixed JS conflict with WordPress 6.9 (nice!)
-
-= 1.1.0 (2025-12-01) =
-* Redux the Custom Packaging screen and options.
-* Packing option for Weight Only.
-* Packing option for Stacked Vertically.
-* Packing option for default product weight.
-* Custom Package Presets from UPS, FedEx, and USPS.
-* New filter hook for Shipping Zone Settings `iqlrss/zone/settings`. Useful for managing Product Packing options.
-* New filter hook for Shipping Zone Settings `iqlrss/zone/package_presets`. Useful for managing Custom Package presets.
-* New filter hook for Shipping Estimates `iqlrss/shipping/packages`. Useful for modifying what gets sent to ShipStation API for retrieving shipping estimates.
