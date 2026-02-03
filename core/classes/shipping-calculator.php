@@ -97,7 +97,7 @@ Class Shipping_Calculator {
      *
      * @param Array $dataset - Cart Contents or an Array of Products.
      * @param Array $args - Array(
-     *      'method'     => WC_Shipping_Zone
+     *      'shipping_method' => WC_Shipping_Method
      *      'instance_id'=> WC_Shipping_Zone ID
      *      'weight_unit'=> 'Store Weight Unit String'
      *      'dim_unit'   => 'Store Dimensions Unit String'
@@ -123,7 +123,7 @@ Class Shipping_Calculator {
 
     /**
      * Return an argument value.
-     * 'method' - Returns the Shipping Zone Method if it exists.
+     * 'shipping_method' - Returns the Shipping Method.
      * 'ssopt.$key' - Returns a ShipStation option value.
      *
      * @param String $key
@@ -178,13 +178,13 @@ Class Shipping_Calculator {
 
                 return ( ! empty( $enabled ) ) ? $enabled : $default;
 
-            } else if( 'method' === $key ) {
+            } else if( 'shipping_method' === $key ) {
                 return $this->method;
             }
 
             return $this->method->get_option( $key, $default );
 
-        } else if( 'method' === $key ) {
+        } else if( 'shipping_method' === $key ) {
             return $this->method;
         }
 
@@ -209,15 +209,15 @@ Class Shipping_Calculator {
     protected function process_args( $args ) {
 
         // Maybe set the shipping method object.
-        if( isset( $args['method'] ) && is_a( $args['method'], 'WC_Shipping_Method' ) ) {
-            $this->method = $args['method'];
+        if( isset( $args['shipping_method'] ) && is_a( $args['shipping_method'], 'WC_Shipping_Method' ) ) {
+            $this->method = $args['shipping_method'];
         } else if( isset( $args['instance_id'] ) ) {
             $this->method = \WC_Shipping_Zones::get_shipping_method( $args['instance_id'] );
         }
 
         $args = array_diff_key( $args, array(
-            'method' => '',
-            'instance_id' => '',
+            'shipping_method' => '',
+            'instance_id'     => '',
         ) );
 
         $this->args = array_merge( array(
@@ -928,8 +928,9 @@ Class Shipping_Calculator {
                 } else {
 
                     // Cost
-                    $this->rates[ $hash ]['cost'][] = $rate['cost'];
+                    $this->rates[ $hash ]['cost'] = array_merge( $this->rates[ $hash ]['cost'], (array)$rate['cost'] );
 
+                    // Metadata
                     if( ! empty( $this->rates[ $hash ]['meta_data'] ) ) {
 
                         // Rates
@@ -981,7 +982,7 @@ Class Shipping_Calculator {
 
         $wc_rate = array(
             'label'		=> ( ! empty( $service_arr['nickname'] ) ) ? $service_arr['nickname'] : $shiprate['name'],
-            'cost'		=> floatval( $shiprate['cost'] ),
+            'cost'		=> array( floatval( $shiprate['cost'] ) ),
             'meta_data' => array(
                 'carrier' => $shiprate['carrier_name'],
                 'service' => $shiprate['name'],
@@ -999,7 +1000,7 @@ Class Shipping_Calculator {
         // Individual items get quantities applied.
         if( 'individual' === $this->get( 'packing', 'individual' ) ) {
             $quantity = $this->get_cartitem_val( array_key_first( $package ), 'quantity', 1 );
-            $wc_rate['cost'] = floatval( $shiprate['cost'] ) * absint( $quantity );
+            $wc_rate['cost'] = array( floatval( $shiprate['cost'] ) * absint( $quantity ) );
             $wc_rate['meta_data']['rates']['qty'] = $quantity;
         }
 
@@ -1008,9 +1009,6 @@ Class Shipping_Calculator {
 
         // Add any Other Costs.
         $this->process_other_adjustments( $wc_rate, $shiprate, $package );
-
-        // Ensure the cost is an array.
-        $wc_rate['cost'] = (array)$wc_rate['cost'];
 
         return $wc_rate;
 
@@ -1031,16 +1029,16 @@ Class Shipping_Calculator {
         $services = $this->get( 'services_enabled', array() );
         $service_arr = ( isset( $services[ $shiprate['carrier_id'] ] ) ) ? $services[ $shiprate['carrier_id'] ][ $shiprate['code'] ] : array();
 
-        // Service Specific - Could be 0.
-        if( isset( $service_arr['adjustment'] ) ) {
+        // Service Specific Adjustments
+        if( ! empty( $service_arr['adjustment_type'] ) ) {
 
             $adjustment = floatval( $service_arr['adjustment'] );
             $adjustment_type = ( isset( $service_arr['adjustment_type'] ) ) ? $service_arr['adjustment_type'] : 'percentage';
 
-            if( ! empty( $adjustment_type ) && $adjustment > 0 ) {
+            if( $adjustment >= 0 ) {
 
                 $adjustment_cost = ( 'percentage' == $adjustment_type ) ? ( floatval( $shiprate['cost'] ) * ( floatval( $adjustment ) / 100 ) ) : floatval( $adjustment );
-                $wc_rate['cost'] = $adjustment_cost;
+                $wc_rate['cost'][] = $adjustment_cost;
                 $wc_rate['meta_data']['rates']['adjustment'] = array(
                     'type' => $adjustment_type,
                     'rate' => $adjustment,
@@ -1050,20 +1048,18 @@ Class Shipping_Calculator {
             }
 
         // Global
-        } else {
+        } else if( $this->get( 'ssopt.global_adjustment_type' ) ) {
 
-            $global_adjustment 		= floatval( $this->get( 'ssopt.global_asjustment', 0 ) );
+            $global_adjustment 		= floatval( $this->get( 'ssopt.global_adjustment', 0 ) );
             $global_adjustment_type = $this->get( 'ssopt.global_adjustment_type' );
-            $global_adjustment_type = ( empty( $global_adjustment_type ) && ! empty( $global_adjustment ) ) ? 'percentage' : $global_adjustment_type;
 
-            if( ! empty( $global_adjustment_type ) && $global_adjustment > 0 ) {
+            if( $global_adjustment > 0 ) {
 
                 $adjustment_cost = ( 'percentage' === $global_adjustment_type ) ? ( floatval( $shiprate['cost'] ) * ( floatval( $global_adjustment ) / 100 ) ) : floatval( $global_adjustment );
-                $wc_rate['cost'] = $adjustment_cost;
+                $wc_rate['cost'][] = $adjustment_cost;
                 $wc_rate['meta_data']['rates']['adjustment'] = array(
                     'type' => $global_adjustment_type,
                     'rate' => $global_adjustment,
-                    'cost' => $adjustment_cost,
                     'global'=> true,
                 );
             }
@@ -1090,14 +1086,14 @@ Class Shipping_Calculator {
         if( ! empty( $shiprate['other_costs'] ) ) {
             foreach( $shiprate['other_costs'] as $slug => $cost_arr ) {
                 if( empty( $cost_arr['amount'] ) ) continue;
-                $wc_rate['cost'] += floatval( $cost_arr['amount'] );
+                $wc_rate['cost'][] = floatval( $cost_arr['amount'] );
                 $other[ $slug ] = $cost_arr['amount'];
             }
         }
 
         // Maybe a package price
         if( 'wc-box-packer' === $this->get( 'packing', 'individual' ) && isset( $package['price'] ) && ! empty( $package['price'] ) ) {
-            $wc_rate['cost'] += floatval( $package['price'] );
+            $wc_rate['cost'][] = floatval( $package['price'] );
             $other['box_price'] = $package['price'];
         }
 
