@@ -350,8 +350,9 @@ class Shipstation  {
 		$trans_key  = $this->prefix_key( 'warehouses' );
 		$warehouses = get_transient( $trans_key );
 
-		if( empty( $warehouses ) || $this->skip_cache ) {
+		if( false === $warehouses || $this->skip_cache ) {
 
+			$warehouses = array();
 			$body = $this->make_request( 'get', 'warehouses' );
 
 			// Return Early - API Request error - see logs.
@@ -360,37 +361,34 @@ class Shipstation  {
 			}
 
 			// Return Early - No Warehouses to work with.
-			if( empty( $body['warehouses'] ) ) {
-				return array();
-			}
+			if( ! empty( $body['warehouses'] ) ) {
 
-			// We do need most the Warehouse data, but not all.
-			$warehouses = array();
-			foreach( $body['warehouses'] as $warehouse_data ) {
+				// We do need most the Warehouse data, but not all.
+				foreach( $body['warehouses'] as $warehouse_data ) {
 
-				$warehouse = array_intersect_key( $warehouse_data, array_flip( array(
-					'warehouse_id',
-					'is_default',
-					'name',
-					'origin_address',
-					'return_address',
-				) ) );
+					$warehouse = array_intersect_key( $warehouse_data, array_flip( array(
+						'warehouse_id',
+						'is_default',
+						'name',
+						'origin_address',
+						'return_address',
+					) ) );
 
-				if( $warehouse['is_default'] ) {
-					$warehouse['name'] .= ' (' . esc_html__( 'ShipStation Default', 'live-rates-for-shipstation' ) . ')';
+					if( $warehouse['is_default'] ) {
+						$warehouse['name'] .= ' (' . esc_html__( 'ShipStation Default', 'live-rates-for-shipstation' ) . ')';
+					}
+
+					$warehouses[ $warehouse['warehouse_id'] ] = $warehouse;
+
 				}
-
-				$warehouses[ $warehouse['warehouse_id'] ] = $warehouse;
-
 			}
 
 			// Cache Warehouse data.
-			if( ! empty( $warehouses ) ) {
-				set_transient( $trans_key, $warehouses, $this->cache_time );
-			}
+			set_transient( $trans_key, $warehouses, $this->cache_time );
+			
 		}
 
-		return $warehouses;
+		return ( ! empty( $warehouses ) ) ? $warehouses : array();
 
 	}
 
