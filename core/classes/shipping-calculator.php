@@ -975,7 +975,7 @@ Class Shipping_Calculator {
             return array();
         }
 
-        $package     = array_first( $package_arr );
+        $package     = reset( $package_arr );
         $rate_name	 = ( isset( $shiprate['_name'] ) ) ? $shiprate['_name'] : '';
 		$rate_name	 = ( empty( $rate_name ) && isset( $package['nickname'] ) ) ? $package['nickname'] : $rate_name;
         $service_arr = $services[ $shiprate['carrier_id'] ][ $shiprate['code'] ];
@@ -1080,7 +1080,7 @@ Class Shipping_Calculator {
     protected function process_other_adjustments( &$wc_rate, $shiprate, $package_arr ) {
 
         $other = array();
-        $package = array_first( $package_arr );
+        $package = reset( $package_arr );
 
         // Loop and add any other shipment amounts.
         if( ! empty( $shiprate['other_costs'] ) ) {
