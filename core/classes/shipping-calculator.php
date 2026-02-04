@@ -653,8 +653,8 @@ Class Shipping_Calculator {
 
 			}
 
-			$dimensions['running']['weight'] = $dimensions['running']['weight'] + ( floatval( $request['weight'] ) * $this->get_cartitem_val( $product->get_id(), 'quantity', 1 ) );
-			$dimensions['running']['height'] = $dimensions['running']['height'] + ( floatval( $product->get_height() ) * $this->get_cartitem_val( $product->get_id(), 'quantity', 1 ) );
+			$dimensions['running']['weight'] = $dimensions['running']['weight'] + ( floatval( $request['weight'] ) * $this->get_cartitem_val( $key, 'quantity', 1 ) );
+			$dimensions['running']['height'] = $dimensions['running']['height'] + ( floatval( $product->get_height() ) * $this->get_cartitem_val( $key, 'quantity', 1 ) );
 			$dimensions['largest'] = array(
 				'length'	=> ( $dimensions['largest']['length'] < $product->get_length() ) ? $product->get_length() : $dimensions['largest']['length'],
 				'width'		=> ( $dimensions['largest']['width'] < $product->get_width() )   ? $product->get_width()  : $dimensions['largest']['width'],
@@ -1261,7 +1261,7 @@ Class Shipping_Calculator {
      */
     public function get_products() {
         if( empty( $this->cart ) ) return array();
-        return array_column( $this->cart, 'data' );
+        return array_combine( array_keys( $this->cart ), array_column( $this->cart, 'data' ) );
     }
 
 
