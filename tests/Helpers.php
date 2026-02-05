@@ -18,7 +18,7 @@ function make_mockery( $of, $kind = '' ) {
  *
  * @param String $what
  *
- * @return String $data
+ * @return Array $data
  */
 function get_data( $what ) {
     return json_decode( file_get_contents( sprintf( __DIR__ . '/Data/%s.json', $what ) ), true );

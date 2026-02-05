@@ -9,6 +9,7 @@ if( defined( 'ABSPATH' ) ) {
 	return;
 }
 
+define( 'ABSPATH', '' );
 require_once rtrim( dirname( __DIR__ ), '\\/' ) . '/_autoload.php';
 require_once rtrim( dirname( __DIR__ ), '\\/' ) . '/vendor/autoload.php';
 require_once 'Mockeries/WordPress.php';

@@ -8,6 +8,7 @@
 /**------------------------------------------------------------------------------------------------ **/
 /** :: Functions :: **/
 /**------------------------------------------------------------------------------------------------ **/
+function absint( $data ) { return intval( $data ); }
 function is_wp_error( $obj ) { return ( is_object( $obj ) && ( is_a( $obj, 'WP_Error' ) || is_a( $obj, 'Exception' ) ) ); }
 function wp_json_encode( $data ) { return json_encode( $data ); }
 function get_option( $key, $default = '' ) { return get_data( 'Options' )[ $key ] ?? $default; }

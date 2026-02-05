@@ -10,7 +10,7 @@
 /**------------------------------------------------------------------------------------------------ **/
 /** :: Shipping Method :: **/
 /**------------------------------------------------------------------------------------------------ **/
-if( ! class_exists( 'WC_Shipping_Method' ) ){
+if( ! class_exists( 'WC_Shipping_Method' ) ) {
 class WC_Shipping_Method {
     function get_option( $key, $default = '' ) {
         switch( $key ) {
@@ -25,7 +25,7 @@ class WC_Shipping_Method {
 /**------------------------------------------------------------------------------------------------ **/
 /** :: Shipping Zone :: **/
 /**------------------------------------------------------------------------------------------------ **/
-if( ! class_exists( 'WC_Shipping_Zones' ) ){
+if( ! class_exists( 'WC_Shipping_Zones' ) ) {
 class WC_Shipping_Zones {
     function get_shipping_method() { return new WC_Shipping_Method(); }
 }
@@ -34,8 +34,50 @@ class WC_Shipping_Zones {
 
 
 /**------------------------------------------------------------------------------------------------ **/
+/** :: Product :: **/
+/**------------------------------------------------------------------------------------------------ **/
+if( ! class_exists( 'WC_Product' ) ) {
+class WC_Product {
+    protected $post_type = 'product';
+	protected $product_type = 'simple';
+	protected $data = array(
+		'name'               => 'Mock Product',
+		'slug'               => 'mock-product',
+		'id'				 => 0,
+		'status'             => 'publish',
+		'sku'                => 'MOCK',
+		'price'              => '1.00',
+		'weight'             => '10',
+		'length'             => '5',
+		'width'              => '5',
+		'height'             => '5',
+	);
+
+	public function __construct( $data = array() ) { $this->data = $data; }
+	public function __call( $name, $args = array() ) { return $this->data[ str_replace( 'get_', '', $name ) ]; }
+
+}
+}
+
+
+
+/**------------------------------------------------------------------------------------------------ **/
 /** :: Full Functions :: **/
 /**------------------------------------------------------------------------------------------------ **/
+/**
+ * Return an array of WC_Products
+ *
+ * @param Array $args
+ *
+ * @return Array
+ */
+function wc_get_products( $args = array() ) {
+	$products = array();
+	$data 	  = get_data( 'Products' );
+	foreach( $data as $p ) $products[] = new \WC_Product( $p );
+	return $products;
+}
+
 /**
  * @link https://github.com/woocommerce/woocommerce/blob/trunk/plugins/woocommerce/includes/wc-formatting-functions.php#L119
  *
