@@ -653,8 +653,8 @@ Class Shipping_Calculator {
 
 			}
 
-			$dimensions['running']['weight'] = $dimensions['running']['weight'] + ( floatval( $request['weight'] ) * $this->get_cartitem_value( $key, 'quantity', 1 ) );
-			$dimensions['running']['height'] = $dimensions['running']['height'] + ( floatval( $product->get_height() ) * $this->get_cartitem_value( $key, 'quantity', 1 ) );
+			$dimensions['running']['weight'] = $dimensions['running']['weight'] + ( floatval( $request['weight'] ) * $this->get_cartitem_val( $key, 'quantity', 1 ) );
+			$dimensions['running']['height'] = $dimensions['running']['height'] + ( floatval( $product->get_height() ) * $this->get_cartitem_val( $key, 'quantity', 1 ) );
 			$dimensions['largest'] = array(
 				'length'	=> ( $dimensions['largest']['length'] < $product->get_length() ) ? $product->get_length() : $dimensions['largest']['length'],
 				'width'		=> ( $dimensions['largest']['width'] < $product->get_width() )   ? $product->get_width()  : $dimensions['largest']['width'],
@@ -975,7 +975,7 @@ Class Shipping_Calculator {
             return array();
         }
 
-        $package     = array_first( $package_arr );
+        $package     = reset( $package_arr );
         $rate_name	 = ( isset( $shiprate['_name'] ) ) ? $shiprate['_name'] : '';
 		$rate_name	 = ( empty( $rate_name ) && isset( $package['nickname'] ) ) ? $package['nickname'] : $rate_name;
         $service_arr = $services[ $shiprate['carrier_id'] ][ $shiprate['code'] ];
@@ -1080,7 +1080,7 @@ Class Shipping_Calculator {
     protected function process_other_adjustments( &$wc_rate, $shiprate, $package_arr ) {
 
         $other = array();
-        $package = array_first( $package_arr );
+        $package = reset( $package_arr );
 
         // Loop and add any other shipment amounts.
         if( ! empty( $shiprate['other_costs'] ) ) {
@@ -1261,7 +1261,7 @@ Class Shipping_Calculator {
      */
     public function get_products() {
         if( empty( $this->cart ) ) return array();
-        return array_column( $this->cart, 'data' );
+        return array_combine( array_keys( $this->cart ), array_column( $this->cart, 'data' ) );
     }
 
 
