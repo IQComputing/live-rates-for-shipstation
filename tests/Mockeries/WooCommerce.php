@@ -4,7 +4,8 @@
  *
  * :: Shipping Method
  * :: Shipping Zone
- * :: Ipsum Functions
+ * :: Product
+ * :: Countries
  * :: Full Functions
  */
 /**------------------------------------------------------------------------------------------------ **/
@@ -55,8 +56,26 @@ class WC_Product {
 
 	public function __construct( $data = array() ) { $this->data = $data; }
 	public function __call( $name, $args = array() ) { return $this->data[ str_replace( 'get_', '', $name ) ]; }
+	public function needs_shipping() { return true; }
 
 }
+}
+
+
+
+/**------------------------------------------------------------------------------------------------ **/
+/** :: Countries :: **/
+/**------------------------------------------------------------------------------------------------ **/
+class WC_Countries {
+	public function __call( $method, $args = array() ) {
+		switch( $method ) {
+			case 'get_base_county': return 'WCBaseCountry';
+			case 'get_base_postcode': return 'WCBasePostcode';
+			case 'get_base_city': return 'WCBaseCity';
+			case 'get_base_state': return 'WCBaseState';
+		}
+		return 'WCBaseUnknown';
+	}
 }
 
 
@@ -64,6 +83,18 @@ class WC_Product {
 /**------------------------------------------------------------------------------------------------ **/
 /** :: Full Functions :: **/
 /**------------------------------------------------------------------------------------------------ **/
+/**
+ * WooCommerce WC()
+ *
+ * @return Object (or something?)
+ */
+function WC() {
+	$obj = new stdClass();
+	$obj->countries = new WC_Countries();
+	return $obj;
+}
+
+
 /**
  * Return an array of WC_Products
  *
