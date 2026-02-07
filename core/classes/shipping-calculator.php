@@ -77,11 +77,19 @@ Class Shipping_Calculator {
 
 
     /**
-     * Array of cart_contents (mocked).
+     * Array of cart_contents.
      *
      * @var Array
      */
     protected $cart = array();
+
+
+    /**
+     * Cart extras without contents or rates.
+     *
+     * @var Array
+     */
+    protected $cart_extras = array();
 
 
     /**
@@ -116,7 +124,6 @@ Class Shipping_Calculator {
 
         $this->process_args( $args );
         $this->determine_dataset( $dataset );
-        $this->associate_cart_content( $dataset );
 
     }
 
@@ -133,38 +140,15 @@ Class Shipping_Calculator {
      */
     public function get( $key, $default = '' ) {
 
-        // Friendly deep array traversal.
-        if( false !== strpos( $key, '.' ) || false !== strpos( $key, '/' ) ) {
+        // Return Only.
+        switch( $key ) {
+            case 'cart'             : return ( ! empty( $this->cart ) ) ? $this->cart : $default;
+            case 'args'             : return ( ! empty( $this->args ) ) ? $this->args : $default;
+            case 'shipping_method'  : return ( ! empty( $this->method ) ) ? $this->method : $default;
+            case 'services_enabled' :
 
-            $value      = (array)$this->args;
-            $delimiter  = ( false !== strpos( $key, '/' ) ) ? '/' : '.';
-            $keyways    = explode( $delimiter, $key );
-
-            // Shortcircut  ShipStation Option
-            if( false !== strpos( $key, 'ssopt' ) ) {
-
-                // Allow $this->args override.
-                $argname = str_replace( 'ssopt' . $delimiter, '', $key );
-                if( $value = $this->get( $argname, null ) ) return $value;
-                return \IQLRSS\Driver::get_ss_opt( $argname, $default );
-            }
-
-            array_walk( $keyways, function( $slug ) use( &$value, $default ) {
-                if( $default === $value ) return;
-                $value = ( is_array( $value ) && isset( $value[ $slug ] ) ) ? $value[ $slug ] : $default;
-            } );
-
-            return $value;
-        }
-
-        // Arg key.
-        if( isset( $this->args[ $key ] ) ) {
-            return $this->args[ $key ];
-
-        // Shipping Method option maybe?
-        } else if( $this->method ) {
-
-            if( 'services_enabled' === $key ) {
+                // Return Early - No Shipping Method
+                if( empty( $this->method ) ) return $default;
 
                 $enabled  = array();
                 $services = $this->get( 'services', array() );
@@ -178,17 +162,16 @@ Class Shipping_Calculator {
 
                 return ( ! empty( $enabled ) ) ? $enabled : $default;
 
-            } else if( 'shipping_method' === $key ) {
-                return $this->method;
-            }
+            // Specific arg
+            case isset( $this->args[ $key ] ): return $this->args[ $key ];
+            case isset( $this->cart_extras[ $key ] ): return $this->cart_extras[ $key ];
 
-            return $this->method->get_option( $key, $default );
-
-        } else if( 'shipping_method' === $key ) {
-            return $this->method;
+            // ShipStation Option
+            case ( false !== strpos( $key, 'ssopt.' ) ): return \IQLRSS\Driver::get_ss_opt( str_replace( 'ssopt.', '', $key ), $default );
         }
 
-        return $default;
+        // Shipping Method if it exists, otherwise default.
+        return ( $this->method ) ? $this->method->get_option( $key, $default ) : $default;
 
     }
 
@@ -247,15 +230,19 @@ Class Shipping_Calculator {
         // Return Early - Dataset is a full Cart Array (probably)
         if( is_array( $dataset ) && isset( $dataset['contents'], $dataset['destination'] ) ) {
 
-            $this->datatype = 'cart';
-            $this->cart = $dataset['contents'];
+            $this->datatype     = 'cart';
+            $this->cart         = $dataset['contents'];
+            $this->cart_extras  = array_diff_key( $dataset, array(
+                'contents'  => array(),
+                'rates'     => array(),
+            ) );
             return; //!
 
         }
 
         // Dataset is [hopefully] an Array of Products.
         $this->datatype = 'products';
-        $dataval    = array_shift( $dataset );
+        $dataval    = reset( $dataset );
         $products   = array();
 
         // Array of Product IDs.
@@ -271,88 +258,12 @@ Class Shipping_Calculator {
         }
 
         // Set Cart
+        $items = $this->get( 'items', array() );  // These override globals using product_id as the key association. Usually set as args?
         if( ! empty( $products ) ) {
             foreach( $products as $product ) {
-                $this->cart['data'][ $product->get_id() ] = $product;
-            }
-        }
-
-    }
-
-
-    /**
-     * Try to mock the WC_Cart cart_contents with the
-     * given set of products, 'cart' as the base set
-     * of cart_content keys, then 'items' as overrides.
-     *
-     * Mainly used for quantity. Always optional.
-     * Quantity will default to 1.
-     *
-     * @param Array $dataset
-     *
-     * @return void
-     */
-    protected function associate_cart_content( $dataset ) {
-
-        if( empty( $this->cart ) ) return;
-
-        // Return Early - Associate Cart Content, except some array keys.
-        if( 'cart' === $this->datatype ) {
-
-            $this->args = array_merge( array_diff_key( $dataset, array(
-                'contents'  => array(),
-                'rates'     => array(),
-            ) ), $this->args );
-            return; // !
-
-        // Return Early - What?
-        } else if( 'products' !== $this->datatype ) {
-            return;
-        }
-
-        // Associate cart args with products.
-        $cart   = $this->get( 'cart', array() );   // These act as order item globals. Every item will have theses.
-        $items  = $this->get( 'items', array() );  // These override globals using product_id as the key association.
-
-        // Items and Cart
-        if( ! empty( $items ) && is_array( $items ) ) {
-
-            foreach( $this->cart as $cart_item ) {
-
-                if( ! is_a( $cart_item['data'], 'WC_Product' ) ) continue;
-                if( ! isset( $items[ $cart_item['data']->get_id() ] ) ) continue;
-
-                $product = $cart_item['data'];
-                $this->cart[ $product->get_id() ] = array_merge(
-                    array( 'quantity' => 1 ),
-                    (array)$cart,
-                    (array)$items[ $product->get_id() ],
-                    array( 'data' => $product ) // Ensure the product isn't overridable.
-                );
-
-            }
-
-        // Just Cart
-        } else if( ! empty( $cart ) && is_array( $cart ) ) {
-
-            foreach( $this->cart as $cart_item ) {
-
-                if( ! is_a( $cart_item['data'], 'WC_Product' ) ) continue;
-                $this->cart[ $cart_item['data']->get_id() ] = array_merge(
-                    array( 'quantity' => 1 ),
-                    (array)$cart,
-                    array( 'data' => $cart_item['data'] ) // Ensure the product isn't overridable.
-                );
-            }
-
-        } else {
-
-            foreach( $this->cart as $cart_item ) {
-
-                if( ! is_a( $cart_item['data'], 'WC_Product' ) ) continue;
-                $this->cart[ $cart_item['data']->get_id() ] = array(
-                    'quantity' => 1,
-                    'data' => $cart_item['data']
+                $this->cart[ $product->get_id() ] = array(
+                    'quantity'  => ( isset( $items[ $product->get_id() ] ) ) ? $items[ $product->get_id() ] : 1,
+                    'data'      => $product,
                 );
             }
         }
@@ -406,13 +317,14 @@ Class Shipping_Calculator {
      */
     public function get_ship_to() {
 
-        // destination.* come from WC_Cart data
-        // to.* come from instance $args
+        // 'destination' may come from WC_Cart data
+        // 'to' may come from instance $args
+        $to = $this->get( 'to', $this->get( 'destination' ), array() );
         return array(
-            'to_country_code'	 => $this->get( 'to.country', $this->get( 'destination.country' ) ),
-            'to_postal_code'	 => $this->get( 'to.postcode', $this->get( 'destination.postcode' ) ),
-            'to_city_locality'	 => $this->get( 'to.city', $this->get( 'destination.city' ) ),
-            'to_state_province'	 => $this->get( 'to.state', $this->get( 'destination.state' ) ),
+            'to_country_code'	 => ( isset( $to['country'] ) ) ? $to['country'] : '',
+            'to_postal_code'	 => ( isset( $to['postcode'] ) ) ? $to['postcode'] : '',
+            'to_city_locality'	 => ( isset( $to['city'] ) ) ? $to['city'] : '',
+            'to_state_province'	 => ( isset( $to['state'] ) ) ? $to['state'] : '',
         );
 
     }
@@ -434,12 +346,13 @@ Class Shipping_Calculator {
      */
     public function get_ship_from() {
 
-        // from.* come from instance $args
+        // 'from' come from instance $args
+        $from = $this->get( 'from', array() );
         $from_arr = array(
-            'from_country_code'	 => $this->get( 'from.country', WC()->countries->get_base_country() ),
-            'from_postal_code'	 => $this->get( 'from.postcode', WC()->countries->get_base_postcode() ),
-            'from_city_locality' => $this->get( 'from.city', WC()->countries->get_base_city() ),
-            'from_state_province'=> $this->get( 'from.state', WC()->countries->get_base_state() ),
+            'from_country_code'	 => ( isset( $from['country'] ) ) ? $from['country'] : WC()->countries->get_base_country(),
+            'from_postal_code'	 => ( isset( $from['postcode'] ) ) ? $from['postcode'] : WC()->countries->get_base_postcode(),
+            'from_city_locality' => ( isset( $from['city'] ) ) ? $from['city'] : WC()->countries->get_base_city(),
+            'from_state_province'=> ( isset( $from['state'] ) ) ? $from['state'] : WC()->countries->get_base_state(),
         );
 
         $warehouse = $this->get_apival( 'warehouse', array() );

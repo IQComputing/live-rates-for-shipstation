@@ -705,29 +705,29 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	/**
 	 * Calculate shipping costs
 	 *
-	 * @param Array $packages
+	 * @param Array $cart
 	 *
 	 * @return void
 	 */
-	public function calculate_shipping( $packages = array() ) {
+	public function calculate_shipping( $cart = array() ) {
 
-		if( empty( $packages ) || empty( $packages['contents'] ) ) {
+		if( empty( $cart ) || empty( $cart['contents'] ) ) {
 			return;
 		}
 
 		// Try to pull from cache. This may set $this->rates
 		// Return Early - We have cached rates to work with!
-		$this->check_packages_rate_cache( $packages );
+		$this->check_packages_rate_cache( $cart );
 		if( ! empty( $this->rates ) ) {
 			return;
 
 		// Return Early - No Destination to work with. Postcode is kinda required.
-		} else if( ! isset( $packages['destination'] ) || empty( $packages['destination']['postcode'] ) ) {
+		} else if( ! isset( $cart['destination'] ) || empty( $cart['destination']['postcode'] ) ) {
 			return;
 		}
 
 		// Grab the calculator to be filtered.
-		$calculator = new Classes\Shipping_Calculator( $packages, array(
+		$calculator = new Classes\Shipping_Calculator( $cart, array(
 			'shipping_method' => $this,
 		) );
 
@@ -744,7 +744,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		 *
 		 * @return Array $settings
 		 */
-		$maybe_calc = apply_filters( 'iqlrss/shipping/calculator_object', $calculator, $packages, $this );
+		$maybe_calc = apply_filters( 'iqlrss/shipping/calculator_object', $calculator, $cart, $this );
 		if( is_object( $maybe_calc ) && $maybe_calc !== $calculator ) {
 
 			// Override calculator object and log it's change.
@@ -775,7 +775,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			}
 		}
 
-		$cachehash = $this->generate_packages_cache_key( $packages );
+		$cachehash = $this->generate_packages_cache_key( $cart );
 		if( empty( $cachehash ) ) return;
 
 		// Cache packages to prevent multiple requests.
