@@ -475,19 +475,21 @@ Class Shipping_Calculator {
 				'height'	=> $product->get_height(),
 			) );
 
-			// Return Early - Product missing one of the 4 key dimensions.
-			if( count( $physicals ) < 3 || empty( $request['weight'] ) ) {
+			// Return Early - Weight is a minimum, but report back all missing dimensions.
+			if( empty( $request['weight'] ) ) {
 				$this->log( sprintf(
 
 					/* translators: %1$d is the Product ID. %2$s is the Product Dimensions separated by a comma. */
 					esc_html__( 'Product ID #%1$d missing (%2$s) dimensions. Weight is a minimum requirement. Shipping calculations terminated.', 'live-rates-for-shipstation' ),
 					$product->get_id(),
-					implode( ', ', array_diff_key( array(
-						'length'	=> 'length',
-						'width'		=> 'width',
-						'height'	=> 'height',
-						'weight'	=> 'weight',
-					), $physicals + array( 'weight' => $request['weight'] ) ) )
+					implode( ', ',
+                        array_diff_key( array(
+                            'length'	=> 'length',
+                            'width'		=> 'width',
+                            'height'	=> 'height',
+                            'weight'	=> 'weight',
+					    ), array_filter( $physicals + array( 'weight' => $request['weight'] ) ) )
+                    )
 				), 'error' );
 
 				return array();
@@ -577,32 +579,20 @@ Class Shipping_Calculator {
 
 		}
 
-		// Return Early - Rates by total weight.
-		if( 'weightonly' == $subtype ) {
-
-			return array( array(
-				'weight' => array(
-					'value' => (float)round( wc_get_weight( $dimensions['running']['weight'], $this->get( 'weight_unit' ) ), 2 ),
-					'unit'	=> $this->api()->convert_unit_term( $this->get( 'weight_unit' ) ),
-				),
-			) );
-
-		}
-
-		$physicals = array_filter( array(
+        $physicals = array(
 			'length'	=> $dimensions['largest']['length'],
 			'width'		=> $dimensions['largest']['width'],
 			'height'	=> $dimensions['running']['height'],
 			'weight'	=> $dimensions['running']['weight'],
-		) );
+		);
 
-		// Return Early - Error - Missing dimensions to work with.
-		if( $physicals < 4 ) {
+        // Return Early - Weight is required.
+        if( empty( $physicals['weight'] ) ) {
 
-			$this->log( sprintf(
+            $this->log( sprintf(
 
-				/* translators: %1$d is the Product ID. %2$s is the Product Dimensions separated by a comma. */
-				esc_html__( 'OneBox rate requestion missing dimensions (%1$s). Weight is a minimum requirement. Shipping calculations terminated.', 'live-rates-for-shipstation' ),
+				/* translators: %1$s is the Product Dimensions separated by a comma. */
+				esc_html__( 'OneBox rate request missing (%1$s) dimensions. Weight is a minimum requirement. Shipping calculations terminated.', 'live-rates-for-shipstation' ),
 				implode( ', ', array_diff_key( array(
 					'length'	=> 'length',
 					'width'		=> 'width',
@@ -612,26 +602,53 @@ Class Shipping_Calculator {
 			), 'error' );
 
 			return array();
+        }
+
+        // Not weight only, ensure we have dimensions.
+		if( 'weightonly' !== $subtype ) {
+
+            // Log missing dimensions but fallback to weight only.
+            if( ( count( array_filter( $physicals ) ) - 1 ) < 3 ) {
+                $this->log( sprintf(
+
+                    /* translators: %1$s is the Product Dimensions separated by a comma. */
+                    esc_html__( 'OneBox rate request missing (%1$s) dimensions. Rate request falling back to Weight only.', 'live-rates-for-shipstation' ),
+                    implode( ', ', array_diff_key( array(
+                        'length'	=> 'length',
+                        'width'		=> 'width',
+                        'height'	=> 'height',
+                        'weight'	=> 'weight',
+                    ), array_filter( $physicals ) ) )
+                ), 'warning' );
+
+            // Return Early - We have dimensions to work with.
+            } else {
+                return array( array(
+                    'weight' => array(
+                        'unit'	=> $this->api()->convert_unit_term( $this->get( 'weight_unit' ) ),
+                        'value' => (float)round( wc_get_weight( $physicals['weight'], $this->get( 'weight_unit' ) ), 2 ),
+                    ),
+                    'dimensions' => array(
+                        'unit'		=> $this->api()->convert_unit_term( $this->get( 'dim_unit' ) ),
+
+                        // Largest
+                        'length'	=> round( wc_get_dimension( $physicals['length'], $this->get( 'dim_unit' ) ), 2 ),
+                        'width'		=> round( wc_get_dimension( $physicals['width'], $this->get( 'dim_unit' ) ), 2 ),
+
+                        // Running
+                        'height'	=> round( wc_get_dimension( $physicals['height'], $this->get( 'dim_unit' ) ), 2 ),
+                    ),
+                ) );
+            }
 
 		}
 
-		// Default - Stacked Vertically
-		return array( array(
-			'weight' => array(
-				'unit'	=> $this->api()->convert_unit_term( $this->get( 'weight_unit' ) ),
-				'value' => (float)round( wc_get_weight( $physicals['weight'], $this->get( 'weight_unit' ) ), 2 ),
-			),
-			'dimensions' => array(
-				'unit'		=> $this->api()->convert_unit_term( $this->get( 'dim_unit' ) ),
-
-				// Largest
-				'length'	=> round( wc_get_dimension( $physicals['length'], $this->get( 'dim_unit' ) ), 2 ),
-				'width'		=> round( wc_get_dimension( $physicals['width'], $this->get( 'dim_unit' ) ), 2 ),
-
-				// Running
-				'height'	=> round( wc_get_dimension( $physicals['height'], $this->get( 'dim_unit' ) ), 2 ),
-			),
-		) );
+        return array( array(
+            'weight' => array(
+                'value' => (float)round( wc_get_weight( $physicals['weight'], $this->get( 'weight_unit' ) ), 2 ),
+                'unit'	=> $this->api()->convert_unit_term( $this->get( 'weight_unit' ) ),
+            ),
+        ) );
 
 	}
 
@@ -677,22 +694,42 @@ Class Shipping_Calculator {
 				'height'	=> $product->get_height(),
 			) );
 
-			// Return Early - Product missing one of the 4 key dimensions.
-			if( count( $physicals ) < 3 && empty( $data['weight'] ) ) {
+			// Return Early - Missing minimum requirement: weight.
+			if( empty( $data['weight'] ) ) {
 				$this->log( sprintf(
 
 					/* translators: %1$d is the Product ID. %2$s is the Product Dimensions separated by a comma. */
-					esc_html__( 'Product ID #%1$d missing (%2$s) dimensions and no weight found. Shipping calculations terminated.', 'live-rates-for-shipstation' ),
+					esc_html__( 'Product ID #%1$d missing (%2$s) dimensions. Weight is a minimum requirement. Shipping calculations terminated.', 'live-rates-for-shipstation' ),
+					$product->get_id(),
+					implode( ', ', array_diff_key( array(
+						'width'		=> 'width',
+						'height'	=> 'height',
+						'length'	=> 'length',
+                        'weight'    => 'weight',
+					), $physicals ) )
+				), 'error' );
+				return array();
+
+            // Log any issues with product dimensions.
+			} else if( count( $physicals ) < 3 ) {
+                $this->log( sprintf(
+
+					/* translators: %1$d is the Product ID. %2$s is the Product Dimensions separated by a comma. */
+					esc_html__( 'Product ID #%1$d missing (%2$s) dimensions which may leads to packaging inconsistencies.', 'live-rates-for-shipstation' ),
 					$product->get_id(),
 					implode( ', ', array_diff_key( array(
 						'width'		=> 'width',
 						'height'	=> 'height',
 						'length'	=> 'length',
 					), $physicals ) )
-				), 'error' );
-				return array();
-			}
+				), 'warning' );
+            }
 
+            $physicals = array_merge( array(
+                'length' => 0,
+				'width'	 => 0,
+				'height' => 0,
+            ), $physicals );
 			sort( $physicals );
 			$data = array(
 				'length'	=> round( wc_get_dimension( $physicals[2], $this->get( 'dim_unit' ) ), 2 ),
@@ -741,7 +778,7 @@ Class Shipping_Calculator {
 				),
 				'packed' => $packed_items,
 				'price'	 => ( ! empty( $package->data ) ) ? $package->data['price'] : 0,
-				'nickname'		=> ( ! empty( $package->data ) ) ? $package->data['nickname'] : '',
+				'nickname'		=> ( ! empty( $package->data ) ) ? $package->data['nickname'] : esc_html__( 'Individually Packed', 'live-rates-for-shipstation' ),
 				'box_weight'	=> ( ! empty( $package->data ) ) ? $package->data['weight'] : 0,
 				'box_max_weight'=> ( ! empty( $package->data ) ) ? $package->data['weight_max'] : 0,
 				'package_code'	=> ( ! empty( $package->data ) ) ? $package->data['preset'] : '',
