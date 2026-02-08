@@ -56,6 +56,7 @@ class WC_Product {
 
 	public function __construct( $data = array() ) { $this->data = $data; }
 	public function __call( $name, $args = array() ) { return $this->data[ str_replace( 'get_', '', $name ) ]; }
+	public function set( $key, $val ) { $this->data[ $key ] = $val; }
 	public function needs_shipping() { return true; }
 
 }
