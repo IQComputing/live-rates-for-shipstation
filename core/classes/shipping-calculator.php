@@ -288,11 +288,11 @@ Class Shipping_Calculator {
         $from_arr = $this->get_ship_from();
 
         // Log - Did not have all the necessary fields to run an API request on. This may trigger often on cart, so skip it.
-        if( 'cart' !== $this->datatype && empty( $to_arr['to_country_code'] ) && empty( $to_arr['to_postal_code'] ) ) {
+        if( empty( $to_arr['to_country_code'] ) || empty( $to_arr['to_postal_code'] ) ) {
             $this->log( esc_html__( 'Request missing a To Country Code and/or To Postal Code.', 'live-rates-for-shipstation' ), 'error' );
 
         // Log - Did not have all the necessary fields to run an API request on.
-        } else if( empty( $from_arr['from_country_code'] ) && empty( $to_arr['from_postal_code'] ) ) {
+        } else if( empty( $from_arr['from_country_code'] ) || empty( $to_arr['from_postal_code'] ) ) {
 			$this->log( esc_html__( 'Request missing a From Country Code and/or From Postal Code.', 'live-rates-for-shipstation' ), 'error' );
 		}
 
