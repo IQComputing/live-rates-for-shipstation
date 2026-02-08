@@ -100,7 +100,8 @@ class WC_Boxpack_Box {
 		}
 
 		// Weight
-		$this->weight = floatval( $box['weight'] );
+		$this->weight 		= floatval( $box['weight'] );
+		$this->max_weight 	= floatval( $box['weight_max'] );
 
 		// Everything else
 		$this->data = $box;
