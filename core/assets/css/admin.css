@@ -142,10 +142,10 @@ html:has( #customBoxesFormModal:modal ) {overflow: hidden;}
 #customBoxesFormModal .iqlrss-field select  {width: 100%; max-width: none;}
 
 /* Services */
-.iqrlsserviceprice-flex       {display: flex;}
-.iqrlsserviceprice-flex > *   {flex: 1 1 calc( 50% - 8px );}
-.iqrlsserviceprice-flex > :first-child    {flex-basis: fit-content; padding-right: 4px;}
-.iqrlsserviceprice-flex > :last-child     {padding-left: 4px;}
+.iqlrsserviceprice-flex       {display: flex;}
+.iqlrsserviceprice-flex > *   {flex: 1 1 calc( 50% - 8px );}
+.iqlrsserviceprice-flex > :first-child    {flex-basis: fit-content; padding-right: 4px;}
+.iqlrsserviceprice-flex > :last-child     {padding-left: 4px;}
 
 #carrierServices input[type=text]	{width: 100%;}
 

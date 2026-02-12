@@ -108,7 +108,7 @@ $global_adjustment_type = ( empty( $global_adjustment_type ) && ! empty( $global
 							);
 
 							// Service Price Adjustment
-							printf( '<td data-label="%s"><div class="iqrlsserviceprice-flex">', esc_attr__( 'Price Adjustment', 'live-rates-for-shipstation' ) );
+							printf( '<td data-label="%s"><div class="iqlrsserviceprice-flex">', esc_attr__( 'Price Adjustment', 'live-rates-for-shipstation' ) );
 
 								printf( '<div><select name="%s" style="width:100%%;">', esc_attr( $attr_name . '[adjustment_type]' ) );
 									foreach( static::get_adjustment_types( true ) as $slug => $label ) {
@@ -197,7 +197,7 @@ $global_adjustment_type = ( empty( $global_adjustment_type ) && ! empty( $global
 							);
 
 							// Service Price Adjustment
-							printf( '<td data-label="%s"><div class="iqrlsserviceprice-flex">', esc_attr__( 'Price Adjustment', 'live-rates-for-shipstation' ) );
+							printf( '<td data-label="%s"><div class="iqlrsserviceprice-flex">', esc_attr__( 'Price Adjustment', 'live-rates-for-shipstation' ) );
 
 								printf( '<div><select name="%s" style="width:100%%;">', esc_attr( $attr_name . '[adjustment_type]' ) );
 									foreach( static::get_adjustment_types( true ) as $slug => $label ) {
