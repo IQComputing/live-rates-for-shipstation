@@ -413,6 +413,19 @@ Class Settings_Shipstation {
 
 			}
 
+			// Append cleanup checkbox after logging.
+			if( 'logging_enabled' === $key ) {
+
+				$appended_fields[ \IQLRSS\Driver::plugin_prefix( 'uninstall_full' ) ] = array(
+					'title'			=> esc_html__( 'IQLRSS Full Uninstall', 'live-rates-for-shipstation' ),
+					'label'			=> esc_html__( 'When Live Rates for ShipStation is uninstalled or deleted - remove all iqlrss data', 'live-rates-for-shipstation' ),
+					'description'	=> esc_html__( 'This ensures all options and data created by our plugin is removed automatically. This includes: ShipStation rates zones, cached API data, API keys, and more.', 'live-rates-for-shipstation' ),
+					'type'			=> 'checkbox',
+					'default'		=> 0,
+				);
+
+			}
+
 		}
 
 		return $appended_fields;
