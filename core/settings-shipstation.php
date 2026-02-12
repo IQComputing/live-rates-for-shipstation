@@ -135,6 +135,7 @@ Class Settings_Shipstation {
 					document.querySelectorAll( '[name*=iqlrss]' ).forEach( ( $elm ) => {
 						if( $elm.name.includes( 'api_key' ) ) return;
 						if( $elm.name.includes( 'cart_weight' ) ) return;
+						if( $elm.name.includes( 'uninstall_full' ) ) return;
 						fnHide( $elm );
 					} );
 
