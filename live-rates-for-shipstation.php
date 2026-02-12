@@ -247,4 +247,4 @@ add_action( 'plugins_loaded', array( '\IQLRSS\Driver', 'drive' ), 8 );
  */
 require_once rtrim( __DIR__, '\\/' ) . '/_stallation.php';
 register_deactivation_hook( __FILE__, array( '\IQLRSS\Stallation', 'deactivate' ) );
-register_activation_hook( 	__FILE__, array( '\IQLRSS\Stallation', 'uninstall' ) );
+register_uninstall_hook( 	__FILE__, array( '\IQLRSS\Stallation', 'uninstall' ) );
