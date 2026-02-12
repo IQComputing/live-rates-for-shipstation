@@ -1,8 +1,8 @@
 === Live Rates for ShipStation ===
 Contributors: iqcomputing
 Tags: woocommerce, shipstation, usps, ups, fedex
-Requires at least: 5.9
-Tested up to: 6.8
+Requires at least: 6.2
+Tested up to: 6.9
 Stable tag: 1.2.3
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html

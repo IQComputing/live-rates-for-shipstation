@@ -6,6 +6,10 @@
  */
 namespace IQLRSS;
 
+if( ! defined( 'ABSPATH' ) ) {
+	return;
+}
+
 spl_autoload_register( function( $class ) {
 
 	if( false === strpos( $class, __NAMESPACE__ . '\\' ) ) {
