@@ -2,6 +2,17 @@
 
 This is a brief text document keeping track of changes to the plugin. For a full history, see the Github Repository.
 
+= 1.2.4 =
+
+Relase Date: February 12, 2026.
+
+* Overview
+	* New Setting under WooCommerce > Settings > Integration to denote a full uninstall.
+		* The uninstall will try to remove all created iqlrss data when this is both enabled and an uninstall trigger is triggered.
+		* Otherwise, only caches are cleared on uninstall, all other settings are preserved.
+	* New Admin Notification if/when the ShipStation API is missing. Thanks to .org user @robersw for the idea!
+	* Various Shipping Calculator patches applied that were found during Unit Testing. 
+
 = 1.2.3 =
 
 Relase Date: February 04, 2026.
