@@ -204,6 +204,8 @@ Class Settings_Shipstation {
 
 			\WC_Admin_Notices::add_custom_notice( 'iqlrss_missing_apikey', $warning );
 
+		} else {
+			\WC_Admin_Notices::remove_notice( 'iqlrss_missing_apikey' );
 		}
 
 	}
