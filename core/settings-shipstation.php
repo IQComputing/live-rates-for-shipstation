@@ -37,6 +37,7 @@ Class Settings_Shipstation {
 	private function action_hooks() {
 
 		add_action( 'admin_enqueue_scripts',					array( $this, 'register_admin_assets' ), 3 );
+		add_action( 'admin_init',								array( $this, 'add_admin_notices' ) );
 		add_action( 'admin_footer',								array( $this, 'localize_script_vars' ), 3 );
 		add_action( 'admin_enqueue_scripts',					array( $this, 'enqueue_admin_assets' ) );
 		add_action( 'woocommerce_cart_totals_after_order_total',array( $this, 'display_cart_weight' ) ) ;
@@ -172,6 +173,37 @@ Class Settings_Shipstation {
 
 		wp_enqueue_style( \IQLRSS\Driver::plugin_prefix( 'admin', '-' ) );
 		wp_enqueue_script_module( \IQLRSS\Driver::plugin_prefix( 'admin', '-' ) );
+
+	}
+
+
+
+
+	/**
+	 * Add admin notices when necessary.
+	 *
+	 * @return void
+	 */
+	public function add_admin_notices() {
+
+		if( ! class_exists( '\WC_Admin_Notices' ) ) return;
+
+		// Missing API Key.
+		if( empty( \IQLRSS\Driver::get_ss_opt( 'api_key', false ) ) ) {
+
+			$warning = sprintf( '%s <a href="%s">%s</a>',
+				esc_html__( 'Live Rates for ShipStation is only functional with a ShipStation API Key.', 'live-rates-for-shipstation' ),
+				esc_url( add_query_arg( array(
+					'page'    => 'wc-settings',
+					'tab'     => 'integration',
+					'section' => 'shipstation',
+				), admin_url( 'admin.php' ) ) ),
+				esc_html__( 'Set API Key', 'live-rates-for-shipstation' )
+			);
+
+			\WC_Admin_Notices::add_custom_notice( 'iqlrss_missing_apikey', $warning );
+
+		}
 
 	}
 
