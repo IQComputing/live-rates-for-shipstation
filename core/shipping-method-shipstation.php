@@ -986,7 +986,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		if( ! is_wp_error( $sspackages ) && ! empty( $sspackages ) ) {
 
 			$carrier_packages['shipstation'] = array(
-				'label' 	=> esc_html__( 'ShipStation' ),
+				'label' 	=> esc_html__( 'ShipStation', 'live-rates-for-shipstation' ),
 				'packages'	=> array(),
 			);
 

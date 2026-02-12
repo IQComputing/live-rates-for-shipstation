@@ -23,17 +23,38 @@ Class Stallation {
 	 */
 	public static function uninstall() {
 
-		// Normalize ShipStation Settings by removing our keys.
+		// Grab Settings
 		$settings = get_option( 'woocommerce_shipstation_settings' );
-		foreach( $settings as $key => $val ) {
-			if( is_numeric( $key ) ) continue;
-			if( 0 === strpos( $key, 'iqlrss_' ) ) {
-				unset( $settings[ $key ] );
-			}
-		}
-		update_option( 'woocommerce_shipstation_settings', $settings );
 
-		// Clear Cache
+		// Check for a Full Uninstall
+		if( isset( $settings['iqlrss_uninstall_full'] ) && $settings['iqlrss_uninstall_full'] ) {
+
+			// Normalize ShipStation Settings by removing our keys.
+			foreach( $settings as $key => $val ) {
+				if( is_numeric( $key ) ) continue;
+				if( 0 === strpos( $key, 'iqlrss_' ) ) {
+					unset( $settings[ $key ] );
+				}
+			}
+			update_option( 'woocommerce_shipstation_settings', $settings );
+
+			// Grab IQLRSS Specific Shipping Methods and remove them.
+			if( class_exists( '\WC_Shipping_Zones' ) ) {
+
+				foreach( \WC_Shipping_Zones::get_zones() as $zone_arr ) {
+
+					$iqlrss_methods = array_filter( $zone_arr['shipping_methods'], fn( $m ) => false !== strpos( $m->id, 'iqlrss_shipstation' ) );
+					if( ! empty( $iqlrss_methods ) ) {
+						foreach( $iqlrss_methods as $m ) {
+							( new \WC_Shipping_Zone( $zone_arr['id'] ) )->delete_shipping_method( $m->instance_id );
+						}
+					}
+				}
+			}
+
+		}
+
+		// Always Clear Cache
 		\IQLRSS\Driver::clear_cache();
 
 	}
