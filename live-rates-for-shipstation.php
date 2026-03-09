@@ -11,6 +11,8 @@
  * License URI: https://www.gnu.org/licenses/gpl-3.0.html
  * Text Domain: live-rates-for-shipstation
  * Requires Plugins: woocommerce, woocommerce-shipstation-integration
+ * 
+ * @todo Look into the `woocommerce_update_options_general` hook for cache busting.
  */
 namespace IQLRSS;
 
