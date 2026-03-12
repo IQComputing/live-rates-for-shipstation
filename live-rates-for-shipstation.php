@@ -3,7 +3,7 @@
  * Plugin Name: Live Rates for ShipStation
  * Plugin URI: https://iqcomputing.com/contact/
  * Description: ShipStation shipping method with live rates.
- * Version: 1.2.4
+ * Version: 1.2.5
  * Requires at least: 6.2
  * Author: IQComputing
  * Author URI: https://iqcomputing.com/
@@ -11,8 +11,6 @@
  * License URI: https://www.gnu.org/licenses/gpl-3.0.html
  * Text Domain: live-rates-for-shipstation
  * Requires Plugins: woocommerce, woocommerce-shipstation-integration
- *
- * @todo Look into the `woocommerce_update_options_general` hook for cache busting.
  */
 namespace IQLRSS;
 
@@ -27,7 +25,7 @@ class Driver {
 	 *
 	 * @var String
 	 */
-	protected static $version = '1.2.4';
+	protected static $version = '1.2.5';
 
 
 	/**

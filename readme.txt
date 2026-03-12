@@ -3,7 +3,7 @@ Contributors: iqcomputing
 Tags: woocommerce, shipstation, usps, ups, fedex
 Requires at least: 6.2
 Tested up to: 6.9
-Stable tag: 1.2.4
+Stable tag: 1.2.5
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -50,6 +50,11 @@ Don't have a ShipStation account? [Open a ShipStation account today!](https://ww
 
 == Changelog ==
 
+= 1.2.5 (2026-03-12) =
+* Fixes isset() isse when checking FROM address (Thanks @richecolocity)!
+* Fixes return value on WooCommerce Integration filter hook.
+* Adds new cache busting when WooCommerce > Settings > General options are saved.
+
 = 1.2.4 (2026-02-12) =
 * Adds new Integration Settings for a full uninstall/cleanup.
 * Adds a new admin banner to let users know of a missing ShipStation API Key. (Thanks @robersw)!
@@ -58,6 +63,3 @@ Don't have a ShipStation account? [Open a ShipStation account today!](https://ww
 = 1.2.3 (2026-02-04) =
 * Patches issue of misnamed method call. (Thanks @centuryperf)!
 * Patches issue where warehouses would be called multiple times a request.
-
-= 1.2.2 (2026-02-04) =
-* Replaces PHP 8.5 func array_first with reset. (Thanks Theo)!

@@ -2,6 +2,16 @@
 
 This is a brief text document keeping track of changes to the plugin. For a full history, see the Github Repository.
 
+= 1.2.5 =
+
+Relase Date: March 12, 2026.
+
+* Overview
+	* Fixes isset() isse when checking FROM address (Thanks @richecolocity)!
+	* Fixes return value on WooCommerce Integration filter hook.
+	* Adds new cache busting when WooCommerce > Settings > General options are saved.
+		* This is important for when the shop address changes.
+
 = 1.2.4 =
 
 Relase Date: February 12, 2026.
