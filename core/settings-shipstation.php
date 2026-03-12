@@ -42,6 +42,7 @@ Class Settings_Shipstation {
 		add_action( 'admin_enqueue_scripts',					array( $this, 'enqueue_admin_assets' ) );
 		add_action( 'woocommerce_cart_totals_after_order_total',array( $this, 'display_cart_weight' ) ) ;
 		add_action( 'woocommerce_update_option',				array( $this, 'clear_cache_on_update' ) );
+		add_action( 'woocommerce_update_options_general',		array( $this, 'clear_cache_on_settings_general' ) );
 
 	}
 
@@ -273,6 +274,19 @@ Class Settings_Shipstation {
 
 		\IQLRSS\Driver::clear_cache();
 
+	}
+
+
+	/**
+	 * Clear teh cache whenever the WooCommerce > Settings > General has been updated.
+	 * This is important if the Store Address changes.
+	 *
+	 * Thanks Paul!
+	 *
+	 * @return void
+	 */
+	function clear_cache_on_settings_general() {
+		\IQLRSS\Driver::clear_cache();
 	}
 
 
