@@ -4,6 +4,7 @@
  *
  * :: Functions
  * :: Ipsum Functions
+ * :: Classes
  */
 /**------------------------------------------------------------------------------------------------ **/
 /** :: Functions :: **/
@@ -48,3 +49,22 @@ function register_deactivation_hook( $file, $callback ) { /* Do thing */ };
 function register_activation_hook( $file, $callback ) { /* Do thing */ };
 function add_action( $hook, $callback, $priority = 10, $accepted_args = 1 ) { /* Do thing */ };
 function add_filter( $hook, $callback, $priority = 10, $accepted_args = 1 ) { /* Do thing */ };
+
+
+
+/**------------------------------------------------------------------------------------------------ **/
+/** :: Classes :: **/
+/**------------------------------------------------------------------------------------------------ **/
+class WP_Error {
+    protected $main = array();
+    public function __construct( $code = '', $message = '', $data = '' ) {
+        $this->main = array(
+            'code'      => $code,
+            'message'   => $message,
+            'data'      => $data,
+        );
+    }
+    public function __call( $method, $args ) {
+        return $this->main[ str_replace( 'get_error_', '', $method ) ] ?? '';
+    }
+}
