@@ -23,7 +23,7 @@ trait Logger {
 	 */
 	protected function log( $error, $level = 'info', $context = array() ) {
 
-		if( ! \IQLRSS\Driver::get_ss_opt( 'logging_enabled', 0, true ) ) {
+		if( 'yes' !== \IQLRSS\Driver::get_ss_opt( 'logging_enabled', 0, true ) ) {
 			return $error;
 		}
 
