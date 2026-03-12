@@ -801,7 +801,6 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 */
 	protected function check_packages_rate_cache( $packages ) {
 
-
 		/**
 		 * Maybe skip cart caches.
 		 * Do note that WooCommerce makes multiple calls to the cart / calculations.

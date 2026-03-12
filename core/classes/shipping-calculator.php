@@ -292,7 +292,7 @@ Class Shipping_Calculator {
             $this->log( esc_html__( 'Request missing a To Country Code and/or To Postal Code.', 'live-rates-for-shipstation' ), 'error' );
 
         // Log - Did not have all the necessary fields to run an API request on.
-        } else if( empty( $from_arr['from_country_code'] ) || empty( $to_arr['from_postal_code'] ) ) {
+        } else if( empty( $from_arr['from_country_code'] ) || empty( $from_arr['from_postal_code'] ) ) {
 			$this->log( esc_html__( 'Request missing a From Country Code and/or From Postal Code.', 'live-rates-for-shipstation' ), 'error' );
 		}
 
@@ -320,12 +320,12 @@ Class Shipping_Calculator {
         // 'destination' may come from WC_Cart data
         // 'to' may come from instance $args
         $to = $this->get( 'to', $this->get( 'destination' ), array() );
-        return array(
+        return array_map( 'trim', array(
             'to_country_code'	 => ( isset( $to['country'] ) ) ? $to['country'] : '',
             'to_postal_code'	 => ( isset( $to['postcode'] ) ) ? $to['postcode'] : '',
             'to_city_locality'	 => ( isset( $to['city'] ) ) ? $to['city'] : '',
             'to_state_province'	 => ( isset( $to['state'] ) ) ? $to['state'] : '',
-        );
+        ) );
 
     }
 
@@ -364,7 +364,7 @@ Class Shipping_Calculator {
             $from_arr = $warehouse;
         }
 
-        return $from_arr;
+        return array_map( 'trim', $from_arr );
 
     }
 
