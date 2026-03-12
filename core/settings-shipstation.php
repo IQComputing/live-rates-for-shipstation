@@ -322,7 +322,7 @@ Class Settings_Shipstation {
 	public function append_shipstation_integration_settings( $fields ) {
 
 		if( ! ( isset( $_GET, $_GET['section'] ) && 'shipstation' === $_GET['section'] ) ) {
-			return;
+			return $fields;
 		}
 
 		$carriers = array(
