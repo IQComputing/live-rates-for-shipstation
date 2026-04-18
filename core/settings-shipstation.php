@@ -146,10 +146,14 @@ Class Settings_Shipstation {
 
 				<?php else : ?>
 
-					document.querySelectorAll( '[name*=iqlrss]' ).forEach( ( $elm ) => {
+					document.querySelectorAll( '[name*=iqlrss],[name*=logging_enabled]' ).forEach( ( $elm ) => {
 
-						if( 'checkbox' == $elm.type && $elm.name.includes( 'return_lowest' ) && ! $elm.checked ) {
-							fnHide( document.querySelector( '[name*=return_lowest_label]' ) );
+						if( 'checkbox' == $elm.type ) {
+							if( $elm.name.includes( 'return_lowest' ) && ! $elm.checked ) {
+								fnHide( document.querySelector( '[name*=return_lowest_label]' ) );
+							} else if( $elm.name.includes( 'logging_enabled' ) && ! $elm.checked ) {
+								fnHide( document.querySelector( '[name*=log_types]' ) );
+							}
 						}
 
 						if( $elm.name.includes( 'global_adjustment_type' ) && '' == $elm.value ) {

@@ -19,6 +19,7 @@ export class shipStationSettings {
 		this.apiClearCache();
 		this.setupPriceAdjustments();
 		this.setupSingleLowest();
+		this.setupDebugTypes();
 
 	}
 
@@ -114,6 +115,24 @@ export class shipStationSettings {
 				$lowestcb.dispatchEvent( new Event( 'change' ) );
 			}
 		}
+
+	}
+
+
+	/**
+	 * Show / Hide the Single Lowest label
+	 */
+	setupDebugTypes() {
+
+
+		/**
+		 * Event: Change
+		 * Toggle the Lowest Rate Label row visibility.
+		 */
+		const $lowestcb = document.querySelector( '[type=checkbox][name*=logging_enabled' );
+		$lowestcb.addEventListener( 'change', () => {
+			rowMakeVisible( $lowestcb.closest( 'tr' ).nextElementSibling, $lowestcb.checked );
+		} );
 
 	}
 
