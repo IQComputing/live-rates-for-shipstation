@@ -2,6 +2,18 @@
 
 This is a brief text document keeping track of changes to the plugin. For a full history, see the Github Repository.
 
+= 1.2.6 =
+
+Relase Date: ??? ??, 2026.
+
+* Overview
+	* WooCommerce has resolved caclulate_shipping() caching.
+		* Removes `iqlrss/cache/cart_rates` filter hook.
+		* Removes WC_Session caching from IQLRSS Shipping Method class.
+		* Adds new customer cache invalidation.
+	* Flips `iqlrss/cache/shipstation` hook to return TRUE instead of FALSE.
+	* Adds new Debug Types box to allow admins to log events, but not all events possible.
+
 = 1.2.5 =
 
 Relase Date: March 12, 2026.
@@ -21,7 +33,7 @@ Relase Date: February 12, 2026.
 		* The uninstall will try to remove all created iqlrss data when this is both enabled and an uninstall trigger is triggered.
 		* Otherwise, only caches are cleared on uninstall, all other settings are preserved.
 	* New Admin Notification if/when the ShipStation API is missing. Thanks to .org user @robersw for the idea!
-	* Various Shipping Calculator patches applied that were found during Unit Testing. 
+	* Various Shipping Calculator patches applied that were found during Unit Testing.
 
 = 1.2.3 =
 
@@ -33,7 +45,7 @@ Relase Date: February 04, 2026.
 		* Future unit tests will harden against this kind of error.
 	* Patches issue where warehouses would be called multiple times a request.
 		* When there were no ShipStation warehouses, the API would retry. This now checks against the transient FALSE first, then attempts an API call.
-		* This unfortunately means possibly storing an empty transient, weighing the options this seems acceptable. 
+		* This unfortunately means possibly storing an empty transient, weighing the options this seems acceptable.
 
 = 1.2.2 =
 

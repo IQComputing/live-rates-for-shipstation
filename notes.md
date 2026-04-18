@@ -36,5 +36,5 @@ error		Product ID #%1$d missing (%2$s) dimensions. Weight is a minimum requireme
 error		Product ID #%1$d missing weight. Shipping Zone weight fallback could not be used. Shipping calculations terminated.
 error		OneBox rate request missing (%1$s) dimensions. Weight is a minimum requirement. Shipping calculations terminated.
 error		OneBox rate request missing (%1$s) dimensions. Rate request falling back to Weight only.
-error		No enabled carrier services found. Please enable carrier services within the shipping zone.
+error		No enabled carrier services found. Please enable carrier services within the shipping zone. Please ensure carriers are selected within the integration settings.
 ```

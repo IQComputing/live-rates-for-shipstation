@@ -381,6 +381,9 @@ Class Settings_Shipstation {
 					} )(),
 					'desc_tip'		=> esc_html__( 'Services from selected carriers will be available when setting up Shipping Zones.', 'live-rates-for-shipstation' ),
 					'default'		=> '',
+					'custom_attributes' => array(
+						'data-placeholder'	=> esc_html__( '~ Select ShipStation Carriers ~', 'live-rates-for-shipstation' ),
+					),
 				);
 
 				$appended_fields[ \IQLRSS\Driver::plugin_prefix( 'global_warehouse' ) ] = array(
@@ -442,27 +445,20 @@ Class Settings_Shipstation {
 
 				$appended_fields[ \IQLRSS\Driver::plugin_prefix( 'log_types' ) ] = array(
 					'title'			=> esc_html__( 'IQLRSS Log Types', 'live-rates-for-shipstation' ),
-					'label'			=> esc_html__( 'When Live Rates for ShipStation is uninstalled or deleted - remove all iqlrss data', 'live-rates-for-shipstation' ),
-					'description'	=> esc_html__( 'This ensures all options and data created by our plugin is removed automatically. This includes: ShipStation rates zones, cached API data, API keys, and more.', 'live-rates-for-shipstation' ),
 					'type'			=> 'multiselect',
 					'class'			=> 'chosen_select',
 					'options'		=> array(
-						'debug' => esc_html__( 'Debug Info' ),
-					)
+						'debug'	 	=> esc_html__( 'Debug Info', 'live-rates-for-shipstation' ),
+						'notice'	=> esc_html__( 'Override Notices', 'live-rates-for-shipstation' ),
+						'warning'	=> esc_html__( 'Warnings', 'live-rates-for-shipstation' ),
+						'error'		=> esc_html__( 'Errors', 'live-rates-for-shipstation' ),
+					),
+					'custom_attributes' => array(
+						'data-placeholder'	=> esc_html__( 'Log All', 'live-rates-for-shipstation' ),
+					),
+					'description'	=> esc_html__( 'Log specific events during live rate execution.', 'live-rates-for-shipstation' ),
+					'desc_tip'		=> esc_html__( 'Debug Info is full package and request info which can be a rather large dataset.', 'live-rates-for-shipstation' ),
 				);
-
-				'title'			=> esc_html__( 'Shipping Carriers', 'live-rates-for-shipstation' ),
-				'type'			=> 'multiselect',
-				'class'			=> 'chosen_select',
-				'options'		=> $carriers,
-				'description'	=> ( function() {
-					if( ! empty( \IQLRSS\Driver::get_ss_opt( 'api_key' ) ) ) {
-						return esc_html__( 'Select which ShipStation carriers you would like to see live shipping rates from.', 'live-rates-for-shipstation' );
-					}
-					return esc_html__( 'Please set and verify your ShipStation API key. Then, click the Save button at the bottom of this page.', 'live-rates-for-shipstation' );
-				} )(),
-				'desc_tip'		=> esc_html__( 'Services from selected carriers will be available when setting up Shipping Zones.', 'live-rates-for-shipstation' ),
-				'default'		=> '',
 
 				$appended_fields[ \IQLRSS\Driver::plugin_prefix( 'uninstall_full' ) ] = array(
 					'title'			=> esc_html__( 'IQLRSS Full Uninstall', 'live-rates-for-shipstation' ),

@@ -1089,7 +1089,7 @@ Class Shipping_Calculator {
 		// Return Early - No enabled services.
 		$services_enabled = $this->get( 'services_enabled' );
 		if( empty( $services_enabled ) ) {
-			$this->log( esc_html__( 'No enabled carrier services found. Please enable carrier services within the shipping zone.', 'live-rates-for-shipstation' ), 'error' );
+			$this->log( esc_html__( 'No enabled carrier services found. Please enable carrier services within the shipping zone. Please ensure carriers are selected within the integration settings.', 'live-rates-for-shipstation' ), 'error' );
 			return;
 		}
 
