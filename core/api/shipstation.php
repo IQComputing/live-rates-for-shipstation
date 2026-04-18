@@ -179,10 +179,8 @@ class Shipstation  {
 			'packages' => array(),
 		);
 
-		error_log( 'carriers' );
 		if( empty( $data['carriers'] ) || ! $this->cache ) {
 
-			error_log( 'carriers --- requested' );
 			$body = $this->make_request( 'get', 'carriers' );
 
 			// Return Early - API Request error - see logs.
@@ -354,10 +352,8 @@ class Shipstation  {
 		$trans_key  = $this->prefix_key( 'warehouses' );
 		$warehouses = get_transient( $trans_key );
 
-		error_log( 'warehouses' );
 		if( false === $warehouses || ! $this->cache ) {
 
-			error_log( 'warehouses --- requested' );
 			$warehouses = array();
 			$body = $this->make_request( 'get', 'warehouses' );
 
@@ -430,10 +426,8 @@ class Shipstation  {
 		$trans_key  = $this->prefix_key( 'packages' );
 		$packages = get_transient( $trans_key );
 
-		error_log( 'packages' );
 		if( empty( $packages ) || ! $this->cache ) {
 
-			error_log( 'packages --- request' );
 			$body = $this->make_request( 'get', 'packages' );
 
 			// Return Early - API Request error - see logs.
