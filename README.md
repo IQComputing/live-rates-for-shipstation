@@ -44,7 +44,6 @@ This is a free plugin entirely volunteer run. While we will ensure that the plug
 
 ## Filter Hooks
 
-- `iqlrss/cache/cart_rates`
 - `iqlrss/cache/shipstation`
 - `iqlrss/cache/shipstation_expires`
 - `iqlrss/shipping/calculator_object`

@@ -667,7 +667,7 @@ Class Shipping_Calculator {
 
 		/* Return Early - No custom boxes found. */
 		if( empty( $boxes ) ) {
-			$this->log( esc_html__( 'Custom Boxes selected, but no boxes found. Items packed individually', 'live-rates-for-shipstation' ), 'warning' );
+			$this->log( esc_html__( 'Custom Boxes selected, but no boxes found. Items packed individually.', 'live-rates-for-shipstation' ), 'warning' );
 			return $this->get_requestsby_individual();
 		}
 
@@ -804,7 +804,7 @@ Class Shipping_Calculator {
 		}
 
 		if( ! empty( $box_log ) ) {
-			$this->log( esc_html__( 'Custom Boxes Packed', 'live-rates-for-shipstation' ), 'debug', $box_log );
+			$this->log( esc_html__( 'Custom Boxes Packed.', 'live-rates-for-shipstation' ), 'debug', $box_log );
 		}
 
 		return $requests;

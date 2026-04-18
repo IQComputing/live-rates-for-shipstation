@@ -142,6 +142,7 @@ class Driver {
 
 		global $wpdb;
 
+
 		/**
 		 * The API Class creates various transients to cache carrier services.
 		 * These transients are not tracked but generated based on the responses carrier codes.
@@ -154,9 +155,13 @@ class Driver {
 			'%' . $wpdb->esc_like( '_' . static::get( 'slug' ) . '_' ) . '%'
 		) );
 
-		// Set transient to clear any WC_Session caches if they are found.
-		$expires = absint( apply_filters( 'wc_session_expiration', DAY_IN_SECONDS * 2 ) ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
-		set_transient( static::plugin_prefix( 'wcs_timeout' ), time(), $expires );
+
+		/**
+		 * WooCommerce caches the shipping rates with a transient version.
+		 * Forcing a refresh on the version invalidates all customer
+		 * shipping calculations, forcing the system to recalculate the cart.
+		 */
+		\WC_Cache_Helper::get_transient_version( 'shipping', true );
 
 	}
 

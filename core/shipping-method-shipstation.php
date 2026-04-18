@@ -127,7 +127,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 */
 	public function process_admin_options() {
 
-		( new \IQLRSS\Core\Settings_Shipstation() )->clear_cache();
+		\IQLRSS\Driver::clear_cache();
 		return parent::process_admin_options();
 
 	}
@@ -713,15 +713,6 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 
 		if( empty( $cart ) || empty( $cart['contents'] ) ) {
 			return;
-		}
-
-		// Try to pull from cache. This may set $this->rates
-		// Return Early - We have cached rates to work with!
-		$this->check_packages_rate_cache( $cart );
-		if( ! empty( $this->rates ) ) {
-			return;
-
-		// Return Early - No Destination to work with. Postcode is kinda required.
 		} else if( ! isset( $cart['destination'] ) || empty( $cart['destination']['postcode'] ) ) {
 			return;
 		}
@@ -774,92 +765,6 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				$this->add_rate( $rate );
 			}
 		}
-
-		$cachehash = $this->generate_packages_cache_key( $cart );
-		if( empty( $cachehash ) ) return;
-
-		// Cache packages to prevent multiple requests.
-		WC()->session->set( $this->plugin_prefix . '_packages', array_merge(
-			WC()->session->get( $this->plugin_prefix . '_packages', array() ),
-			array( 'method_hash' => $cachehash ),
-			array( 'method_cache_time' => time() ),
-		) );
-
-	}
-
-
-	/**
-	 * Set the rates based on cached packages.
-	 *
-	 * Attempt to pull from the WC() Session cache to prevent multiple calculations
-	 * requests, which could unnecessarily ping the API or add duplicate logs.
-	 * This issue is common when dealing with WP Blocks/Gutenberg Editor.
-	 *
-	 * @param Array $packages - Packages in use.
-	 *
-	 * @return void
-	 */
-	protected function check_packages_rate_cache( $packages ) {
-
-		/**
-		 * Maybe skip cart caches.
-		 * Do note that WooCommerce makes multiple calls to the cart / calculations.
-		 * Disabling this may result in many more API calls than expected.
-		 *
-		 * @hook filter
-		 *
-		 * @param Bolean TRUE
-		 *
-		 * @return Boolean
-		 */
-		// Return Early - Filter Skips Cache.
-		if( true !== apply_filters( 'iqlrss/cache/cart_rates', true ) ) return;
-
-		$session 	= WC()->session->get( $this->plugin_prefix . '_packages', array() );
-		$cleartime 	= get_transient( \IQLRSS\Driver::plugin_prefix( 'wcs_timeout' ) );
-		$cachehash 	= $this->generate_packages_cache_key( $packages );
-
-		// Return Early - Cache cleared or 30 minuites has passed (invalidate cache).
-		if( isset( $session['method_cache_time'] ) && ( $cleartime > $session['method_cache_time'] || $session['method_cache_time'] < ( time() - ( 30 * 60 ) ) ) ) {
-			return;
-
-		// Return Early- Cart has changed.
-		} else if( ! isset( $session['method_hash'] ) || empty( $cachehash ) || $session['method_hash'] != $cachehash ) {
-			return;
-		}
-
-		// Try to populate Rates.
-		$size = count( $packages );
-		for( $i = 0; $i < $size; $i++ ) {
-			$cache = WC()->session->get( 'shipping_for_package_' . $i, false );
-			if( empty( $cache ) || ! is_array( $cache ) ) break;
-			$this->rates = array_merge( $cache['rates'], $this->rates );
-		}
-
-	}
-
-
-	/**
-	 * Generate a hash key based off of the given packages.
-	 *
-	 * @param Array $packages
-	 *
-	 * @return String $hash
-	 */
-	protected function generate_packages_cache_key( $packages ) {
-
-		$keys = array();
-		foreach( $packages['contents'] as $key => $package ) {
-			$keys[] = array(
-				$key,
-				$package['quantity'],
-				$package['line_total'],
-				$packages['destination'],
-			);
-		}
-
-		if( empty( $keys ) ) return '';
-		return md5( wp_json_encode( $keys ) ) . \WC_Cache_Helper::get_transient_version( 'shipping' );
 
 	}
 

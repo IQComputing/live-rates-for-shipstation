@@ -231,35 +231,6 @@ Class Settings_Shipstation {
 
 
 	/**
-	 * Clear the API cache.
-	 *
-	 * @return void
-	 */
-	public function clear_cache() {
-
-		global $wpdb;
-
-
-		/**
-		 * The API Class creates various transients to cache carrier services.
-		 * These transients are not tracked but generated based on the responses carrier codes.
-		 * All these transients are prefixed with our plugins unique string slug.
-		 * The first WHERE ensures only `_transient_` and the 2nd ensures only our plugins transients.
-		 */
-		$wpdb->query( $wpdb->prepare( "DELETE FROM %i WHERE option_name LIKE %s AND option_name LIKE %s", // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
-			$wpdb->options,
-			$wpdb->esc_like( '_transient_' ) . '%',
-			'%' . $wpdb->esc_like( '_' . \IQLRSS\Driver::get( 'slug' ) . '_' ) . '%'
-		) );
-
-		// Set transient to clear any WC_Session caches if they are found.
-		$expires = absint( apply_filters( 'wc_session_expiration', DAY_IN_SECONDS * 2 ) ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
-		set_transient( \IQLRSS\Driver::plugin_prefix( 'wcs_timeout' ), time(), $expires );
-
-	}
-
-
-	/**
 	 * Clear the cache whenever the Integration settings have been updated.
 	 *
 	 * @param Array $args
