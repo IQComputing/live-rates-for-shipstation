@@ -8,7 +8,7 @@ if( ! defined( 'ABSPATH' ) ) {
 	return;
 }
 
-Class Stallation {
+class Stallation {
 
 	/**
 	 * Deactivate Plugin

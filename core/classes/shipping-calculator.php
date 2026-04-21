@@ -25,7 +25,7 @@ if( ! defined( 'ABSPATH' ) ) {
 	return;
 }
 
-Class Shipping_Calculator {
+class Shipping_Calculator {
 
     /**
 	 * Inherit logger traits

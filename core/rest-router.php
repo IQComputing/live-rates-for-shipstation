@@ -9,7 +9,7 @@ if( ! defined( 'ABSPATH' ) ) {
 	return;
 }
 
-Class Rest_Router {
+class Rest_Router {
 
 	/**
 	 * Initialize controller

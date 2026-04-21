@@ -13,7 +13,7 @@ if( ! defined( 'ABSPATH' ) ) {
 	return;
 }
 
-Class Settings_Shipstation {
+class Settings_Shipstation {
 
 	/**
 	 * Initialize controller
