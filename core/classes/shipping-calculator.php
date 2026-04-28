@@ -457,7 +457,7 @@ Class Shipping_Calculator {
         $products = $this->get_products();
         $default_weight = $this->get( 'minweight', '' );
 
-        foreach( $products as $product ) {
+        foreach( $products as $carthash => $product ) {
 
 			// Continue - No shipping needed for product.
 			if( ! $product->needs_shipping() ) continue;
@@ -514,7 +514,7 @@ Class Shipping_Calculator {
 				);
 			}
 
-			$requests[ $product->get_id() ] = $request;
+			$requests[ $carthash ] = $request;
 
 		}
 
@@ -541,7 +541,7 @@ Class Shipping_Calculator {
 			'largest' => array_combine( array( 'length', 'width', 'height', 'weight' ), array_fill( 0, 4, 0 ) ),
 		);
 
-		foreach( $products as $key => $product ) {
+		foreach( $products as $carthash => $product ) {
 
 			// Continue - No shipping needed for product.
 			if( ! $product->needs_shipping() ) continue;
@@ -568,8 +568,8 @@ Class Shipping_Calculator {
 
 			}
 
-			$dimensions['running']['weight'] = $dimensions['running']['weight'] + ( floatval( $request['weight'] ) * $this->get_cartitem_val( $key, 'quantity', 1 ) );
-			$dimensions['running']['height'] = $dimensions['running']['height'] + ( floatval( $product->get_height() ) * $this->get_cartitem_val( $key, 'quantity', 1 ) );
+			$dimensions['running']['weight'] = $dimensions['running']['weight'] + ( floatval( $request['weight'] ) * $this->get_cartitem_val( $carthash, 'quantity', 1 ) );
+			$dimensions['running']['height'] = $dimensions['running']['height'] + ( floatval( $product->get_height() ) * $this->get_cartitem_val( $carthash, 'quantity', 1 ) );
 			$dimensions['largest'] = array(
 				'length'	=> ( $dimensions['largest']['length'] < $product->get_length() ) ? $product->get_length() : $dimensions['largest']['length'],
 				'width'		=> ( $dimensions['largest']['width'] < $product->get_width() )   ? $product->get_width()  : $dimensions['largest']['width'],
@@ -678,7 +678,7 @@ Class Shipping_Calculator {
 		}
 
 		// Loop the items, grabs their dimensions, and associates them with WC_Boxpack for future packing.
-		foreach( $this->cart as $key => $cart_item ) {
+		foreach( $this->cart as $carthash => $cart_item ) {
 
             if( ! isset( $cart_item['data'] ) || ! is_a( $cart_item['data'], 'WC_Product' ) ) continue;
 			if( ! $cart_item['data']->needs_shipping() ) continue;
@@ -949,7 +949,7 @@ Class Shipping_Calculator {
 
         // Individual items get quantities applied.
         if( 'individual' === $this->get( 'packing', 'individual' ) ) {
-            $quantity = $this->get_cartitem_val( array_key_first( $package ), 'quantity', 1 );
+            $quantity = $this->get_cartitem_val( array_key_first( $package_arr ), 'quantity', 1 );
             $wc_rate['cost'] = array( floatval( $shiprate['cost'] ) * absint( $quantity ) );
             $wc_rate['meta_data']['rates']['qty'] = $quantity;
         }
