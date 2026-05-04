@@ -47,6 +47,7 @@ function get_transient( $string ) { return array(); }
 function set_transient( $transient, $value, $expiration ) { return true; }
 function register_deactivation_hook( $file, $callback ) { /* Do thing */ };
 function register_activation_hook( $file, $callback ) { /* Do thing */ };
+function register_uninstall_hook( $file, $arr ) { /* Do thing */ };
 function add_action( $hook, $callback, $priority = 10, $accepted_args = 1 ) { /* Do thing */ };
 function add_filter( $hook, $callback, $priority = 10, $accepted_args = 1 ) { /* Do thing */ };
 

@@ -133,7 +133,7 @@ class TestShippingCalculator extends PHPUnit\TestCase {
 	/**
 	 * Error Logged - Destination From - Missing Postcode
 	 */
-	public function test_errorDestFromPostcode() {
+	public function test_errorDestFromNoPostcode() {
 
 		// Setup
 		$products 		= $this->getProducts( 'mock' );
@@ -344,7 +344,7 @@ class TestShippingCalculator extends PHPUnit\TestCase {
 
 
 	/**
-	 * This packing option have unique settings:
+	 * This packing option has unique settings:
 	 * 'custom_boxes' => Array
 	 */
 	/**------------------------------------------------------------------------------------------------ **/
@@ -387,7 +387,6 @@ class TestShippingCalculator extends PHPUnit\TestCase {
 		}
 
 	}
-
 
 	/**
 	 * Valid Minweight
@@ -518,8 +517,7 @@ class MockShippingCalculator extends \IQLRSS\Core\Classes\Shipping_Calculator {
 		return parent::get( $key, $default );
 	}
 	public function log( $error, $level = 'info', $context = array() ) {
-		if( in_array( $level, array( 'debug', 'info', 'notice' ) ) ) return;
-		if( in_array( $level, array( 'warning' ) ) ) return trigger_error( $error, E_USER_WARNING );
+		if( in_array( $level, array( 'debug', 'notice' ) ) ) return;
 		throw new \Exception( $error );
 	}
 	protected function api() {

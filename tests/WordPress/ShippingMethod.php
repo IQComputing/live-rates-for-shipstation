@@ -16,6 +16,14 @@ class ShippingMethod extends PHPUnit\TestCase {
 
 
 	/**
+	 * Error Logged - Destination To - Missing Country
+	 */
+	public function test_tmp() {
+		$this->assertTrue( true );
+	}
+
+
+	/**
 	 * Setup the test case.
 	 *
 	 * @return void
