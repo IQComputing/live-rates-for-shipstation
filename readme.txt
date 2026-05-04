@@ -3,7 +3,7 @@ Contributors: iqcomputing
 Tags: woocommerce, shipstation, usps, ups, fedex
 Requires at least: 6.2
 Tested up to: 6.9
-Stable tag: 1.2.5
+Stable tag: 1.2.6
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -50,7 +50,8 @@ Don't have a ShipStation account? [Open a ShipStation account today!](https://ww
 
 == Changelog ==
 
-= 1.2.6 (2026-05-03) =
+= 1.2.6 (2026-05-04) =
+* May The 4th Be With You!
 * Fixes quantity issue with Individual Packaging (Thanks @piexxer)!
 * Flips `iqlrss/cache/shipstation` hook to return TRUE instead of FALSE.
 * Removes `iqlrss/cache/cart_rates` filter hook.
