@@ -38,14 +38,14 @@ class Shipstationv1 extends Shipstation  {
 	/**
 	 * Setup API
 	 *
-	 * @param Boolean $skip_cache
+	 * @param Boolean $cache
 	 */
-	public function __construct( $skip_cache = false ) {
+	public function __construct( $cache = true ) {
 
 		$this->prefix 	= \IQLRSS\Driver::get( 'slug' );
 		$this->key 		= \IQLRSS\Driver::get_ss_opt( 'apiv1_key', '' );
 		$this->secret 	= \IQLRSS\Driver::get_ss_opt( 'apiv1_secret', '' );
-		$this->skip_cache = (boolean)$skip_cache;
+		$this->cache 	= (bool)$cache;
 		$this->cache_time = defined( 'DAY_IN_SECONDS' ) ? DAY_IN_SECONDS : 604800;
 
 	}
@@ -68,7 +68,7 @@ class Shipstationv1 extends Shipstation  {
 		$stores 	= get_transient( $trans_key );
 		$siteurl 	= get_bloginfo( 'url' );
 
-		if( empty( $stores ) || $this->skip_cache ) {
+		if( empty( $stores ) || ! $this->cache ) {
 
 			$body = $this->make_request( 'get', 'stores', array( 'showInactive' => 'false' ) ); // Must be a string.
 			$stores = array();
@@ -135,7 +135,7 @@ class Shipstationv1 extends Shipstation  {
 		$carriers = get_transient( $trans_key );
 
 		// No carriers cached - prime cache
-		if( empty( $carriers ) || $this->skip_cache ) {
+		if( empty( $carriers ) || ! $this->cache ) {
 			$carriers = $this->get_carriers( '', array( 'services' => true, 'packages' => true ) );
 		}
 
@@ -181,12 +181,12 @@ class Shipstationv1 extends Shipstation  {
 		$carriers = get_transient( $trans_key );
 		$carriers = array();
 		$data = array(
-			'carriers' => ( ! empty( $carriers ) && ! $this->skip_cache ) ? $carriers : array(),
+			'carriers' => ( ! empty( $carriers ) && $this->cache ) ? $carriers : array(),
 			'services' => array(),
 			'packages' => array(),
 		);
 
-		if( empty( $data['carriers'] ) || $this->skip_cache ) {
+		if( empty( $data['carriers'] ) || ! $this->cache ) {
 
 			$body = $this->make_request( 'get', 'carriers' );
 
@@ -269,7 +269,7 @@ class Shipstationv1 extends Shipstation  {
 		$trans_key 	= sprintf( '%s_%s_services', $this->prefix_key( 'v1carriers' ), $carrier_code );
 		$services 	= get_transient( $trans_key );
 
-		if( empty( $services ) || $this->skip_cache ) {
+		if( empty( $services ) || ! $this->cache ) {
 
 			$body = $this->make_request( 'get', 'carriers/listservices', array( 'carrierCode' => $carrier_code ) );
 			$services = array();
@@ -332,7 +332,7 @@ class Shipstationv1 extends Shipstation  {
 		$trans_key 	= sprintf( '%s_%s_packages', $this->prefix_key( 'v1carriers' ), $carrier_code );
 		$packages 	= get_transient( $trans_key );
 
-		if( empty( $packages ) || $this->skip_cache ) {
+		if( empty( $packages ) || ! $this->cache ) {
 
 			$body = $this->make_request( 'get', 'carriers/listpackages', array( 'carrierCode' => $carrier_code ) );
 			$packages = array();
@@ -395,14 +395,14 @@ class Shipstationv1 extends Shipstation  {
 
 		$order = array();
 
-		if( ! $this->skip_cache ) {
+		if( $this->cache ) {
 
 			$wc_order = wc_get_order( $order_id );
 			$order = $wc_order->get_meta( '_shipstation_order', true );
 
 		}
 
-		if( empty( $order ) || $this->skip_cache ) {
+		if( empty( $order ) || ! $this->cache ) {
 
 			$orders = $this->get_orders( array( 'orderNumber' => $order_id ) );
 			if( is_wp_error( $orders ) ) {
@@ -445,7 +445,7 @@ class Shipstationv1 extends Shipstation  {
 		$order_ids = get_transient( $trans_key );
 
 		// Maybe pull from WC_Order
-		if( is_array( $order_ids ) && ! empty( $order_ids ) && ! $this->skip_cache ) {
+		if( is_array( $order_ids ) && ! empty( $order_ids ) && $this->cache ) {
 
 			$wc_orders = wc_get_orders( array(
 				'include' => array_map( 'absint', $order_ids ),
@@ -458,7 +458,7 @@ class Shipstationv1 extends Shipstation  {
 		}
 
 		// Pull from API and associate with known WC_Orders.
-		if( empty( $orders ) || $this->skip_cache ) {
+		if( empty( $orders ) || ! $this->cache ) {
 
 			$body = $this->make_request( 'get', 'orders', array_merge( array(
 				'storeId' => \IQLRSS\Driver::get_ss_opt( 'store_id' ),

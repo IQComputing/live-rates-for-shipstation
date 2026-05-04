@@ -86,7 +86,7 @@ class Shipstation  {
 		 *
 		 * @return Boolean
 		 */
-		$this->cache = (boolean)apply_filters( 'iqlrss/cache/shipstation', ! $skip_cache, $this );
+		$this->cache = (bool)apply_filters( 'iqlrss/cache/shipstation', ! $skip_cache, $this );
 
 
 		/**
