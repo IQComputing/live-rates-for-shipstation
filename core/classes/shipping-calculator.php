@@ -15,7 +15,7 @@
  * :: Base API Request Args
  * :: Packing / Packages
  * :: Run API Requests
- * :: Return Rate Methods
+ * :: Return Rates
  * :: Utility
  */
 namespace IQLRSS\Core\Classes;
