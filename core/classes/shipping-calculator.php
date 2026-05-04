@@ -292,7 +292,7 @@ class Shipping_Calculator {
             $this->log( esc_html__( 'Request missing a To Country Code and/or To Postal Code.', 'live-rates-for-shipstation' ), 'error' );
 
         // Log - Did not have all the necessary fields to run an API request on.
-        } else if( empty( $from_arr['from_country_code'] ) || empty( $from_arr['from_postal_code'] ) ) {
+        } else if( empty( $from_arr['from_country_code'] ) || 'WCBaseUnknown' === $from_arr['from_country_code'] || empty( $from_arr['from_postal_code'] ) || 'WCBasePostcode' === $from_arr['from_postal_code'] ) {
 			$this->log( esc_html__( 'Request missing a From Country Code and/or From Postal Code.', 'live-rates-for-shipstation' ), 'error' );
 		}
 
@@ -715,7 +715,7 @@ class Shipping_Calculator {
                 $this->log( sprintf(
 
 					/* translators: %1$d is the Product ID. %2$s is the Product Dimensions separated by a comma. */
-					esc_html__( 'Product ID #%1$d missing (%2$s) dimensions which may leads to packaging inconsistencies.', 'live-rates-for-shipstation' ),
+					esc_html__( 'Product ID #%1$d missing (%2$s) dimensions which may lead to packaging inconsistencies.', 'live-rates-for-shipstation' ),
 					$product->get_id(),
 					implode( ', ', array_diff_key( array(
 						'width'		=> 'width',
