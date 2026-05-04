@@ -50,6 +50,12 @@ Don't have a ShipStation account? [Open a ShipStation account today!](https://ww
 
 == Changelog ==
 
+= 1.2.6 (2026-05-03) =
+* Fixes quantity issue with Individual Packaging (Thanks @piexxer)!
+* Flips `iqlrss/cache/shipstation` hook to return TRUE instead of FALSE.
+* Removes `iqlrss/cache/cart_rates` filter hook.
+* Adds new Debug Types box to allow admins to log events, but not all events possible.
+
 = 1.2.5 (2026-03-12) =
 * Fixes isset() isse when checking FROM address (Thanks @richecolocity)!
 * Fixes return value on WooCommerce Integration filter hook.
@@ -59,7 +65,3 @@ Don't have a ShipStation account? [Open a ShipStation account today!](https://ww
 * Adds new Integration Settings for a full uninstall/cleanup.
 * Adds a new admin banner to let users know of a missing ShipStation API Key. (Thanks @robersw)!
 * Adds various patches found during unit testing.
-
-= 1.2.3 (2026-02-04) =
-* Patches issue of misnamed method call. (Thanks @centuryperf)!
-* Patches issue where warehouses would be called multiple times a request.
