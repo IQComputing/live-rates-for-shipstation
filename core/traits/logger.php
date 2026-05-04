@@ -15,6 +15,8 @@ trait Logger {
 	 * Passthru method - log what's given and give it back.
 	 * Could make a good Trait
 	 *
+	 * Used: (debug|notice|warning|error)
+	 *
 	 * @param Mixed $error 		- String or WP_Error
 	 * @param String $level 	- WooCommerce level (debug|info|notice|warning|error|critical|alert|emergency)
 	 * @param Array $context
@@ -23,7 +25,13 @@ trait Logger {
 	 */
 	protected function log( $error, $level = 'info', $context = array() ) {
 
-		if( ! \IQLRSS\Driver::get_ss_opt( 'logging_enabled', 0, true ) ) {
+		if( 'yes' !== \IQLRSS\Driver::get_ss_opt( 'logging_enabled', 'no', true ) ) {
+			return $error;
+		}
+
+		// Return Early - Error type does not match offered types.
+		$types = \IQLRSS\Driver::get_ss_opt( 'log_types', array() );
+		if( ! empty( $types ) && ! in_array( $level, $types ) ) {
 			return $error;
 		}
 

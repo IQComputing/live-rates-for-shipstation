@@ -2,6 +2,10 @@
 /**
  * ShipStation Settings Controller
  * Integrate into the ShipStation Settings.
+ *
+ * :: Action Hooks
+ * :: Filter Hooks
+ * :: Helper Methods
  */
 namespace IQLRSS\Core;
 
@@ -9,7 +13,7 @@ if( ! defined( 'ABSPATH' ) ) {
 	return;
 }
 
-Class Settings_Shipstation {
+class Settings_Shipstation {
 
 	/**
 	 * Initialize controller
@@ -42,6 +46,7 @@ Class Settings_Shipstation {
 		add_action( 'admin_enqueue_scripts',					array( $this, 'enqueue_admin_assets' ) );
 		add_action( 'woocommerce_cart_totals_after_order_total',array( $this, 'display_cart_weight' ) ) ;
 		add_action( 'woocommerce_update_option',				array( $this, 'clear_cache_on_update' ) );
+		add_action( 'woocommerce_update_options_general',		array( $this, 'clear_cache_on_settings_general' ) );
 
 	}
 
@@ -135,15 +140,20 @@ Class Settings_Shipstation {
 					document.querySelectorAll( '[name*=iqlrss]' ).forEach( ( $elm ) => {
 						if( $elm.name.includes( 'api_key' ) ) return;
 						if( $elm.name.includes( 'cart_weight' ) ) return;
+						if( $elm.name.includes( 'uninstall_full' ) ) return;
 						fnHide( $elm );
 					} );
 
 				<?php else : ?>
 
-					document.querySelectorAll( '[name*=iqlrss]' ).forEach( ( $elm ) => {
+					document.querySelectorAll( '[name*=iqlrss],[name*=logging_enabled]' ).forEach( ( $elm ) => {
 
-						if( 'checkbox' == $elm.type && $elm.name.includes( 'return_lowest' ) && ! $elm.checked ) {
-							fnHide( document.querySelector( '[name*=return_lowest_label]' ) );
+						if( 'checkbox' == $elm.type ) {
+							if( $elm.name.includes( 'return_lowest' ) && ! $elm.checked ) {
+								fnHide( document.querySelector( '[name*=return_lowest_label]' ) );
+							} else if( $elm.name.includes( 'logging_enabled' ) && ! $elm.checked ) {
+								fnHide( document.querySelector( '[name*=log_types]' ) );
+							}
 						}
 
 						if( $elm.name.includes( 'global_adjustment_type' ) && '' == $elm.value ) {
@@ -203,6 +213,8 @@ Class Settings_Shipstation {
 
 			\WC_Admin_Notices::add_custom_notice( 'iqlrss_missing_apikey', $warning );
 
+		} else {
+			\WC_Admin_Notices::remove_notice( 'iqlrss_missing_apikey' );
 		}
 
 	}
@@ -227,35 +239,6 @@ Class Settings_Shipstation {
 
 
 	/**
-	 * Clear the API cache.
-	 *
-	 * @return void
-	 */
-	public function clear_cache() {
-
-		global $wpdb;
-
-
-		/**
-		 * The API Class creates various transients to cache carrier services.
-		 * These transients are not tracked but generated based on the responses carrier codes.
-		 * All these transients are prefixed with our plugins unique string slug.
-		 * The first WHERE ensures only `_transient_` and the 2nd ensures only our plugins transients.
-		 */
-		$wpdb->query( $wpdb->prepare( "DELETE FROM %i WHERE option_name LIKE %s AND option_name LIKE %s", // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder
-			$wpdb->options,
-			$wpdb->esc_like( '_transient_' ) . '%',
-			'%' . $wpdb->esc_like( '_' . \IQLRSS\Driver::get( 'slug' ) . '_' ) . '%'
-		) );
-
-		// Set transient to clear any WC_Session caches if they are found.
-		$expires = absint( apply_filters( 'wc_session_expiration', DAY_IN_SECONDS * 2 ) ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
-		set_transient( \IQLRSS\Driver::plugin_prefix( 'wcs_timeout' ), time(), $expires );
-
-	}
-
-
-	/**
 	 * Clear the cache whenever the Integration settings have been updated.
 	 *
 	 * @param Array $args
@@ -270,6 +253,19 @@ Class Settings_Shipstation {
 
 		\IQLRSS\Driver::clear_cache();
 
+	}
+
+
+	/**
+	 * Clear teh cache whenever the WooCommerce > Settings > General has been updated.
+	 * This is important if the Store Address changes.
+	 *
+	 * Thanks Paul!
+	 *
+	 * @return void
+	 */
+	function clear_cache_on_settings_general() {
+		\IQLRSS\Driver::clear_cache();
 	}
 
 
@@ -319,7 +315,7 @@ Class Settings_Shipstation {
 	public function append_shipstation_integration_settings( $fields ) {
 
 		if( ! ( isset( $_GET, $_GET['section'] ) && 'shipstation' === $_GET['section'] ) ) {
-			return;
+			return $fields;
 		}
 
 		$carriers = array(
@@ -389,6 +385,9 @@ Class Settings_Shipstation {
 					} )(),
 					'desc_tip'		=> esc_html__( 'Services from selected carriers will be available when setting up Shipping Zones.', 'live-rates-for-shipstation' ),
 					'default'		=> '',
+					'custom_attributes' => array(
+						'data-placeholder'	=> esc_html__( '~ Select ShipStation Carriers ~', 'live-rates-for-shipstation' ),
+					),
 				);
 
 				$appended_fields[ \IQLRSS\Driver::plugin_prefix( 'global_warehouse' ) ] = array(
@@ -447,6 +446,23 @@ Class Settings_Shipstation {
 
 			// Append cleanup checkbox after logging.
 			if( 'logging_enabled' === $key ) {
+
+				$appended_fields[ \IQLRSS\Driver::plugin_prefix( 'log_types' ) ] = array(
+					'title'			=> esc_html__( 'IQLRSS Log Types', 'live-rates-for-shipstation' ),
+					'type'			=> 'multiselect',
+					'class'			=> 'chosen_select',
+					'options'		=> array(
+						'debug'	 	=> esc_html__( 'Debug Info', 'live-rates-for-shipstation' ),
+						'notice'	=> esc_html__( 'Override Notices', 'live-rates-for-shipstation' ),
+						'warning'	=> esc_html__( 'Warnings', 'live-rates-for-shipstation' ),
+						'error'		=> esc_html__( 'Errors', 'live-rates-for-shipstation' ),
+					),
+					'custom_attributes' => array(
+						'data-placeholder'	=> esc_html__( 'Log All', 'live-rates-for-shipstation' ),
+					),
+					'description'	=> esc_html__( 'Log specific events during live rate execution.', 'live-rates-for-shipstation' ),
+					'desc_tip'		=> esc_html__( 'Debug Info is full package and request info which can be a rather large dataset.', 'live-rates-for-shipstation' ),
+				);
 
 				$appended_fields[ \IQLRSS\Driver::plugin_prefix( 'uninstall_full' ) ] = array(
 					'title'			=> esc_html__( 'IQLRSS Full Uninstall', 'live-rates-for-shipstation' ),

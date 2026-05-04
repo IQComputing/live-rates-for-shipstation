@@ -26,11 +26,11 @@ class Shipstation  {
 
 
 	/**
-	 * Skip cache check
+	 * Cache API Requests
 	 *
 	 * @var Boolean
 	 */
-	public $skip_cache = false;
+	public $cache = false;
 
 
 	/**
@@ -86,7 +86,7 @@ class Shipstation  {
 		 *
 		 * @return Boolean
 		 */
-		$this->skip_cache = (boolean)apply_filters( 'iqlrss/cache/shipstation', $skip_cache, $this );
+		$this->cache = (boolean)apply_filters( 'iqlrss/cache/shipstation', ! $skip_cache, $this );
 
 
 		/**
@@ -100,8 +100,10 @@ class Shipstation  {
 		 *
 		 * @return Boolean
 		 */
-		$cache_time = apply_filters( 'iqlrss/cache/shipstation_expires', $this->cache_time, $this );
-		$this->cache_time = ( is_numeric( $cache_time ) ) ? absint( $cache_time ) : $this->cache_time;
+		if( $this->cache ) {
+			$cache_time = apply_filters( 'iqlrss/cache/shipstation_expires', $this->cache_time, $this );
+			$this->cache_time = ( is_numeric( $cache_time ) ) ? absint( $cache_time ) : $this->cache_time;
+		}
 
 	}
 
@@ -124,7 +126,7 @@ class Shipstation  {
 		$carriers = get_transient( $trans_key );
 
 		// No carriers cached - prime cache
-		if( empty( $carriers ) || $this->skip_cache ) {
+		if( empty( $carriers ) || ! $this->cache ) {
 			$carriers = $this->get_carriers();
 		}
 
@@ -172,12 +174,12 @@ class Shipstation  {
 		$trans_key = $this->prefix_key( 'carriers' );
 		$carriers = get_transient( $trans_key );
 		$data = array(
-			'carriers' => ( ! empty( $carriers ) && ! $this->skip_cache ) ? $carriers : array(),
+			'carriers' => ( ! empty( $carriers ) && $this->cache ) ? $carriers : array(),
 			'services' => array(),
 			'packages' => array(),
 		);
 
-		if( empty( $data['carriers'] ) || $this->skip_cache ) {
+		if( empty( $data['carriers'] ) || ! $this->cache ) {
 
 			$body = $this->make_request( 'get', 'carriers' );
 
@@ -350,7 +352,7 @@ class Shipstation  {
 		$trans_key  = $this->prefix_key( 'warehouses' );
 		$warehouses = get_transient( $trans_key );
 
-		if( false === $warehouses || $this->skip_cache ) {
+		if( false === $warehouses || ! $this->cache ) {
 
 			$warehouses = array();
 			$body = $this->make_request( 'get', 'warehouses' );
@@ -385,7 +387,7 @@ class Shipstation  {
 
 			// Cache Warehouse data.
 			set_transient( $trans_key, $warehouses, $this->cache_time );
-			
+
 		}
 
 		return ( ! empty( $warehouses ) ) ? $warehouses : array();
@@ -424,7 +426,7 @@ class Shipstation  {
 		$trans_key  = $this->prefix_key( 'packages' );
 		$packages = get_transient( $trans_key );
 
-		if( empty( $packages ) || $this->skip_cache ) {
+		if( empty( $packages ) || ! $this->cache ) {
 
 			$body = $this->make_request( 'get', 'packages' );
 

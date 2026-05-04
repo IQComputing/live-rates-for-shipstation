@@ -15,7 +15,7 @@
  * :: Base API Request Args
  * :: Packing / Packages
  * :: Run API Requests
- * :: Return Rate Methods
+ * :: Return Rates
  * :: Utility
  */
 namespace IQLRSS\Core\Classes;
@@ -25,7 +25,7 @@ if( ! defined( 'ABSPATH' ) ) {
 	return;
 }
 
-Class Shipping_Calculator {
+class Shipping_Calculator {
 
     /**
 	 * Inherit logger traits
@@ -292,7 +292,7 @@ Class Shipping_Calculator {
             $this->log( esc_html__( 'Request missing a To Country Code and/or To Postal Code.', 'live-rates-for-shipstation' ), 'error' );
 
         // Log - Did not have all the necessary fields to run an API request on.
-        } else if( empty( $from_arr['from_country_code'] ) || empty( $to_arr['from_postal_code'] ) ) {
+        } else if( empty( $from_arr['from_country_code'] ) || empty( $from_arr['from_postal_code'] ) ) {
 			$this->log( esc_html__( 'Request missing a From Country Code and/or From Postal Code.', 'live-rates-for-shipstation' ), 'error' );
 		}
 
@@ -320,12 +320,12 @@ Class Shipping_Calculator {
         // 'destination' may come from WC_Cart data
         // 'to' may come from instance $args
         $to = $this->get( 'to', $this->get( 'destination' ), array() );
-        return array(
+        return array_map( 'trim', array(
             'to_country_code'	 => ( isset( $to['country'] ) ) ? $to['country'] : '',
             'to_postal_code'	 => ( isset( $to['postcode'] ) ) ? $to['postcode'] : '',
             'to_city_locality'	 => ( isset( $to['city'] ) ) ? $to['city'] : '',
             'to_state_province'	 => ( isset( $to['state'] ) ) ? $to['state'] : '',
-        );
+        ) );
 
     }
 
@@ -364,7 +364,7 @@ Class Shipping_Calculator {
             $from_arr = $warehouse;
         }
 
-        return $from_arr;
+        return array_map( 'trim', $from_arr );
 
     }
 
@@ -457,7 +457,7 @@ Class Shipping_Calculator {
         $products = $this->get_products();
         $default_weight = $this->get( 'minweight', '' );
 
-        foreach( $products as $product ) {
+        foreach( $products as $carthash => $product ) {
 
 			// Continue - No shipping needed for product.
 			if( ! $product->needs_shipping() ) continue;
@@ -514,7 +514,7 @@ Class Shipping_Calculator {
 				);
 			}
 
-			$requests[ $product->get_id() ] = $request;
+			$requests[ $carthash ] = $request;
 
 		}
 
@@ -541,7 +541,7 @@ Class Shipping_Calculator {
 			'largest' => array_combine( array( 'length', 'width', 'height', 'weight' ), array_fill( 0, 4, 0 ) ),
 		);
 
-		foreach( $products as $key => $product ) {
+		foreach( $products as $carthash => $product ) {
 
 			// Continue - No shipping needed for product.
 			if( ! $product->needs_shipping() ) continue;
@@ -568,8 +568,8 @@ Class Shipping_Calculator {
 
 			}
 
-			$dimensions['running']['weight'] = $dimensions['running']['weight'] + ( floatval( $request['weight'] ) * $this->get_cartitem_val( $key, 'quantity', 1 ) );
-			$dimensions['running']['height'] = $dimensions['running']['height'] + ( floatval( $product->get_height() ) * $this->get_cartitem_val( $key, 'quantity', 1 ) );
+			$dimensions['running']['weight'] = $dimensions['running']['weight'] + ( floatval( $request['weight'] ) * $this->get_cartitem_val( $carthash, 'quantity', 1 ) );
+			$dimensions['running']['height'] = $dimensions['running']['height'] + ( floatval( $product->get_height() ) * $this->get_cartitem_val( $carthash, 'quantity', 1 ) );
 			$dimensions['largest'] = array(
 				'length'	=> ( $dimensions['largest']['length'] < $product->get_length() ) ? $product->get_length() : $dimensions['largest']['length'],
 				'width'		=> ( $dimensions['largest']['width'] < $product->get_width() )   ? $product->get_width()  : $dimensions['largest']['width'],
@@ -667,7 +667,7 @@ Class Shipping_Calculator {
 
 		/* Return Early - No custom boxes found. */
 		if( empty( $boxes ) ) {
-			$this->log( esc_html__( 'Custom Boxes selected, but no boxes found. Items packed individually', 'live-rates-for-shipstation' ), 'warning' );
+			$this->log( esc_html__( 'Custom Boxes selected, but no boxes found. Items packed individually.', 'live-rates-for-shipstation' ), 'warning' );
 			return $this->get_requestsby_individual();
 		}
 
@@ -678,7 +678,7 @@ Class Shipping_Calculator {
 		}
 
 		// Loop the items, grabs their dimensions, and associates them with WC_Boxpack for future packing.
-		foreach( $this->cart as $key => $cart_item ) {
+		foreach( $this->cart as $carthash => $cart_item ) {
 
             if( ! isset( $cart_item['data'] ) || ! is_a( $cart_item['data'], 'WC_Product' ) ) continue;
 			if( ! $cart_item['data']->needs_shipping() ) continue;
@@ -804,7 +804,7 @@ Class Shipping_Calculator {
 		}
 
 		if( ! empty( $box_log ) ) {
-			$this->log( esc_html__( 'Custom Boxes Packed', 'live-rates-for-shipstation' ), 'debug', $box_log );
+			$this->log( esc_html__( 'Custom Boxes Packed.', 'live-rates-for-shipstation' ), 'debug', $box_log );
 		}
 
 		return $requests;
@@ -949,7 +949,7 @@ Class Shipping_Calculator {
 
         // Individual items get quantities applied.
         if( 'individual' === $this->get( 'packing', 'individual' ) ) {
-            $quantity = $this->get_cartitem_val( array_key_first( $package ), 'quantity', 1 );
+            $quantity = $this->get_cartitem_val( array_key_first( $package_arr ), 'quantity', 1 );
             $wc_rate['cost'] = array( floatval( $shiprate['cost'] ) * absint( $quantity ) );
             $wc_rate['meta_data']['rates']['qty'] = $quantity;
         }
@@ -1089,7 +1089,7 @@ Class Shipping_Calculator {
 		// Return Early - No enabled services.
 		$services_enabled = $this->get( 'services_enabled' );
 		if( empty( $services_enabled ) ) {
-			$this->log( esc_html__( 'No enabled carrier services found. Please enable carrier services within the shipping zone.', 'live-rates-for-shipstation' ), 'error' );
+			$this->log( esc_html__( 'No enabled carrier services found. Please enable carrier services within the shipping zone. Please ensure carriers are selected within the integration settings.', 'live-rates-for-shipstation' ), 'error' );
 			return;
 		}
 

@@ -3,7 +3,7 @@
  * Plugin Name: Live Rates for ShipStation
  * Plugin URI: https://iqcomputing.com/contact/
  * Description: ShipStation shipping method with live rates.
- * Version: 1.2.3
+ * Version: 1.2.5
  * Requires at least: 6.2
  * Author: IQComputing
  * Author URI: https://iqcomputing.com/
@@ -25,7 +25,7 @@ class Driver {
 	 *
 	 * @var String
 	 */
-	protected static $version = '1.2.3';
+	protected static $version = '1.2.5';
 
 
 	/**
@@ -142,6 +142,7 @@ class Driver {
 
 		global $wpdb;
 
+
 		/**
 		 * The API Class creates various transients to cache carrier services.
 		 * These transients are not tracked but generated based on the responses carrier codes.
@@ -154,9 +155,13 @@ class Driver {
 			'%' . $wpdb->esc_like( '_' . static::get( 'slug' ) . '_' ) . '%'
 		) );
 
-		// Set transient to clear any WC_Session caches if they are found.
-		$expires = absint( apply_filters( 'wc_session_expiration', DAY_IN_SECONDS * 2 ) ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
-		set_transient( static::plugin_prefix( 'wcs_timeout' ), time(), $expires );
+
+		/**
+		 * WooCommerce caches the shipping rates with a transient version.
+		 * Forcing a refresh on the version invalidates all customer
+		 * shipping calculations, forcing the system to recalculate the cart.
+		 */
+		\WC_Cache_Helper::get_transient_version( 'shipping', true );
 
 	}
 
@@ -247,4 +252,4 @@ add_action( 'plugins_loaded', array( '\IQLRSS\Driver', 'drive' ), 8 );
  */
 require_once rtrim( __DIR__, '\\/' ) . '/_stallation.php';
 register_deactivation_hook( __FILE__, array( '\IQLRSS\Stallation', 'deactivate' ) );
-register_activation_hook( 	__FILE__, array( '\IQLRSS\Stallation', 'uninstall' ) );
+register_uninstall_hook( 	__FILE__, array( '\IQLRSS\Stallation', 'uninstall' ) );

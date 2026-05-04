@@ -8,7 +8,7 @@ if( ! defined( 'ABSPATH' ) ) {
 	return;
 }
 
-Class Admin_Edit_Order {
+class Admin_Edit_Order {
 
 	/**
 	 * Initialize controller
@@ -16,6 +16,8 @@ Class Admin_Edit_Order {
 	 * @return void
 	 */
 	public static function initialize() {
+
+		if( ! is_admin() ) return;
 
 		$class = new self();
 		$class->action_hooks();
