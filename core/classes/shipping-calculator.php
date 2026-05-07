@@ -1156,10 +1156,10 @@ class Shipping_Calculator {
             }
         }
 
-        return array_merge(
+        return array( $lowest_service => array_merge(
             (array)$rates[ $lowest_service ],
             array( 'label' => ( ! empty( $label ) ) ? $label : $rates[ $lowest_service ]['label'] ),
-        );
+        ) );
 
     }
 
