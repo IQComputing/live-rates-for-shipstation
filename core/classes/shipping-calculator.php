@@ -1097,6 +1097,11 @@ class Shipping_Calculator {
         $this->setup_packages();
         $this->setup_rates();
 
+        // Log processed rates
+		$this->log( esc_html__( 'Calcualtor Processed Rates', 'live-rates-for-shipstation' ), 'debug', array(
+			'rates' => $this->rates,
+		) );
+
         return $this->prepare_rates( $this->rates );
 
     }
@@ -1114,6 +1119,11 @@ class Shipping_Calculator {
         // Maybe process the single lowest rates.
         if( 'yes' === $this->get( 'ssopt.return_lowest', 'no' ) ) {
             $rates = $this->prepare_single_lowest_rate( $rates );
+
+            // Log lowest rate
+            $this->log( esc_html__( 'Lowest Rate', 'live-rates-for-shipstation' ), 'debug', array(
+                'rates' => $rates,
+            ) );
 
         // Sort and remove anything but the cheapest rates.
         } else {

@@ -750,7 +750,7 @@ class Shipstation  {
 
 		// Log API Request Result
 		/* translators: %s is the API endpoint (example: carriers/rates). */
-		$this->log( sprintf( esc_html__( 'ShipStation API Request to %s', 'live-rates-for-shipstation' ), $endpoint ), 'debug', array(
+		$this->log( sprintf( esc_html__( 'ShipStation API Request to %s', 'live-rates-for-shipstation' ), $endpoint ), 'info', array(
 			'args'		=> $args,
 			'code'		=> $code,
 			'response'	=> $body,

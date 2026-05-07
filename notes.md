@@ -12,8 +12,11 @@ iqlrss/zone/settings                    - Filters the WC_Shipping_Method setting
 # WC Log Types
 
 ```
-debug		make_request()			args, code, response
-debug		Custom Boxes Packed.	box_log
+info		make_request()			args, code, response
+
+debug		Custom Boxes Packed.	    box_log
+debug       Calcualtor Processed Rates  get_rates
+debug       Lowest Rate                 prepare_rates
 
 notice		Shipping Calculations Object overridden.
 notice		The Shipping packages were modified by a 3rd party using the `iqlrss/shipping/packages` filter hook.
