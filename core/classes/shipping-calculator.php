@@ -842,9 +842,14 @@ class Shipping_Calculator {
         }
 
         // Run the API Requests.
+        $cart_rates = array();
         foreach( $this->packed as $idx => $package ) {
 
-            // API Request!
+            /**
+             * API Request!
+             * The API returns rates for all enabled carriers, and all services.
+             * self::process_available_rate() "gates" the returned services to those enabled in the Shiping Zone.
+             */
             $this->requests['reqs'][ $idx ] = array_merge(
                 $package,
                 $this->requests['base'],
@@ -871,37 +876,32 @@ class Shipping_Calculator {
                 if( ! isset( $rate['id'] ) ) $rate['id'] = $hash;
 
                 // Set rate
-                if( ! isset( $this->rates[ $hash ] ) ) {
-                    $this->rates[ $hash ] = $rate;
+                if( ! isset( $cart_rates[ $hash ] ) ) {
+                    $cart_rates[ $hash ] = $rate;
 
                 // Append cost, merge rates, merge boxes.
                 } else {
 
                     // Cost
-                    $this->rates[ $hash ]['cost'] = array_merge( $this->rates[ $hash ]['cost'], (array)$rate['cost'] );
+                    $cart_rates[ $hash ]['cost'] = array_merge( $cart_rates[ $hash ]['cost'], (array)$rate['cost'] );
 
-                    // Metadata
-                    if( ! empty( $this->rates[ $hash ]['meta_data'] ) ) {
+                    // Metadata - Rates
+                    $cart_rates[ $hash ]['meta_data']['rates'] = array_merge(
+                        (array)$cart_rates[ $hash ]['meta_data']['rates'],
+                        (array)$rate['meta_data']['rates']
+                    );
 
-                        // Rates
-                        if( isset( $this->rates[ $hash ]['meta_data']['rates'] ) && $rate['meta_data']['rates'] ) {
-                            $this->rates[ $hash ]['meta_data']['rates'] = array_merge(
-                                (array)$this->rates[ $hash ]['meta_data']['rates'],
-                                (array)$rate['meta_data']['rates']
-                            );
-                        }
-
-                        // Boxes
-                        if( isset( $this->rates[ $hash ]['meta_data']['boxes'] ) && $rate['meta_data']['boxes'] ) {
-                            $this->rates[ $hash ]['meta_data']['boxes'] = array_merge(
-                                (array)$this->rates[ $hash ]['meta_data']['boxes'],
-                                (array)$rate['meta_data']['boxes']
-                            );
-                        }
-                    }
+                    // Metadata - Boxes
+                    $cart_rates[ $hash ]['meta_data']['boxes'] = array_merge(
+                        (array)$cart_rates[ $hash ]['meta_data']['boxes'],
+                        (array)$rate['meta_data']['boxes']
+                    );
                 }
             }
         }
+
+        // Ensure we only set rates that encompass all our boxes.
+        $this->rates = array_filter( $cart_rates, fn( $arr ) => count( $arr['meta_data']['boxes'] ) == count( $this->packed ) );
 
     }
 
