@@ -12,8 +12,11 @@ iqlrss/zone/settings                    - Filters the WC_Shipping_Method setting
 # WC Log Types
 
 ```
-debug		make_request()			args, code, response
-debug		Custom Boxes Packed.	box_log
+info		make_request()			args, code, response
+
+debug		Custom Boxes Packed.	    box_log
+debug       Calcualtor Processed Rates  get_rates
+debug       Lowest Rate                 prepare_rates
 
 notice		Shipping Calculations Object overridden.
 notice		The Shipping packages were modified by a 3rd party using the `iqlrss/shipping/packages` filter hook.
@@ -23,7 +26,7 @@ warning		Could not find carrier information.
 warning		No ShipStation REST API Key found.
 warning		Warehosue found, but was missing a required API parameter.
 warning		Custom Boxes selected, but no boxes found. Items packed individually.
-warning		Product ID #%1$d missing (%2$s) dimensions which may leads to packaging inconsistencies.
+warning		Product ID #%1$d missing (%2$s) dimensions which may lead to packaging inconsistencies.
 warning		Setup Rates tried to run with no packed items to work with.
 warning		Setup Rates tried to run with no base API args set.
 warning		Setup Rates tried to run but could not determine enabled carriers.

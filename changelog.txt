@@ -4,15 +4,17 @@ This is a brief text document keeping track of changes to the plugin. For a full
 
 = 1.2.6 =
 
-Relase Date: ??? ??, 2026.
+Relase Date: May 04, 2026.
 
 * Overview
+	* Fixes quantity issue with Individual Packaging (Thanks @piexxer)!
 	* WooCommerce has resolved caclulate_shipping() caching.
 		* Removes `iqlrss/cache/cart_rates` filter hook.
 		* Removes WC_Session caching from IQLRSS Shipping Method class.
 		* Adds new customer cache invalidation.
 	* Flips `iqlrss/cache/shipstation` hook to return TRUE instead of FALSE.
 	* Adds new Debug Types box to allow admins to log events, but not all events possible.
+		* This will allow admins to log errors without having to log API notices, or they may do both.
 
 = 1.2.5 =
 

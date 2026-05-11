@@ -452,6 +452,7 @@ class Settings_Shipstation {
 					'type'			=> 'multiselect',
 					'class'			=> 'chosen_select',
 					'options'		=> array(
+						'info'		=> esc_html__( 'API Responses', 'live-rates-for-shipstation' ),
 						'debug'	 	=> esc_html__( 'Debug Info', 'live-rates-for-shipstation' ),
 						'notice'	=> esc_html__( 'Override Notices', 'live-rates-for-shipstation' ),
 						'warning'	=> esc_html__( 'Warnings', 'live-rates-for-shipstation' ),
