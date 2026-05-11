@@ -399,6 +399,7 @@ class Shipping_Calculator {
 		 * $requests = Array( Array(
 		 * ~ Required Fields:
 		 * 		'_name' => '$productID|$productName', - This format makes it easy to show the Shop Manager what's packed into the box.
+         *      'quantity' => 1,
 		 * 		'dimensions' => array(
 		 * 			'length => 123,
 		 * 			'width' => 123,
@@ -468,6 +469,7 @@ class Shipping_Calculator {
 					$product->get_name(),
 				),
 				'weight' => ( ! empty( $product->get_weight() ) ) ? $product->get_weight() : $default_weight,
+                'quantity' => $this->get_cartitem_val( $carthash, 'quantity', 1 ),
 			);
 			$physicals = array_filter( array(
 				'length'	=> $product->get_length(),
@@ -624,6 +626,7 @@ class Shipping_Calculator {
             // Return Early - We have dimensions to work with.
             } else {
                 return array( array(
+                    'quantity' => 1,
                     'weight' => array(
                         'unit'	=> $this->api()->convert_unit_term( $this->get( 'weight_unit' ) ),
                         'value' => (float)round( wc_get_weight( $physicals['weight'], $this->get( 'weight_unit' ) ), 2 ),
@@ -644,6 +647,7 @@ class Shipping_Calculator {
 		}
 
         return array( array(
+            'quantity' => 1,
             'weight' => array(
                 'value' => (float)round( wc_get_weight( $physicals['weight'], $this->get( 'weight_unit' ) ), 2 ),
                 'unit'	=> $this->api()->convert_unit_term( $this->get( 'weight_unit' ) ),
@@ -766,6 +770,7 @@ class Shipping_Calculator {
 
 			$packed_items = ( is_array( $package->packed ) ) ? array_map( function( $item ) { return $item->meta['_name']; }, $package->packed ) : array();
 			$requests[] = array(
+                'quantity' => 1,
 				'weight' => array(
 					'value' => round( $package->weight, 2 ),
 					'unit'	=> $this->api()->convert_unit_term( $this->get( 'weight_unit' ) ),
@@ -887,8 +892,8 @@ class Shipping_Calculator {
 
                     // Metadata - Rates
                     $cart_rates[ $hash ]['meta_data']['rates'] = array_merge(
+                        (array)$rate['meta_data']['rates'],
                         (array)$cart_rates[ $hash ]['meta_data']['rates'],
-                        (array)$rate['meta_data']['rates']
                     );
 
                     // Metadata - Boxes
@@ -926,20 +931,21 @@ class Shipping_Calculator {
         }
 
         $package     = reset( $package_arr );
-        $rate_name	 = ( isset( $shiprate['_name'] ) ) ? $shiprate['_name'] : '';
-		$rate_name	 = ( empty( $rate_name ) && isset( $package['nickname'] ) ) ? $package['nickname'] : $rate_name;
+        $rate_name	 = $package['nickname'] ?? '';
+        $rate_name   = $rate_name ?: $package['_name'] ?? $shiprate['_name'] ?? '';
         $service_arr = $services[ $shiprate['carrier_id'] ][ $shiprate['code'] ];
 
         $wc_rate = array(
             'label'		=> ( ! empty( $service_arr['nickname'] ) ) ? $service_arr['nickname'] : $shiprate['name'],
-            'cost'		=> array( floatval( $shiprate['cost'] ) ),
+            'cost'		=> array_fill( 0, $package['quantity'] ?? 1, floatval( $shiprate['cost'] ) ),
             'meta_data' => array(
                 'carrier' => $shiprate['carrier_name'],
                 'service' => $shiprate['name'],
-                'rates'   => array(
+                'rates'   => array( array(
                     '_name'=> $rate_name, // Item products(ID|Name) or box nickname.
 					'rate' => floatval( $shiprate['cost'] ),
-                ),
+                    'quantity' => $package['quantity'] ?? 1,
+                ) ),
                 'boxes'   => array( $package ),
                 sprintf( '_%s', \IQLRSS\Driver::plugin_prefix( 'carrier_id' ) )   => $shiprate['carrier_id'],
                 sprintf( '_%s', \IQLRSS\Driver::plugin_prefix( 'carrier_code' ) ) => $shiprate['carrier_code'],
@@ -947,18 +953,11 @@ class Shipping_Calculator {
             )
         );
 
-        // Individual items get quantities applied.
-        if( 'individual' === $this->get( 'packing', 'individual' ) ) {
-            $quantity = $this->get_cartitem_val( array_key_first( $package_arr ), 'quantity', 1 );
-            $wc_rate['cost'] = array( floatval( $shiprate['cost'] ) * absint( $quantity ) );
-            $wc_rate['meta_data']['rates']['qty'] = $quantity;
-        }
-
         // Add the Service Adjustment.
-        $this->process_service_adjustments( $wc_rate, $shiprate, $package );
+        $this->process_service_adjustments( $wc_rate, $shiprate, $package_arr );
 
         // Add any Other Costs.
-        $this->process_other_adjustments( $wc_rate, $shiprate, $package );
+        $this->process_other_adjustments( $wc_rate, $shiprate, $package_arr );
 
         return $wc_rate;
 
@@ -1036,8 +1035,12 @@ class Shipping_Calculator {
         if( ! empty( $shiprate['other_costs'] ) ) {
             foreach( $shiprate['other_costs'] as $slug => $cost_arr ) {
                 if( empty( $cost_arr['amount'] ) ) continue;
-                $wc_rate['cost'][] = floatval( $cost_arr['amount'] );
-                $other[ $slug ] = $cost_arr['amount'];
+
+                $other[ $slug ]  = $cost_arr['amount'];
+                $wc_rate['cost'] = array_merge(
+                    (array)$wc_rate['cost'],
+                    array_fill( 0, $package['quantity'] ?? 1, floatval( $cost_arr['amount'] ) )
+                );
             }
         }
 
@@ -1184,14 +1187,9 @@ class Shipping_Calculator {
      */
     protected function prepare_sorted_rates( $rates ) {
 
-        foreach( $rates as $rate_arr ) {
-
-            // If more than 1 rate, add the cheapest.
-            if( count( $rate_arr['cost'] ) > 1 ) {
-                usort( $rate_arr['cost'], fn( $r1, $r2 ) => ( (float)$r1 < (float)$r2 ) ? -1 : 1 );
-                $rate_arr['cost'] = (array)array_shift( $rate_arr['cost'] );
-            }
-        }
+        usort( $rates, function( $r1, $r2 ) {
+            return array_sum( (array)$r1['cost'] ) < array_sum( (array)$r2['cost'] ) ? -1 : 1;
+        } );
 
         return $rates;
 
