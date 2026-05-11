@@ -3,7 +3,7 @@ Contributors: iqcomputing
 Tags: woocommerce, shipstation, usps, ups, fedex
 Requires at least: 6.2
 Tested up to: 6.9
-Stable tag: 1.2.6
+Stable tag: 1.2.7
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -50,6 +50,13 @@ Don't have a ShipStation account? [Open a ShipStation account today!](https://ww
 
 == Changelog ==
 
+= 1.2.7 (2026-05-11) =
+* May The 11th Be With You?
+* Patches issue with individual shipping skipping quantity in some cases.
+* Patches issue with package sorting not accounting for the full costs.
+* Patches issue where all rates would return instead of rates that encompass all packed packages.
+* Big thanks to @sinisterfish for their detailed report!
+
 = 1.2.6 (2026-05-04) =
 * May The 4th Be With You!
 * Fixes quantity issue with Individual Packaging (Thanks @piexxer)!
@@ -61,8 +68,3 @@ Don't have a ShipStation account? [Open a ShipStation account today!](https://ww
 * Fixes isset() isse when checking FROM address (Thanks @richecolocity)!
 * Fixes return value on WooCommerce Integration filter hook.
 * Adds new cache busting when WooCommerce > Settings > General options are saved.
-
-= 1.2.4 (2026-02-12) =
-* Adds new Integration Settings for a full uninstall/cleanup.
-* Adds a new admin banner to let users know of a missing ShipStation API Key. (Thanks @robersw)!
-* Adds various patches found during unit testing.

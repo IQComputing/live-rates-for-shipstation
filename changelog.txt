@@ -2,6 +2,20 @@
 
 This is a brief text document keeping track of changes to the plugin. For a full history, see the Github Repository.
 
+= 1.2.7 =
+
+Relase Date: May 11, 2026.
+
+* Overview
+	* Fixes Shipping_Calculator::setup_rates() method
+		* Metadata Rates now combines all found rates instead of holding onto only the latest.
+		* Rates now only return those that encompass all packed packages.
+		* Rates Cost moved from multiplication via quantity to merging.
+			* This creates a flat array of all costs (rate, service, upcharge), allowing WooCommerce to array_sum() the full array.
+	* Fixes usort() to use array_sum comparison instead of the first found cost comparison.
+	* Adds a quantity to all the packaging methods for consistency and ease-of-access.
+	* Thanks @sinisterfish for the bug report!
+
 = 1.2.6 =
 
 Relase Date: May 04, 2026.
