@@ -2,8 +2,8 @@
 Contributors: iqcomputing
 Tags: woocommerce, shipstation, usps, ups, fedex
 Requires at least: 6.2
-Tested up to: 6.9
-Stable tag: 1.2.8
+Tested up to: 7.0
+Stable tag: 1.2.9
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -50,7 +50,7 @@ Don't have a ShipStation account? [Open a ShipStation account today!](https://ww
 
 == Changelog ==
 
-= 1.2.8 (2026-06-05) =
+= 1.2.9 (2026-06-05) =
 * Version bump to keep in step with WordPress 7.0 minor updates.
 
 = 1.2.7 (2026-05-11) =
