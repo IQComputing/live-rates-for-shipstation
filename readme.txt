@@ -3,7 +3,7 @@ Contributors: iqcomputing
 Tags: woocommerce, shipstation, usps, ups, fedex
 Requires at least: 6.2
 Tested up to: 6.9
-Stable tag: 1.2.7
+Stable tag: 1.2.8
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -49,6 +49,9 @@ Don't have a ShipStation account? [Open a ShipStation account today!](https://ww
 1. From here you can setup custom boxes and select which services from the previously selected carriers you would like to make available for the selected shipping zone.
 
 == Changelog ==
+
+= 1.2.8 (2026-06-05) =
+* Version bump to keep in step with WordPress 7.0 minor updates.
 
 = 1.2.7 (2026-05-11) =
 * May The 11th Be With You?
