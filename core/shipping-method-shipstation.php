@@ -711,9 +711,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 */
 	public function calculate_shipping( $cart = array() ) {
 
-		if( empty( $cart ) || empty( $cart['contents'] ) ) {
-			return;
-		} else if( ! isset( $cart['destination'] ) || empty( $cart['destination']['postcode'] ) ) {
+		if( empty( $cart ) || empty( $cart['contents'] ) || empty( $cart['destination'] ) ) {
 			return;
 		}
 
