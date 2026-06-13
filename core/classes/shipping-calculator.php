@@ -1265,7 +1265,7 @@ class Shipping_Calculator {
      */
     public function get_postcode_exempt_countries() {
 	    return array_keys( array_filter(
-            \WC()->countries->get_country_locale(),
+            WC()->countries->get_country_locale(),
             fn( $c ) => isset( $c['postcode']['required'] ) && ! $c['postcode']['required']
         ) );
     }

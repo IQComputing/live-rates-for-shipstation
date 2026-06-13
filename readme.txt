@@ -19,11 +19,11 @@ In order to use the Live Rates for ShipStation plugin, you must have a [premium 
 
 Please review [ShipStations Terms of Service](https://www.shipstation.com/terms-of-service/) and [ShipStations Privacy Policy](https://auctane.com/legal/privacy-policy/) for more information about how your data is managed.
 
-Don't have a ShipStation account? [Open a ShipStation account today!](https://www.kqzyfj.com/click-101532691-15733876)
+Don't have a ShipStation account? [Open a free ShipStation account today!](https://www.kqzyfj.com/click-101532691-15733876)
 
 == Plugin Requirements ==
 
-1. [A Premium ShipStation Account](https://www.kqzyfj.com/click-101532691-15733876)
+1. [A Free ShipStation Account](https://www.kqzyfj.com/click-101532691-15733876)
 1. [The WooCommerce Plugin](https://wordpress.org/plugins/woocommerce/)
 1. [The ShipStation for WooCommerce Plugin](https://woocommerce.com/products/shipstation-integration/)
 1. The Live Rates for ShipStation Plugin
@@ -49,6 +49,9 @@ Don't have a ShipStation account? [Open a ShipStation account today!](https://ww
 1. From here you can setup custom boxes and select which services from the previously selected carriers you would like to make available for the selected shipping zone.
 
 == Changelog ==
+
+= 1.2.10 (2026-06-15) =
+* Support for countries that do not require postcodes (Thanks @lgs77717)!
 
 = 1.2.9 (2026-06-05) =
 * Version bump to keep in step with WordPress 7.0 minor updates.
