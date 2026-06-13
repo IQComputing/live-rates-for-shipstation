@@ -319,13 +319,21 @@ class Shipping_Calculator {
 
         // 'destination' may come from WC_Cart data
         // 'to' may come from instance $args
-        $to = $this->get( 'to', $this->get( 'destination' ), array() );
-        return array_map( 'trim', array(
-            'to_country_code'	 => ( isset( $to['country'] ) ) ? $to['country'] : '',
-            'to_postal_code'	 => ( isset( $to['postcode'] ) ) ? $to['postcode'] : '',
-            'to_city_locality'	 => ( isset( $to['city'] ) ) ? $to['city'] : '',
-            'to_state_province'	 => ( isset( $to['state'] ) ) ? $to['state'] : '',
+        $to = $this->get( 'to', $this->get( 'destination', array() ) );
+        $to_arr = array_map( 'trim', array(
+            'to_country_code'	=> ( isset( $to['country'] ) )  ? $to['country']  : '',
+            'to_postal_code'	=> ( isset( $to['postcode'] ) ) ? $to['postcode'] : '',
+            'to_city_locality'	=> ( isset( $to['city'] ) )     ? $to['city']     : '',
+            'to_state_province'	=> ( isset( $to['state'] ) )    ? $to['state']    : '',
         ) );
+
+        // Maybe a country where postcodes are not required.
+        $countries = $this->get_postcode_exempt_countries();
+        if( in_array( strtoupper( $to_arr['to_country_code'] ), $countries ) ) {
+            $to_arr['to_postal_code'] = '00000';
+        }
+
+        return $to_arr;
 
     }
 
@@ -348,13 +356,20 @@ class Shipping_Calculator {
 
         // 'from' come from instance $args
         $from = $this->get( 'from', array() );
-        $from_arr = array(
-            'from_country_code'	 => ( isset( $from['country'] ) ) ? $from['country'] : WC()->countries->get_base_country(),
+        $from_arr = array_map( 'trim', array(
+            'from_country_code'	 => ( isset( $from['country'] ) )  ? $from['country']  : WC()->countries->get_base_country(),
             'from_postal_code'	 => ( isset( $from['postcode'] ) ) ? $from['postcode'] : WC()->countries->get_base_postcode(),
-            'from_city_locality' => ( isset( $from['city'] ) ) ? $from['city'] : WC()->countries->get_base_city(),
-            'from_state_province'=> ( isset( $from['state'] ) ) ? $from['state'] : WC()->countries->get_base_state(),
-        );
+            'from_city_locality' => ( isset( $from['city'] ) )     ? $from['city']     : WC()->countries->get_base_city(),
+            'from_state_province'=> ( isset( $from['state'] ) )    ? $from['state']    : WC()->countries->get_base_state(),
+        ) );
 
+        // Maybe a country where postcodes are not required.
+        $countries = $this->get_postcode_exempt_countries();
+        if( in_array( strtoupper( $from_arr['from_country_code'] ), $countries ) ) {
+            $from_arr['from_postal_code'] = '00000';
+        }
+
+        // Maybe a warehouse?
         $warehouse = $this->get_apival( 'warehouse', array() );
         if( ! empty( $warehouse ) && is_array( $warehouse ) && count( array_intersect_key( $from_arr, $warehouse ) ) <= 3 ) {
             $this->log( esc_html__( 'Warehosue found, but was missing a required API parameter.', 'live-rates-for-shipstation' ), 'warning', array(
@@ -364,7 +379,7 @@ class Shipping_Calculator {
             $from_arr = $warehouse;
         }
 
-        return array_map( 'trim', $from_arr );
+        return $from_arr;
 
     }
 
@@ -1240,6 +1255,19 @@ class Shipping_Calculator {
         if( ! isset( $this->cart[ $id ][ $slug ] ) ) return $default;
         return $this->cart[ $id ][ $slug ];
 
+    }
+
+
+    /**
+     * Return an array of country codes which do not require postcodes.
+     *
+     * @return Array
+     */
+    public function get_postcode_exempt_countries() {
+	    return array_keys( array_filter(
+            \WC()->countries->get_country_locale(),
+            fn( $c ) => isset( $c['postcode']['required'] ) && ! $c['postcode']['required']
+        ) );
     }
 
 
