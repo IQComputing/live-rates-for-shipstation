@@ -52,6 +52,7 @@ Don't have a ShipStation account? [Open a free ShipStation account today!](https
 
 = 1.2.10 (2026-06-15) =
 * Support for countries that do not require postcodes (Thanks @lgs77717)!
+* Bumps required version to WordPress 6.5.
 
 = 1.2.9 (2026-06-05) =
 * Version bump to keep in step with WordPress 7.0 minor updates.

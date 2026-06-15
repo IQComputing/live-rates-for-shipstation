@@ -10,6 +10,7 @@ Relase Date: June 15, 2026
 	* Support for countries that do not require postcodes. (Thanks @lgs77717)!
 		* The system now defaults to `00000` for specific countries.
 		* @see Shipping_Calculator->get_postcode_exempt_countries()
+	* Bumped the required WordPress version to 6.5 due to wp_register_script_module() use.
 
 = 1.2.9 =
 
