@@ -327,9 +327,16 @@ class Shipping_Calculator {
             'to_state_province'	=> ( isset( $to['state'] ) )    ? $to['state']    : '',
         ) );
 
+        // US Territories should be treated as States for API purposes.
+        $ust_countries = $this->get_usterritory_countries();
+        if( in_array( strtoupper( $to_arr['to_country_code'] ), $ust_countries ) ) {
+            $to_arr['to_state_province'] = $to_arr['to_country_code'];
+            $to_arr['to_country_code']   = 'US';
+        }
+
         // Maybe a country where postcodes are not required.
-        $countries = $this->get_postcode_exempt_countries();
-        if( in_array( strtoupper( $to_arr['to_country_code'] ), $countries ) ) {
+        $pce_countries = $this->get_postcode_exempt_countries();
+        if( in_array( strtoupper( $to_arr['to_country_code'] ), $pce_countries ) ) {
             $to_arr['to_postal_code'] = '00000';
         }
 
@@ -1254,6 +1261,28 @@ class Shipping_Calculator {
         if( ! isset( $this->cart[ $id ] ) ) return $default;
         if( ! isset( $this->cart[ $id ][ $slug ] ) ) return $default;
         return $this->cart[ $id ][ $slug ];
+
+    }
+
+
+    /**
+     * Return an array of countries that are considered U.S. Territories.
+     * WooCommerce treats these as Countries, but the API should treat them
+     * as States within the U.S. country.
+     * 
+     * @return Array
+     */
+    public function get_usterritory_countries() {
+
+        $territories = array(
+            'PR' => 'Purero Rico',
+            'VI' => 'U.S. Virgin Islands',
+            'GU' => 'Guam',
+            'AS' => 'American Samoa',
+            'MP' => 'Nothern Marinana Islands',
+        );
+
+        return array_keys( $territories );
 
     }
 
