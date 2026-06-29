@@ -19,11 +19,11 @@ In order to use the Live Rates for ShipStation plugin, you must have a [premium 
 
 Please review [ShipStations Terms of Service](https://www.shipstation.com/terms-of-service/) and [ShipStations Privacy Policy](https://auctane.com/legal/privacy-policy/) for more information about how your data is managed.
 
-Don't have a ShipStation account? [Open a free ShipStation account today!](https://www.kqzyfj.com/click-101532691-15733876)
+Don't have a ShipStation account? [Open a ShipStation account today!](https://www.kqzyfj.com/click-101532691-15733876)
 
 == Plugin Requirements ==
 
-1. [A Free ShipStation Account](https://www.kqzyfj.com/click-101532691-15733876)
+1. [A ShipStation Account with API Access](https://www.kqzyfj.com/click-101532691-15733876)
 1. [The WooCommerce Plugin](https://wordpress.org/plugins/woocommerce/)
 1. [The ShipStation for WooCommerce Plugin](https://woocommerce.com/products/shipstation-integration/)
 1. The Live Rates for ShipStation Plugin

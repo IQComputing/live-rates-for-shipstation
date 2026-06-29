@@ -11,7 +11,7 @@ Live Rates for ShipStation is a free Open Source plugin that works with [ShipSta
 
 This plugin connects to the ShipStation API using an authentication key to display shipping rates from various common carriers supported by ShipStation. This allows store owners to group all their shipping carriers under one umbrella which makes management easier and allows customers to choose the best shipping method for them which leads to happier customers.
 
-In order to use the Live Rates for ShipStation plugin, you must have a [premium ShipStation account](https://www.kqzyfj.com/click-101532691-15733876), and purchased the [ShipStation for WooCommerce](https://woocommerce.com/products/shipstation-integration/) plugin. This plugin **will not work** without access to the ShipStation API which is tied to your premium ShipStation account.
+In order to use the Live Rates for ShipStation plugin, you must have a [premium ShipStation account with API access](https://www.kqzyfj.com/click-101532691-15733876), and purchased the [ShipStation for WooCommerce](https://woocommerce.com/products/shipstation-integration/) plugin. This plugin **will not work** without access to the ShipStation API which is tied to your premium ShipStation account.
 
 Please review [ShipStations Terms of Service](https://www.shipstation.com/terms-of-service/) and [ShipStations Privacy Policy](https://auctane.com/legal/privacy-policy/) for more information about how your data is managed.
 
@@ -21,7 +21,7 @@ Don't have a ShipStation account? [Open a free ShipStation account today!](https
 
 Live Rates for ShipStation is free to use, but it does require a premium ShipStation account to access their REST API. In addition, there are plugin requirements as well. Here's a list of requirements in order to use this plugin properly:
 
-1. [A Free ShipStation Account](https://www.kqzyfj.com/click-101532691-15733876)
+1. [A ShipStation Account with API Access](https://www.kqzyfj.com/click-101532691-15733876)
 1. [WooCommerce Plugin](https://wordpress.org/plugins/woocommerce/)
 1. [ShipStation for WooCommerce Plugin](https://woocommerce.com/products/shipstation-integration/)
 1. [Live Rates for ShipStation Plugin](https://wordpress.org/plugins/live-rates-for-shipstation/)
