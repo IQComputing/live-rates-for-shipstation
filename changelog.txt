@@ -2,6 +2,16 @@
 
 This is a brief text document keeping track of changes to the plugin. For a full history, see the Github Repository.
 
+= 1.2.11 =
+
+Relase Date: June 30, 2026
+
+* Overview
+	* Accommodates ShipStation for WooCommerce 5.2.0 integration settings update (Thanks @zurety)!
+		* ShipStation for WooCommerce has updated their integration settings.
+		* Backwards compatibility built-in for both `auth_key` and `shipstation_credentials` depending on installed ShipStation for WooCommerce version.
+	* Updates the readme for various ShipStation links - API access is still a premium feature unfortunately.
+
 = 1.2.10 =
 
 Relase Date: June 15, 2026

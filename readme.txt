@@ -50,28 +50,13 @@ Don't have a ShipStation account? [Open a ShipStation account today!](https://ww
 
 == Changelog ==
 
+= 1.2.11 (2026-06-30) =
+* Accommodates ShipStation for WooCommerce 5.2.0 integration settings update (Thanks @zurety)!
+* Updates ShipStation readme links - API access is still only a premium feature unfortunately.
+
 = 1.2.10 (2026-06-15) =
 * Support for countries that do not require postcodes (Thanks @lgs77717)!
 * Bumps required version to WordPress 6.5.
 
 = 1.2.9 (2026-06-05) =
 * Version bump to keep in step with WordPress 7.0 minor updates.
-
-= 1.2.7 (2026-05-11) =
-* May The 11th Be With You?
-* Patches issue with individual shipping skipping quantity in some cases.
-* Patches issue with package sorting not accounting for the full costs.
-* Patches issue where all rates would return instead of rates that encompass all packed packages.
-* Big thanks to @sinisterfish for their detailed report!
-
-= 1.2.6 (2026-05-04) =
-* May The 4th Be With You!
-* Fixes quantity issue with Individual Packaging (Thanks @piexxer)!
-* Flips `iqlrss/cache/shipstation` hook to return TRUE instead of FALSE.
-* Removes `iqlrss/cache/cart_rates` filter hook.
-* Adds new Debug Types box to allow admins to log events, but not all events possible.
-
-= 1.2.5 (2026-03-12) =
-* Fixes isset() isse when checking FROM address (Thanks @richecolocity)!
-* Fixes return value on WooCommerce Integration filter hook.
-* Adds new cache busting when WooCommerce > Settings > General options are saved.
