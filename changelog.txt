@@ -10,6 +10,8 @@ Relase Date: June 30, 2026
 	* Accommodates ShipStation for WooCommerce 5.2.0 integration settings update (Thanks @zurety)!
 		* ShipStation for WooCommerce has updated their integration settings.
 		* Backwards compatibility built-in for both `auth_key` and `shipstation_credentials` depending on installed ShipStation for WooCommerce version.
+	* Accommodates US Outlier Territories such as Puerto Rico, U.S. Virgin Islands, Guam, American Samoa, and Northern Marinana Islands (Thanks @lgs77717)!
+		* WooCommerce does not recognize some of these as terriroties, but their own countries. To accommodate, we have to apply it as a State and set the country to US.
 	* Updates the readme for various ShipStation links - API access is still a premium feature unfortunately.
 
 = 1.2.10 =

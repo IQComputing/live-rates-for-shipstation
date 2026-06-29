@@ -52,6 +52,7 @@ Don't have a ShipStation account? [Open a ShipStation account today!](https://ww
 
 = 1.2.11 (2026-06-30) =
 * Accommodates ShipStation for WooCommerce 5.2.0 integration settings update (Thanks @zurety)!
+* Accommodates US Outlier Territories such as Puerto Rico, U.S. Virgin Islands, Guam, American Samoa, and Northern Marinana Islands (Thanks @lgs77717)!
 * Updates ShipStation readme links - API access is still only a premium feature unfortunately.
 
 = 1.2.10 (2026-06-15) =
