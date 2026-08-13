@@ -227,6 +227,8 @@ class Driver {
 	 */
 	public static function drive() {
 
+		include 'core/helpers.php';
+
 		// Run any version transition actions.
 		Stallation::transversion( static::$version );
 

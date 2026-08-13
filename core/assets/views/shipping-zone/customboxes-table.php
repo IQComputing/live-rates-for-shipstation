@@ -101,6 +101,9 @@ function iqlrssPrintCustomBoxItem( $box ) {
 
 }
 
+$wc_weight_unit = get_option( 'woocommerce_weight_unit', 'lbs' );
+$wc_dim_unit 	= get_option( 'woocommerce_dimension_unit', 'in' );
+
 ?>
 
 <tr valign="top" id="customBoxesRow" style="display:<?php echo ( $show_custom ) ? 'table-row' : 'none'; ?>;" data-count="<?php echo esc_attr( count( $saved_boxes ) ); ?>">
@@ -174,31 +177,46 @@ function iqlrssPrintCustomBoxItem( $box ) {
 					<div class="iqlrss-field">
 						<label for="boxMaxWeight"><?php esc_html_e( 'Max Packing Weight', 'live-rates-for-shipstation' ); ?></label>
 						<input type="text" name="box_weight_max" id="boxMaxWeight" inputmode="decimal" class="iqlrss-numbers-only">
-						<p class="description"><?php esc_html_e( 'Max weight the box can hold in lbs.', 'live-rates-for-shipstation' ); ?></p>
+						<p class="description"><?php 
+							/* translators: %s is the WooCommerce Weight Unit setting value. */
+							esc_html_e( sprintf( 'Max weight the box can hold in %s.', iqlrss_convert_unit_term( $wc_weight_unit, 'plural' ) ), 'live-rates-for-shipstation' );
+						?></p>
 					</div>
 
 					<div class="iqlrss-field">
 						<label for="boxWeight"><?php esc_html_e( 'Box Weight', 'live-rates-for-shipstation' ); ?></label>
 						<input type="text" name="box_weight" id="boxWeight" inputmode="decimal" class="iqlrss-numbers-only">
-						<p class="description"><?php esc_html_e( 'The weight of the empty box in lbs.', 'live-rates-for-shipstation' ); ?></p>
+						<p class="description"><?php
+							/* translators: %s is the WooCommerce Weight Unit setting value. */
+							esc_html_e( sprintf( 'The weight of the empty box in %s.', iqlrss_convert_unit_term( $wc_weight_unit, 'plural' ) ), 'live-rates-for-shipstation' );
+						?></p>
 					</div>
 
 					<div class="iqlrss-field --required">
 						<label for="boxLength"><?php esc_html_e( 'Box Length', 'live-rates-for-shipstation' ); ?></label>
 						<input type="text" name="box_length" id="boxLength" inputmode="decimal" class="iqlrss-numbers-only">
-						<p class="description"><?php esc_html_e( 'The length of the box in inches.', 'live-rates-for-shipstation' ); ?></p>
+						<p class="description"><?php
+							/* translators: %s is the WooCommerce Dimension Unit setting value. */
+							esc_html_e( sprintf( 'The length of the box in %s.', iqlrss_convert_unit_term( $wc_dim_unit, 'plural' ) ), 'live-rates-for-shipstation' );
+						?></p>
 					</div>
 
 					<div class="iqlrss-field --required">
 						<label for="boxWidth"><?php esc_html_e( 'Box Width', 'live-rates-for-shipstation' ); ?></label>
 						<input type="text" name="box_width" id="boxWidth" inputmode="decimal" class="iqlrss-numbers-only">
-						<p class="description"><?php esc_html_e( 'The width of the box in inches.', 'live-rates-for-shipstation' ); ?></p>
+						<p class="description"><?php
+							/* translators: %s is the WooCommerce Dimension Unit setting value. */
+							esc_html_e( sprintf( 'The width of the box in %s.', iqlrss_convert_unit_term( $wc_dim_unit, 'plural' ) ), 'live-rates-for-shipstation' );
+						?></p>
 					</div>
 
 					<div class="iqlrss-field --required">
 						<label for="boxHeight"><?php esc_html_e( 'Box Height', 'live-rates-for-shipstation' ); ?></label>
 						<input type="text" name="box_height" id="boxHeight" inputmode="decimal" class="iqlrss-numbers-only">
-						<p class="description"><?php esc_html_e( 'The height of the box in inches.', 'live-rates-for-shipstation' ); ?></p>
+						<p class="description"><?php
+							/* translators: %s is the WooCommerce Dimension Unit setting value. */
+							esc_html_e( sprintf( 'The height of the box in %s.', iqlrss_convert_unit_term( $wc_dim_unit, 'plural' ) ), 'live-rates-for-shipstation' );
+						?></p>
 					</div>
 
 					<div class="iqlrss-field --complex iqlrss-flex --flexwrap --valign-center">
@@ -216,19 +234,28 @@ function iqlrssPrintCustomBoxItem( $box ) {
 					<div class="iqlrss-field --required --w22" data-enabledby="boxInnerToggle">
 						<label for="boxInnerLength"><?php esc_html_e( 'Box Inner Length', 'live-rates-for-shipstation' ); ?></label>
 						<input type="text" name="box_length_inner" id="boxInnerLength" inputmode="decimal" class="iqlrss-numbers-only">
-						<p class="description"><?php esc_html_e( 'The box\'s inner length in inches.', 'live-rates-for-shipstation' ); ?></p>
+						<p class="description"><?php
+							/* translators: %s is the WooCommerce Dimension Unit setting value. */
+							esc_html_e( sprintf( 'The box\'s inner length in %s.', iqlrss_convert_unit_term( $wc_dim_unit, 'plural' ) ), 'live-rates-for-shipstation' );
+						?></p>
 					</div>
 
 					<div class="iqlrss-field --required --w22" data-enabledby="boxInnerToggle">
 						<label for="boxInnerWidth"><?php esc_html_e( 'Box Inner Width', 'live-rates-for-shipstation' ); ?></label>
 						<input type="text" name="box_width_inner" id="boxInnerWidth" inputmode="decimal" class="iqlrss-numbers-only">
-						<p class="description"><?php esc_html_e( 'The box\'s inner width in inches.', 'live-rates-for-shipstation' ); ?></p>
+						<p class="description"><?php
+							/* translators: %s is the WooCommerce Dimension Unit setting value. */
+							esc_html_e( sprintf( 'The box\'s inner width in %s.', iqlrss_convert_unit_term( $wc_dim_unit, 'plural' ) ), 'live-rates-for-shipstation' );
+						?></p>
 					</div>
 
 					<div class="iqlrss-field --required --w22" data-enabledby="boxInnerToggle">
 						<label for="boxInnerHeight"><?php esc_html_e( 'Box Inner Height', 'live-rates-for-shipstation' ); ?></label>
 						<input type="text" name="box_height_inner" id="boxInnerHeight" inputmode="decimal" class="iqlrss-numbers-only">
-						<p class="description"><?php esc_html_e( 'The box\'s inner height in inches.', 'live-rates-for-shipstation' ); ?></p>
+						<p class="description"><?php
+							/* translators: %s is the WooCommerce Dimension Unit setting value. */
+							esc_html_e( sprintf( 'The box\'s inner height in %s.', iqlrss_convert_unit_term( $wc_dim_unit, 'plural' ) ), 'live-rates-for-shipstation' );
+						?></p>
 					</div>
 				</div>
 

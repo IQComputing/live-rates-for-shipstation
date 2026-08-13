@@ -230,9 +230,10 @@ class Settings_Shipstation {
 		$show_weight = \IQLRSS\Driver::get_ss_opt( 'cart_weight', 'no' );
 		if( 'no' == $show_weight ) return;
 
-		printf( '<tr><th>%s</th><td>%s lbs</td></tr>',
+		printf( '<tr><th>%s</th><td>%s %s</td></tr>',
 			esc_html__( 'Total Weight', 'live-rates-for-shipstation' ),
-			esc_html( WC()->cart->get_cart_contents_weight() )
+			esc_html( WC()->cart->get_cart_contents_weight() ),
+			iqlrss_convert_unit_term( get_option( 'woocommerce_weight_unit', 'lbs' ), 'plural' )
 		);
 
 	}
