@@ -8,10 +8,11 @@
  *
  * phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
  *
- * @param \IQLRSS\Core\Shipping_Method_Shipstation $this
- * @param String $prefix - Plugin prefix.
- * @param Boolean $show_custom - Whether to show the customBoxes table.
- * @param Array $saved_boxes - Saved user entered custom boxes.
+ * @var \IQLRSS\Core\Shipping_Method_Shipstation $this
+ * @var String $prefix          - Plugin prefix.
+ * @var Boolean $show_custom    - Whether to show the customBoxes table.
+ * @var Array $saved_boxes      - Saved user entered custom boxes.
+ * @var Array $packages         - Preset packages.
  */
 
 if( ! defined( 'ABSPATH' ) ) {
@@ -70,7 +71,7 @@ function iqlrssPrintCustomBoxItem( $box ) {
 		// Price
 		$item_html .= sprintf( '<td data-assoc="box_price" data-label="%s">%s</td>',
 			esc_attr__( 'Box Price', 'live-rates-for-shipstation' ),
-			wc_price( $box_arr['price'] )
+			\wc_price( $box_arr['price'] )
 		);
 
 		// Warehouse?
@@ -162,7 +163,7 @@ $wc_dim_unit 	= get_option( 'woocommerce_dimension_unit', 'in' );
 						<p class="description"><?php esc_html_e( 'Some carriers give better rates when using their packages.', 'live-rates-for-shipstation' ); ?></p>
 					</div>
 
-					<div class="iqlrss-field --required --w66">
+					<div class="iqlrss-field --required">
 						<label for="boxNickname"><?php esc_html_e( 'Nickname', 'live-rates-for-shipstation' ); ?></label>
 						<input type="text" name="nickname" id="boxNickname">
 						<p class="description"><?php esc_html_e( 'The nickname is for your identification only.', 'live-rates-for-shipstation' ); ?></p>
@@ -175,9 +176,18 @@ $wc_dim_unit 	= get_option( 'woocommerce_dimension_unit', 'in' );
 					</div>
 
 					<div class="iqlrss-field">
+						<label for="boxMaxVolume"><?php esc_html_e( 'Max Packing Percentage', 'live-rates-for-shipstation' ); ?></label>
+						<input type="number" name="box_volume_max" id="boxMaxVolume" min="1" max="100" value="100">
+						<p class="description"><?php
+							/* translators: %s is the WooCommerce Weight Unit setting value. */
+							esc_html_e( 'Max percentage box volume to be packed. Useful for product padding.', 'live-rates-for-shipstation' );
+						?></p>
+					</div>
+
+					<div class="iqlrss-field">
 						<label for="boxMaxWeight"><?php esc_html_e( 'Max Packing Weight', 'live-rates-for-shipstation' ); ?></label>
 						<input type="text" name="box_weight_max" id="boxMaxWeight" inputmode="decimal" class="iqlrss-numbers-only">
-						<p class="description"><?php 
+						<p class="description"><?php
 							/* translators: %s is the WooCommerce Weight Unit setting value. */
 							esc_html_e( sprintf( 'Max weight the box can hold in %s.', iqlrss_convert_unit_term( $wc_weight_unit, 'plural' ) ), 'live-rates-for-shipstation' );
 						?></p>

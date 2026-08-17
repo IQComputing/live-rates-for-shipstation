@@ -58,6 +58,7 @@ class WC_Boxpack_Box {
 
 	/** @var float Volume of the box */
 	private $volume;
+	private $max_volume = 100;
 
 	/** @var Array Valid box types which affect packing */
 	private $valid_types = array( 'box', 'tube', 'envelope', 'packet' );
@@ -103,6 +104,9 @@ class WC_Boxpack_Box {
 		$this->weight 		= floatval( $box['weight'] );
 		$this->max_weight 	= floatval( $box['weight_max'] );
 
+		// Packing Volume
+		$this->max_volume 	= floatval( ( ! empty( $box['volume_max'] ) ) ? $box['volume_max'] : 100 );
+
 		// Everything else
 		$this->data = $box;
 
@@ -138,8 +142,29 @@ class WC_Boxpack_Box {
 	}
 
 	/**
-	 * Get max weight.
+	 * get_max_volume function.
 	 *
+	 * @return integer
+	 */
+	public function get_max_volume() {
+		return min( 100, max( 1, absint( $this->max_volume ) ) );
+	}
+
+	/**
+	 * set_max_weight function.
+	 *
+	 * @access public
+	 * @param integer $volume
+	 * @return void
+	 */
+	public function set_max_volume( $volume ) {
+		$this->max_volume = $volume ?: 100;
+	}
+
+	/**
+	 * get_max_weight function.
+	 *
+	 * @access public
 	 * @return float
 	 */
 	public function get_max_weight() {
@@ -251,7 +276,7 @@ class WC_Boxpack_Box {
 			}
 
 			// Check volume
-			if ( ( $packed_volume + $item->get_volume() ) > $this->get_volume() ) {
+			if ( ( $packed_volume + $item->get_volume() ) > $this->get_max_packed_volume() ) {
 				$unpacked[] = $item;
 				continue;
 			}
@@ -335,6 +360,14 @@ class WC_Boxpack_Box {
 		} else {
 			return floatval( $this->get_height() * $this->get_width() * $this->get_length() );
 		}
+	}
+
+	/**
+	 * get_max_packed_volume function.
+	 * @return float
+	 */
+	public function get_max_packed_volume() {
+		return floatval( $this->get_volume() * ( $this->get_max_volume() / 100 ) );
 	}
 
 	/**

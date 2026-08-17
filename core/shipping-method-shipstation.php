@@ -21,7 +21,7 @@ if( ! defined( 'ABSPATH' ) ) {
 	return;
 }
 
-class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
+class Shipping_Method_Shipstation extends \WC_Shipping_Method {
 
 	/**
 	 * Inherit logger traits
@@ -554,6 +554,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					),
 					'weight'	=> floatval( $json['weight'] ),
 					'weight_max'=> floatval( $json['weight_max'] ),
+					'volume_max'=> absint( $json['volume_max'] ?? 100 ),
 					'price'		=> floatval( $json['price'] ),
 					'carrier_code' => ( isset( $json['carrier_code'] ) ) ? sanitize_text_field( $json['carrier_code'] ) : '',
 				);
@@ -795,8 +796,8 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 				$weight = preg_match( '/\d+/', $v, $matches ) ? $matches[0] : 0;
 				$kg_boxes[ $k ] = str_replace(
 					'kg',
-					sprintf( 
-						'kg (%d%s)', 
+					sprintf(
+						'kg (%d%s)',
 						wc_get_weight( $weight, $wc_weight_unit, 'kg' ),
 						$wc_weight_unit
 					),
@@ -924,6 +925,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					'width'			=> $package['dimensions']['width'],
 					'height'		=> $package['dimensions']['height'],
 					'weight_max'	=> '',
+					'volume_max'	=> '',
 					'carrier_code'	=> '',
 				);
 			}
@@ -976,6 +978,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		 * 			'width'  => 0,
 		 * 			'height' => 0,
 		 * 			'weight_max' => 0,
+		 * 			'volume_max' => 0,
 		 * 			'carrier_code' => '',
 		 * 		)
 		 * ) )

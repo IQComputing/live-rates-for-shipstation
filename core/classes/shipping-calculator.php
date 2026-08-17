@@ -808,6 +808,7 @@ class Shipping_Calculator {
 				'nickname'		=> ( ! empty( $package->data ) ) ? $package->data['nickname'] : esc_html__( 'Individually Packed', 'live-rates-for-shipstation' ),
 				'box_weight'	=> ( ! empty( $package->data ) ) ? $package->data['weight'] : 0,
 				'box_max_weight'=> ( ! empty( $package->data ) ) ? $package->data['weight_max'] : 0,
+				'box_max_volume'=> ( ! empty( $package->data ) ) ? absint( $package->data['volume_max'] ?? 100 ) : 100,
 				'package_code'	=> ( ! empty( $package->data ) ) ? $package->data['preset'] : '',
 				'carrier_code'	=> ( ! empty( $package->data ) ) ? $package->data['carrier_code'] : '',
 			);
@@ -1269,7 +1270,7 @@ class Shipping_Calculator {
      * Return an array of countries that are considered U.S. Territories.
      * WooCommerce treats these as Countries, but the API should treat them
      * as States within the U.S. country.
-     * 
+     *
      * @return Array
      */
     public function get_usterritory_countries() {
