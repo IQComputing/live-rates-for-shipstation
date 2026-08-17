@@ -74,6 +74,29 @@ class WC_Countries {
 			case 'get_base_postcode': return 'WCBasePostcode';
 			case 'get_base_city': return 'WCBaseCity';
 			case 'get_base_state': return 'WCBaseState';
+			case 'get_country_locale': return array(
+				// Postcode explicitly required.
+				'US' => array(
+					'postcode' => array(
+						'required' => true,
+					),
+				),
+
+				// Postcode explicitly not required.
+				'AE' => array(
+					'postcode' => array(
+						'required' => false,
+						'hidden'   => true,
+					),
+				),
+
+				// Locale exists but does not override postcode requirements.
+				'GB' => array(
+					'state' => array(
+						'label' => 'County',
+					),
+				),
+			);
 		}
 		return 'WCBaseUnknown';
 	}
