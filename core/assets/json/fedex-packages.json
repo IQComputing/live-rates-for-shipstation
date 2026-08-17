@@ -5,7 +5,8 @@
         "width": "12.9",
         "height": "10",
         "weight_max": "22",
-        "carrier_code": "fedex"
+        "volume_max": "100",
+		"carrier_code": "fedex"
     },
     {
         "code": "fedex_25kg_box",
@@ -13,7 +14,8 @@
         "width": "16.5",
         "height": "13",
         "weight_max": "55",
-        "carrier_code": "fedex"
+        "volume_max": "100",
+		"carrier_code": "fedex"
     },
     {
         "code": "fedex_envelope",
@@ -21,7 +23,8 @@
         "width": "9.5",
         "height": "1",
         "weight_max": "",
-        "carrier_code": "fedex"
+        "volume_max": "100",
+		"carrier_code": "fedex"
     },
     {
         "code": "fedex_envelope",
@@ -29,7 +32,8 @@
         "width": "9.5",
         "height": "1",
         "weight_max": "",
-        "carrier_code": "fedex"
+        "volume_max": "100",
+		"carrier_code": "fedex"
     },
     {
         "code": "fedex_envelope",
@@ -37,7 +41,8 @@
         "width": "9.5",
         "height": "1",
         "weight_max": "",
-        "carrier_code": "fedex"
+        "volume_max": "100",
+		"carrier_code": "fedex"
     },
     {
         "code": "fedex_extra_large_box",
@@ -45,7 +50,8 @@
         "width": "10.75",
         "height": "11",
         "weight_max": "",
-        "carrier_code": "fedex"
+        "volume_max": "100",
+		"carrier_code": "fedex"
     },
     {
         "code": "fedex_extra_large_box",
@@ -53,7 +59,8 @@
         "width": "14.125",
         "height": "6",
         "weight_max": "",
-        "carrier_code": "fedex"
+        "volume_max": "100",
+		"carrier_code": "fedex"
     },
     {
         "code": "fedex_large_box",
@@ -61,7 +68,8 @@
         "width": "12.375",
         "height": "3",
         "weight_max": "",
-        "carrier_code": "fedex"
+        "volume_max": "100",
+		"carrier_code": "fedex"
     },
     {
         "code": "fedex_large_box",
@@ -69,7 +77,8 @@
         "width": "8.75",
         "height": "7.75",
         "weight_max": "",
-        "carrier_code": "fedex"
+        "volume_max": "100",
+		"carrier_code": "fedex"
     },
     {
         "code": "fedex_medium_box",
@@ -77,7 +86,8 @@
         "width": "11.5",
         "height": "2.375",
         "weight_max": "",
-        "carrier_code": "fedex"
+        "volume_max": "100",
+		"carrier_code": "fedex"
     },
     {
         "code": "fedex_medium_box",
@@ -85,7 +95,8 @@
         "width": "8.75",
         "height": "4.375",
         "weight_max": "",
-        "carrier_code": "fedex"
+        "volume_max": "100",
+		"carrier_code": "fedex"
     },
     {
         "code": "fedex_pak",
@@ -93,7 +104,8 @@
         "width": "10.25",
         "height": "1",
         "weight_max": "",
-        "carrier_code": "fedex"
+        "volume_max": "100",
+		"carrier_code": "fedex"
     },
     {
         "code": "fedex_pak",
@@ -101,7 +113,8 @@
         "width": "11.75",
         "height": "1",
         "weight_max": "",
-        "carrier_code": "fedex"
+        "volume_max": "100",
+		"carrier_code": "fedex"
     },
     {
         "code": "fedex_pak",
@@ -109,7 +122,8 @@
         "width": "10",
         "height": "1",
         "weight_max": "",
-        "carrier_code": "fedex"
+        "volume_max": "100",
+		"carrier_code": "fedex"
     },
     {
         "code": "fedex_small_box",
@@ -117,7 +131,8 @@
         "width": "10.875",
         "height": "1.5",
         "weight_max": "",
-        "carrier_code": "fedex"
+        "volume_max": "100",
+		"carrier_code": "fedex"
     },
     {
         "code": "fedex_small_box",
@@ -125,7 +140,8 @@
         "width": "8.75",
         "height": "2.625",
         "weight_max": "",
-        "carrier_code": "fedex"
+        "volume_max": "100",
+		"carrier_code": "fedex"
     },
     {
         "code": "fedex_tube",
@@ -133,6 +149,7 @@
         "width": "6",
         "height": "6",
         "weight_max": "",
-        "carrier_code": "fedex"
+        "volume_max": "100",
+		"carrier_code": "fedex"
     }
 ]

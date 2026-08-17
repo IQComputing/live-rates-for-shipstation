@@ -17,7 +17,7 @@ if( ! defined( 'ABSPATH' ) ) {
 	return;
 }
 
-class Shipstation  {
+class Shipstation {
 
 	/**
 	 * Inherit logger traits

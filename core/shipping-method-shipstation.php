@@ -21,7 +21,7 @@ if( ! defined( 'ABSPATH' ) ) {
 	return;
 }
 
-class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
+class Shipping_Method_Shipstation extends \WC_Shipping_Method {
 
 	/**
 	 * Inherit logger traits
@@ -554,6 +554,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					),
 					'weight'	=> floatval( $json['weight'] ),
 					'weight_max'=> floatval( $json['weight_max'] ),
+					'volume_max'=> absint( $json['volume_max'] ?? 100 ),
 					'price'		=> floatval( $json['price'] ),
 					'carrier_code' => ( isset( $json['carrier_code'] ) ) ? sanitize_text_field( $json['carrier_code'] ) : '',
 				);
@@ -711,9 +712,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 */
 	public function calculate_shipping( $cart = array() ) {
 
-		if( empty( $cart ) || empty( $cart['contents'] ) ) {
-			return;
-		} else if( ! isset( $cart['destination'] ) || empty( $cart['destination']['postcode'] ) ) {
+		if( empty( $cart ) || empty( $cart['contents'] ) || empty( $cart['destination'] ) ) {
 			return;
 		}
 
@@ -783,6 +782,30 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 	 */
 	public function get_package_label( $key ) {
 
+		$wc_weight_unit = get_option( 'woocommerce_weight_unit', 'lbs' );
+		$kg_boxes = array(
+			'ups_10_kg_box'		=> esc_html__( 'UPS 10kg Box', 'live-rates-for-shipstation' ),
+			'ups_25_kg_box'		=> esc_html__( 'UPS 25kg Box', 'live-rates-for-shipstation' ),
+			'fedex_10kg_box'	=> esc_html__( 'FedEx 10kg Box', 'live-rates-for-shipstation' ),
+			'fedex_25kg_box'	=> esc_html__( 'FedEx 25kg Box', 'live-rates-for-shipstation' ),
+		);
+
+		// Denote non-kg weights.
+		if( 'kg' !== $wc_weight_unit ) {
+			foreach( $kg_boxes as $k => $v ) {
+				$weight = preg_match( '/\d+/', $v, $matches ) ? $matches[0] : 0;
+				$kg_boxes[ $k ] = str_replace(
+					'kg',
+					sprintf(
+						'kg (%d%s)',
+						wc_get_weight( $weight, $wc_weight_unit, 'kg' ),
+						$wc_weight_unit
+					),
+					$v
+				);
+			}
+		}
+
 		$labels = array(
 			// UPS
 			'flat_rate_envelope'	=> esc_html__( 'USPS Flat Rate Envelope', 'live-rates-for-shipstation' ),
@@ -796,8 +819,8 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			'regional_rate_box_b'	=> esc_html__( 'USPS Regional Rate Box B', 'live-rates-for-shipstation' ),
 
 			// USPS
-			'ups_10_kg_box'			=> esc_html__( 'UPS 10kg (22lbs) Box', 'live-rates-for-shipstation' ),
-			'ups_25_kg_box'			=> esc_html__( 'UPS 25kg (55lbs) Box', 'live-rates-for-shipstation' ),
+			'ups_10_kg_box'			=> $kg_boxes['ups_10_kg_box'],
+			'ups_25_kg_box'			=> $kg_boxes['ups_25_kg_box'],
 			'ups__express_box_large'=> esc_html__( 'UPS Express Box - Large', 'live-rates-for-shipstation' ), // Why does this have an extra underscore? Ask ShipStation.
 			'ups_express_box_medium'=> esc_html__( 'UPS Express Box - Medium', 'live-rates-for-shipstation' ),
 			'ups_express_box_small'	=> esc_html__( 'UPS Express Box - Small', 'live-rates-for-shipstation' ),
@@ -806,8 +829,8 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 			'ups_letter'			=> esc_html__( 'UPS Letter', 'live-rates-for-shipstation' ),
 
 			// FedEx
-			'fedex_10kg_box'	=> esc_html__( 'FedEx 10kg (22lbs) Box', 'live-rates-for-shipstation' ),
-			'fedex_25kg_box'	=> esc_html__( 'FedEx 25kg (55lbs) Box', 'live-rates-for-shipstation' ),
+			'fedex_10kg_box'	=> $kg_boxes['fedex_10kg_box'],
+			'fedex_25kg_box'	=> $kg_boxes['fedex_25kg_box'],
 			'fedex_extra_large_box' => esc_html__( 'FedEx Extra Large Box', 'live-rates-for-shipstation' ),
 			'fedex_large_box'	=> esc_html__( 'FedEx Large Box', 'live-rates-for-shipstation' ),
 			'fedex_medium_box'	=> esc_html__( 'FedEx Medium Box', 'live-rates-for-shipstation' ),
@@ -902,6 +925,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 					'width'			=> $package['dimensions']['width'],
 					'height'		=> $package['dimensions']['height'],
 					'weight_max'	=> '',
+					'volume_max'	=> '',
 					'carrier_code'	=> '',
 				);
 			}
@@ -954,6 +978,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method  {
 		 * 			'width'  => 0,
 		 * 			'height' => 0,
 		 * 			'weight_max' => 0,
+		 * 			'volume_max' => 0,
 		 * 			'carrier_code' => '',
 		 * 		)
 		 * ) )

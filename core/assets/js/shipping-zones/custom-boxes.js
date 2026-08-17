@@ -280,6 +280,7 @@ export class CustomBoxes {
             $modal.querySelector( '[name="box_width"]' ).value  = json['width'];
             $modal.querySelector( '[name="box_height"]' ).value = json['height'];
             $modal.querySelector( '[name="box_weight_max"]' ).value = json['weight_max'];
+            $modal.querySelector( '[name="box_volume_max"]' ).value = json['volume_max'] ?? '100';
 
         } );
 
@@ -337,6 +338,7 @@ export class CustomBoxes {
                 weight: fd.get( 'box_weight' ),
                 price: fd.get( 'box_price' ),
                 weight_max: fd.get( 'box_weight_max' ),
+                volume_max: fd.get( 'box_volume_max' ) || '100',
                 active: ( box_index >= 0 ) ? this.#data.domList.querySelector( `tr:nth-child(${box_index + 1}) td:last-child input` ).checked : 1,
                 carrier_code: carrier_code ?? '',
             };

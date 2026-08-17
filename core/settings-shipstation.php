@@ -230,9 +230,10 @@ class Settings_Shipstation {
 		$show_weight = \IQLRSS\Driver::get_ss_opt( 'cart_weight', 'no' );
 		if( 'no' == $show_weight ) return;
 
-		printf( '<tr><th>%s</th><td>%s lbs</td></tr>',
+		printf( '<tr><th>%s</th><td>%s %s</td></tr>',
 			esc_html__( 'Total Weight', 'live-rates-for-shipstation' ),
-			esc_html( WC()->cart->get_cart_contents_weight() )
+			esc_html( WC()->cart->get_cart_contents_weight() ),
+			iqlrss_convert_unit_term( get_option( 'woocommerce_weight_unit', 'lbs' ), 'plural' )
 		);
 
 	}
@@ -358,12 +359,18 @@ class Settings_Shipstation {
 		$global_adjustment = \IQLRSS\Driver::get_ss_opt( 'global_adjustment', '0' );
 		$adjustment_type_default = ( empty( $global_adjustment_type ) && ! empty( $global_adjustment ) ) ? 'percentage' : '';
 
+		// Different append keys depending on installed ShipStation for WooCommerce version.
+		$append_after_keys = array( 'auth_key', 'logging_enabled' );
+		if( defined( 'WC_SHIPSTATION_VERSION' ) && version_compare( '5.2.0', WC_SHIPSTATION_VERSION, '<=' ) ) {
+			$append_after_keys = array( 'shipstation_credentials', 'logging_enabled' );
+		}
+
 		foreach( $fields as $key => $field ) {
 
 			$appended_fields[ $key ] = $field;
 
 			// Append Live Rate Carriers after Shipped Status select.
-			if( 'auth_key' == $key ) {
+			if( $key === $append_after_keys[0] ) {
 
 				$appended_fields[ \IQLRSS\Driver::plugin_prefix( 'api_key' ) ] = array(
 					'title'			=> esc_html__( 'ShipStation REST API Key', 'live-rates-for-shipstation' ),
@@ -445,7 +452,7 @@ class Settings_Shipstation {
 			}
 
 			// Append cleanup checkbox after logging.
-			if( 'logging_enabled' === $key ) {
+			if( $key === $append_after_keys[1] ) {
 
 				$appended_fields[ \IQLRSS\Driver::plugin_prefix( 'log_types' ) ] = array(
 					'title'			=> esc_html__( 'IQLRSS Log Types', 'live-rates-for-shipstation' ),

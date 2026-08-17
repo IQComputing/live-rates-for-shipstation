@@ -1,9 +1,9 @@
 === Live Rates for ShipStation ===
 Contributors: iqcomputing
 Tags: woocommerce, shipstation, usps, ups, fedex
-Requires at least: 6.2
-Tested up to: 6.9
-Stable tag: 1.2.6
+Requires at least: 6.5
+Tested up to: 7.0
+Stable tag: 1.2.11
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -23,7 +23,7 @@ Don't have a ShipStation account? [Open a ShipStation account today!](https://ww
 
 == Plugin Requirements ==
 
-1. [A Premium ShipStation Account](https://www.kqzyfj.com/click-101532691-15733876)
+1. [A ShipStation Account with API Access](https://www.kqzyfj.com/click-101532691-15733876)
 1. [The WooCommerce Plugin](https://wordpress.org/plugins/woocommerce/)
 1. [The ShipStation for WooCommerce Plugin](https://woocommerce.com/products/shipstation-integration/)
 1. The Live Rates for ShipStation Plugin
@@ -50,19 +50,14 @@ Don't have a ShipStation account? [Open a ShipStation account today!](https://ww
 
 == Changelog ==
 
-= 1.2.6 (2026-05-04) =
-* May The 4th Be With You!
-* Fixes quantity issue with Individual Packaging (Thanks @piexxer)!
-* Flips `iqlrss/cache/shipstation` hook to return TRUE instead of FALSE.
-* Removes `iqlrss/cache/cart_rates` filter hook.
-* Adds new Debug Types box to allow admins to log events, but not all events possible.
+= 1.2.11 (2026-06-30) =
+* Accommodates ShipStation for WooCommerce 5.2.0 integration settings update (Thanks @zurety)!
+* Accommodates US Outlier Territories such as Puerto Rico, U.S. Virgin Islands, Guam, American Samoa, and Northern Marinana Islands (Thanks @lgs77717)!
+* Updates ShipStation readme links - API access is still only a premium feature unfortunately.
 
-= 1.2.5 (2026-03-12) =
-* Fixes isset() isse when checking FROM address (Thanks @richecolocity)!
-* Fixes return value on WooCommerce Integration filter hook.
-* Adds new cache busting when WooCommerce > Settings > General options are saved.
+= 1.2.10 (2026-06-15) =
+* Support for countries that do not require postcodes (Thanks @lgs77717)!
+* Bumps required version to WordPress 6.5.
 
-= 1.2.4 (2026-02-12) =
-* Adds new Integration Settings for a full uninstall/cleanup.
-* Adds a new admin banner to let users know of a missing ShipStation API Key. (Thanks @robersw)!
-* Adds various patches found during unit testing.
+= 1.2.9 (2026-06-05) =
+* Version bump to keep in step with WordPress 7.0 minor updates.

@@ -16,7 +16,7 @@ if( ! defined( 'ABSPATH' ) ) {
 	return;
 }
 
-class Shipstationv1 extends Shipstation  {
+class Shipstationv1 extends Shipstation {
 
 	/**
 	 * The API Key
