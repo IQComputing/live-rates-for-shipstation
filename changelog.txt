@@ -2,6 +2,14 @@
 
 This is a brief text document keeping track of changes to the plugin. For a full history, see the Github Repository.
 
+= 1.2.12 =
+
+Relase Date: August 17, 2026
+* Overview
+	* Adds new field for Custom Boxes: "Max Packing Percentage" (Thanks @ils1225)!
+		* This is useful for boxes that need to ensure there's space for packing material.
+	* Updates the Custom Box unit/dimension strings to match the WooCommerce Settings (Thanks @ils1225)!
+
 = 1.2.11 =
 
 Relase Date: June 30, 2026

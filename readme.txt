@@ -3,7 +3,7 @@ Contributors: iqcomputing
 Tags: woocommerce, shipstation, usps, ups, fedex
 Requires at least: 6.5
 Tested up to: 7.0
-Stable tag: 1.2.11
+Stable tag: 1.2.12
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -50,6 +50,10 @@ Don't have a ShipStation account? [Open a ShipStation account today!](https://ww
 
 == Changelog ==
 
+= 1.2.12 (2026-08-17) =
+* New "Max Packing Percentage" field to Custom Boxes (Thanks @ils1225 - Good idea!)
+* Updates Custom Box unit/dimension labels to match WooCommerce Settings (Thanks @ils1225)!
+
 = 1.2.11 (2026-06-30) =
 * Accommodates ShipStation for WooCommerce 5.2.0 integration settings update (Thanks @zurety)!
 * Accommodates US Outlier Territories such as Puerto Rico, U.S. Virgin Islands, Guam, American Samoa, and Northern Marinana Islands (Thanks @lgs77717)!
@@ -58,6 +62,3 @@ Don't have a ShipStation account? [Open a ShipStation account today!](https://ww
 = 1.2.10 (2026-06-15) =
 * Support for countries that do not require postcodes (Thanks @lgs77717)!
 * Bumps required version to WordPress 6.5.
-
-= 1.2.9 (2026-06-05) =
-* Version bump to keep in step with WordPress 7.0 minor updates.
