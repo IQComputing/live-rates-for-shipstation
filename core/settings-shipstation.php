@@ -233,7 +233,7 @@ class Settings_Shipstation {
 		printf( '<tr><th>%s</th><td>%s %s</td></tr>',
 			esc_html__( 'Total Weight', 'live-rates-for-shipstation' ),
 			esc_html( WC()->cart->get_cart_contents_weight() ),
-			iqlrss_convert_unit_term( get_option( 'woocommerce_weight_unit', 'lbs' ), 'plural' )
+			esc_html( iqlrss_convert_unit_term( get_option( 'woocommerce_weight_unit', 'lbs' ), 'plural' ) )
 		);
 
 	}
