@@ -57,7 +57,7 @@ function iqlrssPrintCustomBoxItem( $box ) {
 				( ! isset( $data['clone'] ) ) ? esc_attr( wp_json_encode( $box_arr ) ) : ''
 			);
 			$item_html .= sprintf( '<a href="#" data-iqlrss-modal="customBoxesFormModal" data-assoc="nickname">%s</a>',
-				$box_arr['nickname'],
+				esc_html( $box_arr['nickname'] ),
 			);
 		$item_html .= '</td>';
 

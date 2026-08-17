@@ -62,7 +62,7 @@ class Driver {
 
 		if( ! $skip_prefix ) $key = static::plugin_prefix( $key );
 		$settings = get_option( 'woocommerce_shipstation_settings' );
-		return ( isset( $settings[ $key ] ) && '' !== $settings[ $key ] ) ? maybe_unserialize( $settings[ $key ] ) : $default;
+		return ( isset( $settings[ $key ] ) && '' !== $settings[ $key ] ) ? $settings[ $key ] : $default;
 
 	}
 
@@ -105,7 +105,7 @@ class Driver {
 	 */
 	public static function get_opt( $key, $default = '' ) {
 		$settings = get_option( static::plugin_prefix( 'plugin' ) );
-		return ( isset( $settings[ $key ] ) && '' !== $settings[ $key ] ) ? maybe_unserialize( $settings[ $key ] ) : $default;
+		return ( isset( $settings[ $key ] ) && '' !== $settings[ $key ] ) ? $settings[ $key ] : $default;
 	}
 
 
