@@ -805,7 +805,7 @@ class Shipping_Calculator {
 				),
 				'packed' => $packed_items,
 				'price'	 => ( ! empty( $package->data ) ) ? $package->data['price'] : 0,
-				'nickname'		=> ( ! empty( $package->data ) ) ? $package->data['nickname'] : esc_html__( 'Individually Packed', 'live-rates-for-shipstation' ),
+				'nickname'		=> ( ! empty( $package->data ) ) ? $package->data['nickname'] : esc_html__( 'Custom Box Packed', 'live-rates-for-shipstation' ),
 				'box_weight'	=> ( ! empty( $package->data ) ) ? $package->data['weight'] : 0,
 				'box_max_weight'=> ( ! empty( $package->data ) ) ? $package->data['weight_max'] : 0,
 				'box_max_volume'=> ( ! empty( $package->data ) ) ? absint( $package->data['volume_max'] ?? 100 ) : 100,

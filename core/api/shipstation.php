@@ -577,29 +577,6 @@ class Shipstation {
 				'packages'  => array(),
 			);
 
-			// Add Packages
-			// $packages = $shipmentItem->get_meta( 'boxes', true );
-			// if( ! empty( $packages ) && is_array( $packages ) ) {
-			// 	foreach( $packages as $package ) {
-
-			// 		$shipment['packages'][] = array(
-			// 			'package_code'  => $ship_package['packageCode'],
-			// 			'package_name'  => $ship_package['packageName'],
-			// 			'weight'        => array(
-			// 				'value' => $ship_package['weight']['value'],
-			// 				'unit'  => $ship_package['weight']['unit'],
-			// 			),
-			// 			'dimensions' => array(
-			// 				'length'	=> $ship_package['dimensions']['length'],
-			// 				'width'		=> $ship_package['dimensions']['width'],
-			// 				'height'	=> $ship_package['dimensions']['height'],
-			// 				'unit'		=> $ship_package['dimensions']['unit'],
-			// 			),
-			// 		);
-
-			// 	}
-			// }
-
 			// Add Order Items
 			foreach( $shipstation_order_arr['items'] as $ship_item ) {
 
