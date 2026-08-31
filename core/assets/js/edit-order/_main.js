@@ -29,10 +29,12 @@ export class editOrderSettings {
 	setupPageEvents() {
 
 		/* Open Label Creation Modal */
-		document.querySelector( '[data-iqlrss-modal="shipstationLabelModal"]' ).addEventListener( 'click', ( e ) => {
-			e.stopImmediatePropagation();
-			e.preventDefault();
-			util.loadModule( 'modal', e.target, { 'modal': e.target.dataset.iqlrssModal } ).then( ( m ) => m.open() );
+		document.querySelectorAll( '[data-iqlrss-modal]' ).forEach( ( $btn ) => {
+			$btn.addEventListener( 'click', ( e ) => {
+				e.stopImmediatePropagation();
+				e.preventDefault();
+				util.loadModule( 'modal', e.target, { 'modal': e.target.dataset.iqlrssModal } ).then( ( m ) => m.open() );
+			} );
 		} );
 
 	}
