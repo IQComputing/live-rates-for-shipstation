@@ -235,6 +235,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method {
 			}
 		}
 
+		$wc_weight_unit = get_option( 'woocommerce_weight_unit', 'lbs' );
 		$settings = array(
 			'title' => array(
 				'title'			=> esc_html__( 'Title', 'live-rates-for-shipstation' ),
@@ -252,7 +253,11 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method {
 			'minweight' => array(
 				'title'			=> esc_html__( 'Product Weight Fallback', 'live-rates-for-shipstation' ),
 				'type'			=> 'text',
-				'description'	=> esc_html__( 'This value will be used if both weight and dimensions are missing from any given product. ShipStation at minimum needs a product weight to retrieve rates.', 'live-rates-for-shipstation' ),
+				'description'	=> sprintf(
+					/* translators: %s is the WooCommerce Weight Unit setting value. */
+					esc_html__( 'This value will be used if both weight and dimensions are missing from any given product. ShipStation at minimum needs a product weight to retrieve rates. Weight measured in %s.', 'live-rates-for-shipstation' ),
+					iqlrss_convert_unit_term( $wc_weight_unit, 'plural' )
+				),
 			),
 			'packing' => array(
 				'title'			=> esc_html__( 'Product Packing', 'live-rates-for-shipstation' ),
