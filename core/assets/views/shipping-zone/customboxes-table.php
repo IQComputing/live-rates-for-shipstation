@@ -179,7 +179,6 @@ $wc_dim_unit 	= get_option( 'woocommerce_dimension_unit', 'in' );
 						<label for="boxMaxVolume"><?php esc_html_e( 'Max Packing Percentage', 'live-rates-for-shipstation' ); ?></label>
 						<input type="number" name="box_volume_max" id="boxMaxVolume" min="1" max="100" value="100">
 						<p class="description"><?php
-							/* translators: %s is the WooCommerce Weight Unit setting value. */
 							esc_html_e( 'Max percentage box volume to be packed. Useful for product padding.', 'live-rates-for-shipstation' );
 						?></p>
 					</div>
