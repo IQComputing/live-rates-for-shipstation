@@ -2,6 +2,29 @@
 
 This is a brief text document keeping track of changes to the plugin. For a full history, see the Github Repository.
 
+= 1.2.14 =
+
+Release Date: September 14, 2026
+* Fixes PHP 8 operand type errors in WooCommerce order rate metadata and custom box calculations.
+	* Stores adjustments and other costs within their related package-rate metadata.
+	* Safely formats legacy metadata and non-numeric package keys on existing orders.
+	* Keeps displayed package quantities and adjustments consistent with calculated costs.
+	* Normalizes box-packer item values and dimensions before arithmetic.
+
+= 1.2.13 =
+
+Release Date: September 04, 2026
+* Fixes live rates that ShipStation returned but WooCommerce did not display.
+	* Uses canonical WooCommerce shipping-zone service field names.
+	* Safely resolves reconnected carrier accounts whose ShipStation ID changed.
+	* De-duplicates per-package carrier/service quotes and preserves multi-package coverage.
+	* Clears ShipStation and WooCommerce shipping caches once on upgrade.
+	* Adds targeted warnings for unmatched, incomplete, or subsequently removed rates.
+	* Accepts carrier-default package quotes when no package preset is selected.
+	* Improves Shipping Zone availability and uses instance-aware WooCommerce rate IDs.
+	* Preserves enabled service selections across stale carrier IDs and safely handles incomplete carrier, service, or warehouse data.
+	* Initializes the intended one-week ShipStation API cache lifetime.
+
 = 1.2.12 =
 
 Relase Date: August 17, 2026

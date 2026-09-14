@@ -3,7 +3,7 @@ Contributors: iqcomputing
 Tags: woocommerce, shipstation, usps, ups, fedex
 Requires at least: 6.5
 Tested up to: 7.0
-Stable tag: 1.2.12
+Stable tag: 1.2.14
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -50,15 +50,19 @@ Don't have a ShipStation account? [Open a ShipStation account today!](https://ww
 
 == Changelog ==
 
+= 1.2.14 (2026-09-14) =
+* Fixes PHP 8 operand type errors in WooCommerce order rate metadata and custom box calculations.
+* Correctly associates adjustments and other costs with package rates while safely handling legacy metadata.
+* Normalizes box-packer item values and dimensions before arithmetic.
+
+= 1.2.13 (2026-09-04) =
+* Fixes ShipStation rates being returned but not displayed by WooCommerce.
+* Safely remaps reconnected carrier accounts and matches enabled zone services.
+* Fixes shipping-zone service field saving and clears stale shipping caches on upgrade.
+* Accepts carrier-default package quotes and uses instance-aware WooCommerce rate IDs.
+* Preserves enabled service selections and safely handles incomplete carrier, service, or warehouse data.
+* Improves Shipping Zone availability and initializes the intended ShipStation API cache lifetime.
+
 = 1.2.12 (2026-08-17) =
 * New "Max Packing Percentage" field to Custom Boxes (Thanks @ils1225 - Good idea!)
 * Updates Custom Box unit/dimension labels to match WooCommerce Settings (Thanks @ils1225)!
-
-= 1.2.11 (2026-06-30) =
-* Accommodates ShipStation for WooCommerce 5.2.0 integration settings update (Thanks @zurety)!
-* Accommodates US Outlier Territories such as Puerto Rico, U.S. Virgin Islands, Guam, American Samoa, and Northern Marinana Islands (Thanks @lgs77717)!
-* Updates ShipStation readme links - API access is still only a premium feature unfortunately.
-
-= 1.2.10 (2026-06-15) =
-* Support for countries that do not require postcodes (Thanks @lgs77717)!
-* Bumps required version to WordPress 6.5.

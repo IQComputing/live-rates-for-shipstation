@@ -10,7 +10,7 @@
  *
  * @param \IQLRSS\Core\Shipping_Method_Shipstation $this
  * @param \IQLRSS\Core\Api\Shipstation $shipStationAPI
- * @param String $prefix - Plugin prefix
+ * @param String $services_field_key - Canonical WC_Settings_API field name
  * @param Array $saved_services - Saved Zone Services
  * @param Array $saved_carriers - Saved ShipStation Carriers
  */
@@ -23,6 +23,7 @@ $api_key = \IQLRSS\Driver::get_ss_opt( 'api_key', '' );
 $global_adjustment = \IQLRSS\Driver::get_ss_opt( 'global_adjustment', '0' );
 $global_adjustment_type = \IQLRSS\Driver::get_ss_opt( 'global_adjustment_type', '' );
 $global_adjustment_type = ( empty( $global_adjustment_type ) && ! empty( $global_adjustment ) ) ? 'percentage' : $global_adjustment_type;
+$processed_services = array();
 
 ?>
 
@@ -62,7 +63,9 @@ $global_adjustment_type = ( empty( $global_adjustment_type ) && ! empty( $global
 				foreach( $saved_services as $carrier_id => $carrier_arr ) {
 					foreach( $carrier_arr as $service_code => $service_arr ) {
 
-						$attr_name = sprintf( '%s[%s][%s]', $prefix, $carrier_id, $service_arr['service_code'] );
+						if( ! is_array( $service_arr ) ) continue;
+						$saved_service_code = $service_arr['service_code'] ?? $service_code;
+						$attr_name = sprintf( '%s[%s][%s]', $services_field_key, $carrier_id, $saved_service_code );
 						$saved_atts = array(
 							'enabled'			=> ( isset( $service_arr['enabled'] ) ) ? $service_arr['enabled'] : false,
 							'nickname'			=> ( isset( $service_arr['nickname'] ) ) ? $service_arr['nickname'] : '',
@@ -82,7 +85,7 @@ $global_adjustment_type = ( empty( $global_adjustment_type ) && ! empty( $global
 								// Metadata
 								printf( '<input type="hidden" name="%s" value="%s">',
 									esc_attr( $attr_name . '[service_name]' ),
-									esc_attr( $service_arr['service_name'] )
+									esc_attr( $service_arr['service_name'] ?? $saved_service_code )
 								);
 								printf( '<input type="hidden" name="%s" value="%s">',
 									esc_attr( $attr_name . '[carrier_id]' ),
@@ -91,11 +94,11 @@ $global_adjustment_type = ( empty( $global_adjustment_type ) && ! empty( $global
 
 								printf( '<input type="hidden" name="%s" value="%s">',
 									esc_attr( $attr_name . '[carrier_code]' ),
-									esc_attr( $service_arr['carrier_code'] )
+									esc_attr( $service_arr['carrier_code'] ?? '' )
 								);
 								printf( '<input type="hidden" name="%s" value="%s">',
 									esc_attr( $attr_name . '[carrier_name]' ),
-									esc_attr( $service_arr['carrier_name'] )
+									esc_attr( $service_arr['carrier_name'] ?? '' )
 								);
 							print( '</td>' );
 
@@ -104,7 +107,7 @@ $global_adjustment_type = ( empty( $global_adjustment_type ) && ! empty( $global
 								esc_attr__( 'Name', 'live-rates-for-shipstation' ),
 								esc_attr( $attr_name . '[nickname]' ),
 								esc_attr( $saved_atts['nickname'] ),
-								esc_attr( $service_arr['service_name'] ),
+								esc_attr( $service_arr['service_name'] ?? $saved_service_code ),
 							);
 
 							// Service Price Adjustment
@@ -131,13 +134,16 @@ $global_adjustment_type = ( empty( $global_adjustment_type ) && ! empty( $global
 							// Carrier Name
 							printf( '<td data-label="%s"><strong>%s</strong></td>',
 								esc_attr__( 'Carrier', 'live-rates-for-shipstation' ),
-								esc_html( $service_arr['carrier_name'] )
+								esc_html( $service_arr['carrier_name'] ?? '' )
 							);
 
 						print( '</tr>' );
 
-						// Set a processed flag for the next array which is not reorganized.
-						$saved_services[ $carrier_id ][ $service_code ]['processed'] = true;
+						// Track the canonical embedded code separately. Legacy
+						// records can have a different array key.
+						$processed_carrier_id = strtolower( trim( (string)$carrier_id ) );
+						$processed_service_code = strtolower( trim( (string)$saved_service_code ) );
+						$processed_services[ $processed_carrier_id ][ $processed_service_code ] = true;
 
 					}
 				}
@@ -157,11 +163,13 @@ $global_adjustment_type = ( empty( $global_adjustment_type ) && ! empty( $global
 					foreach( $response['services'] as $service_arr ) {
 
 						$service_arr = ( ! is_array( $service_arr ) ) ? (array)$service_arr : $service_arr;
-						if( isset( $saved_services[ $carrier_id ][ $service_arr['service_code'] ]['processed'] ) ) continue;
+						$processed_carrier_id = strtolower( trim( (string)$carrier_id ) );
+						$processed_service_code = strtolower( trim( (string)( $service_arr['service_code'] ?? '' ) ) );
+						if( isset( $processed_services[ $processed_carrier_id ][ $processed_service_code ] ) ) continue;
 
 						print( '<tr>' );
 
-							$attr_name = sprintf( '%s[%s][%s]', $prefix, $carrier_id, $service_arr['service_code'] );
+							$attr_name = sprintf( '%s[%s][%s]', $services_field_key, $carrier_id, $service_arr['service_code'] );
 
 							// Service Checkbox and Metadata
 							printf( '<td style="width: 50px;" data-label="%s">', esc_attr__( 'Enabled', 'live-rates-for-shipstation' ) );

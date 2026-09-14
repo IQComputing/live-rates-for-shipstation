@@ -55,7 +55,7 @@ class Stallation {
 		}
 
 		// Always Clear Cache
-		\IQLRSS\Driver::clear_cache();
+		\IQLRSS\Driver::clear_cache( false );
 
 	}
 
@@ -75,6 +75,10 @@ class Stallation {
 			return;
 		}
 
+		// A new build can change how carriers and services resolve. Invalidate
+		// ShipStation data and WooCommerce's cached package rates once so carts
+		// do not replay an empty result calculated by the previous version.
+		\IQLRSS\Driver::clear_cache();
 		\IQLRSS\Driver::set_opt( 'version', $version );
 		flush_rewrite_rules();
 

@@ -871,6 +871,7 @@ class Shipping_Calculator {
 
         // Run the API Requests.
         $cart_rates = array();
+        $unmatched_services = array();
         foreach( $this->packed as $idx => $package ) {
 
             /**
@@ -894,42 +895,91 @@ class Shipping_Calculator {
                 continue;
             }
 
-            // Set Rates from the available rates.
+            // Build one rate per service for this package. ShipStation can return
+            // duplicate rows for the same carrier/service, and counting those as
+            // separate boxes causes the completed rate to be discarded below.
+            $package_rates = array();
             foreach( $available_rates as $shiprate ) {
 
                 $hash = $this->get_rate_hash( array( 'shiprate' => $shiprate ) );
                 $rate = $this->process_available_rate( $shiprate, array( $idx => $package ) );
 
-                if( empty( $rate ) ) continue;
-                if( ! isset( $rate['id'] ) ) $rate['id'] = $hash;
+                if( empty( $rate ) ) {
+                    $unmatched_services[] = sprintf(
+                        '%s | %s | %s',
+                        $shiprate['carrier_id'] ?? '',
+                        $shiprate['carrier_code'] ?? '',
+                        $shiprate['code'] ?? ''
+                    );
+                    continue;
+                }
 
-                // Set rate
+                if( ! isset( $rate['id'] ) ) {
+                    $shipping_method = $this->get( 'shipping_method' );
+                    $rate['id'] = ( is_object( $shipping_method ) && is_callable( array( $shipping_method, 'get_rate_id' ) ) )
+                        ? $shipping_method->get_rate_id( $hash )
+                        : $hash;
+                }
+
+                if(
+                    ! isset( $package_rates[ $hash ] )
+                    || array_sum( (array)$rate['cost'] ) < array_sum( (array)$package_rates[ $hash ]['cost'] )
+                ) {
+                    $package_rates[ $hash ] = $rate;
+                }
+            }
+
+            // Combine the selected service rate across all packed packages.
+            foreach( $package_rates as $hash => $rate ) {
                 if( ! isset( $cart_rates[ $hash ] ) ) {
                     $cart_rates[ $hash ] = $rate;
+                    continue;
+                }
 
-                // Append cost, merge rates, merge boxes.
-                } else {
+                $cart_rates[ $hash ]['cost'] = array_merge( $cart_rates[ $hash ]['cost'], (array)$rate['cost'] );
+                $cart_rates[ $hash ]['meta_data']['rates'] = array_merge(
+                    (array)$rate['meta_data']['rates'],
+                    (array)$cart_rates[ $hash ]['meta_data']['rates'],
+                );
+                $cart_rates[ $hash ]['meta_data']['boxes'] = array_merge(
+                    (array)$cart_rates[ $hash ]['meta_data']['boxes'],
+                    (array)$rate['meta_data']['boxes']
+                );
+            }
+        }
 
-                    // Cost
-                    $cart_rates[ $hash ]['cost'] = array_merge( $cart_rates[ $hash ]['cost'], (array)$rate['cost'] );
-
-                    // Metadata - Rates
-                    $cart_rates[ $hash ]['meta_data']['rates'] = array_merge(
-                        (array)$rate['meta_data']['rates'],
-                        (array)$cart_rates[ $hash ]['meta_data']['rates'],
-                    );
-
-                    // Metadata - Boxes
-                    $cart_rates[ $hash ]['meta_data']['boxes'] = array_merge(
-                        (array)$cart_rates[ $hash ]['meta_data']['boxes'],
-                        (array)$rate['meta_data']['boxes']
+        $enabled_services = array();
+        if( ! empty( $unmatched_services ) ) {
+            foreach( $this->get( 'services_enabled', array() ) as $carrier_id => $carrier_services ) {
+                foreach( (array)$carrier_services as $service_code => $service_arr ) {
+                    $enabled_services[] = sprintf(
+                        '%s | %s | %s',
+                        $service_arr['carrier_id'] ?? $carrier_id,
+                        $service_arr['carrier_code'] ?? '',
+                        $service_arr['service_code'] ?? $service_code
                     );
                 }
             }
         }
 
+        if( empty( $cart_rates ) && ! empty( $unmatched_services ) ) {
+            $this->log( esc_html__( 'ShipStation returned rates, but none matched an enabled service in this shipping zone.', 'live-rates-for-shipstation' ), 'warning', array(
+                'returned_services' => array_values( array_unique( $unmatched_services ) ),
+                'enabled_services'  => array_values( array_unique( $enabled_services ) ),
+            ) );
+        }
+
         // Ensure we only set rates that encompass all our boxes.
-        $this->rates = array_filter( $cart_rates, fn( $arr ) => count( $arr['meta_data']['boxes'] ) == count( $this->packed ) );
+        $this->rates = array_filter( $cart_rates, fn( $arr ) => count( $arr['meta_data']['boxes'] ) === count( $this->packed ) );
+
+        if( empty( $this->rates ) && ! empty( $cart_rates ) ) {
+            $this->log( esc_html__( 'ShipStation returned rates, but no enabled service covered every packed package.', 'live-rates-for-shipstation' ), 'warning', array(
+                'packed_packages' => count( $this->packed ),
+                'service_package_counts' => array_map( fn( $rate ) => count( $rate['meta_data']['boxes'] ), $cart_rates ),
+                'unmatched_services' => array_values( array_unique( $unmatched_services ) ),
+                'enabled_services'   => array_values( array_unique( $enabled_services ) ),
+            ) );
+        }
 
     }
 
@@ -947,19 +997,23 @@ class Shipping_Calculator {
      */
     protected function process_available_rate( $shiprate, $package_arr ) {
 
-        // Return Early - The available rates has a carrier which is not enabled on this shipping method instance.
-        $services = $this->get( 'services_enabled', array() );
-        if( ! isset( $services[ $shiprate['carrier_id'] ][ $shiprate['code'] ] ) ) {
+        // Resolve the returned service against the zone configuration. Carrier
+        // account IDs can change when an account is reconnected, so use the
+        // stored carrier/service metadata as a safe, unique fallback.
+        $service_arr = $this->resolve_enabled_service( $shiprate );
+        if( empty( $service_arr ) ) {
             return array();
         }
 
         $package     = reset( $package_arr );
         $rate_name	 = $package['nickname'] ?? '';
         $rate_name   = $rate_name ?: $package['_name'] ?? $shiprate['_name'] ?? '';
-        $service_arr = $services[ $shiprate['carrier_id'] ][ $shiprate['code'] ];
+        $rate_label  = $service_arr['nickname'] ?? '';
+        $rate_label  = $rate_label ?: $shiprate['name'] ?? $service_arr['service_name'] ?? $shiprate['code'] ?? '';
+        $rate_label  = $rate_label ?: esc_html__( 'Shipping', 'live-rates-for-shipstation' );
 
         $wc_rate = array(
-            'label'		=> ( ! empty( $service_arr['nickname'] ) ) ? $service_arr['nickname'] : $shiprate['name'],
+            'label'		=> $rate_label,
             'cost'		=> array_fill( 0, $package['quantity'] ?? 1, floatval( $shiprate['cost'] ) ),
             'meta_data' => array(
                 'carrier' => $shiprate['carrier_name'],
@@ -977,7 +1031,7 @@ class Shipping_Calculator {
         );
 
         // Add the Service Adjustment.
-        $this->process_service_adjustments( $wc_rate, $shiprate, $package_arr );
+        $this->process_service_adjustments( $wc_rate, $shiprate, $package_arr, $service_arr );
 
         // Add any Other Costs.
         $this->process_other_adjustments( $wc_rate, $shiprate, $package_arr );
@@ -988,30 +1042,133 @@ class Shipping_Calculator {
 
 
     /**
+     * Normalize an identifier returned by ShipStation or stored in zone settings.
+     *
+     * @param Mixed $value
+     *
+     * @return String
+     */
+    protected function normalize_service_identifier( $value ) {
+        return strtolower( trim( (string)$value ) );
+    }
+
+
+    /**
+     * Find the enabled zone service represented by a ShipStation rate.
+     *
+     * Exact carrier account IDs remain authoritative. If ShipStation has
+     * refreshed an account ID, fall back to carrier code only when the match is
+     * unique. A service-code-only fallback is likewise allowed only when it is
+     * unambiguous across every enabled carrier.
+     *
+     * @param Array $shiprate ShipStation API rate.
+     *
+     * @return Array
+     */
+    protected function resolve_enabled_service( $shiprate ) {
+
+        $returned_service_code = $this->normalize_service_identifier( $shiprate['code'] ?? '' );
+        $returned_carrier_id   = $this->normalize_service_identifier( $shiprate['carrier_id'] ?? '' );
+        $returned_carrier_code = $this->normalize_service_identifier( $shiprate['carrier_code'] ?? '' );
+
+        if( empty( $returned_service_code ) ) {
+            return array();
+        }
+
+        $candidates = array();
+        foreach( $this->get( 'services_enabled', array() ) as $carrier_id => $carrier_services ) {
+            foreach( (array)$carrier_services as $service_code => $service_arr ) {
+
+                if( ! is_array( $service_arr ) ) continue;
+
+                $service_codes = array_unique( array_filter( array(
+                    $this->normalize_service_identifier( $service_code ),
+                    $this->normalize_service_identifier( $service_arr['service_code'] ?? '' ),
+                ) ) );
+
+                if( ! in_array( $returned_service_code, $service_codes, true ) ) continue;
+
+                $candidates[] = array(
+                    'service' => $service_arr,
+                    'carrier_ids' => array_unique( array_filter( array(
+                        $this->normalize_service_identifier( $carrier_id ),
+                        $this->normalize_service_identifier( $service_arr['carrier_id'] ?? '' ),
+                    ) ) ),
+                    'carrier_code' => $this->normalize_service_identifier( $service_arr['carrier_code'] ?? '' ),
+                );
+            }
+        }
+
+        if( empty( $candidates ) ) {
+            return array();
+        }
+
+        if( ! empty( $returned_carrier_id ) ) {
+            $id_matches = array_values( array_filter( $candidates, fn( $candidate ) => in_array( $returned_carrier_id, $candidate['carrier_ids'], true ) ) );
+
+            if( 1 === count( $id_matches ) ) {
+                return $id_matches[0]['service'];
+            }
+
+            if( count( $id_matches ) > 1 ) {
+                if( ! empty( $returned_carrier_code ) ) {
+                    $code_matches = array_values( array_filter( $id_matches, fn( $candidate ) => $returned_carrier_code === $candidate['carrier_code'] ) );
+                    if( 1 === count( $code_matches ) ) {
+                        return $code_matches[0]['service'];
+                    }
+                }
+
+                return array();
+            }
+        }
+
+        if( ! empty( $returned_carrier_code ) ) {
+            $code_matches = array_values( array_filter( $candidates, fn( $candidate ) => $returned_carrier_code === $candidate['carrier_code'] ) );
+
+            if( 1 === count( $code_matches ) ) {
+                return $code_matches[0]['service'];
+            }
+
+            if( count( $code_matches ) > 1 ) {
+                return array();
+            }
+        }
+
+        // A service-code-only match is safe only when ShipStation omitted both
+        // carrier identifiers. Explicitly conflicting identifiers must not be
+        // allowed to select a different carrier account.
+        if( ! empty( $returned_carrier_id ) || ! empty( $returned_carrier_code ) ) {
+            return array();
+        }
+
+        return ( 1 === count( $candidates ) ) ? $candidates[0]['service'] : array();
+
+    }
+
+
+    /**
      * Process any service specific rate adjustments.
      *
      * @param Array $wc_rate     - WC compatible rate array.
      * @param Array $shiprate    - ShipStation API rate.
      * @param Array $package_arr - Array( $idx => $package )
+     * @param Array $service_arr - Resolved enabled service settings.
      *
      * @return void
      */
-    protected function process_service_adjustments( &$wc_rate, $shiprate, $package_arr ) {
-
-        $services = $this->get( 'services_enabled', array() );
-        $service_arr = ( isset( $services[ $shiprate['carrier_id'] ] ) ) ? $services[ $shiprate['carrier_id'] ][ $shiprate['code'] ] : array();
+    protected function process_service_adjustments( &$wc_rate, $shiprate, $package_arr, $service_arr = array() ) {
 
         // Service Specific Adjustments
         if( ! empty( $service_arr['adjustment_type'] ) ) {
 
-            $adjustment = floatval( $service_arr['adjustment'] );
+            $adjustment = floatval( $service_arr['adjustment'] ?? 0 );
             $adjustment_type = ( isset( $service_arr['adjustment_type'] ) ) ? $service_arr['adjustment_type'] : 'percentage';
 
             if( $adjustment >= 0 ) {
 
                 $adjustment_cost = ( 'percentage' == $adjustment_type ) ? ( floatval( $shiprate['cost'] ) * ( floatval( $adjustment ) / 100 ) ) : floatval( $adjustment );
                 $wc_rate['cost'][] = $adjustment_cost;
-                $wc_rate['meta_data']['rates']['adjustment'] = array(
+                $wc_rate['meta_data']['rates'][0]['adjustment'] = array(
                     'type' => $adjustment_type,
                     'rate' => $adjustment,
                     'cost' => $adjustment_cost,
@@ -1029,9 +1186,10 @@ class Shipping_Calculator {
 
                 $adjustment_cost = ( 'percentage' === $global_adjustment_type ) ? ( floatval( $shiprate['cost'] ) * ( floatval( $global_adjustment ) / 100 ) ) : floatval( $global_adjustment );
                 $wc_rate['cost'][] = $adjustment_cost;
-                $wc_rate['meta_data']['rates']['adjustment'] = array(
+                $wc_rate['meta_data']['rates'][0]['adjustment'] = array(
                     'type' => $global_adjustment_type,
                     'rate' => $global_adjustment,
+                    'cost' => $adjustment_cost,
                     'global'=> true,
                 );
             }
@@ -1075,7 +1233,7 @@ class Shipping_Calculator {
 
         // Set metadata in rates.
         if( ! empty( $other ) && isset( $wc_rate['meta_data']['rates'] ) ) {
-            $wc_rate['meta_data']['rates']['other_costs'] = $other;
+            $wc_rate['meta_data']['rates'][0]['other_costs'] = $other;
         }
 
     }
@@ -1142,6 +1300,10 @@ class Shipping_Calculator {
      */
     protected function prepare_rates( $rates ) {
 
+        if( empty( $rates ) ) {
+            return array();
+        }
+
         // Maybe process the single lowest rates.
         if( 'yes' === $this->get( 'ssopt.return_lowest', 'no' ) ) {
             $rates = $this->prepare_single_lowest_rate( $rates );
@@ -1161,7 +1323,7 @@ class Shipping_Calculator {
             if( empty( $rate['meta_data'] ) || ! is_array( $rate['meta_data'] ) ) continue;
             foreach( $rate['meta_data'] as $mk => $val ) {
                 if( ! is_array( $val ) ) continue;
-                $rate[ $k ]['meta_data'][ $mk ] = wp_json_encode( $rate['meta_data'][ $mk ] );
+                $rates[ $k ]['meta_data'][ $mk ] = wp_json_encode( $rate['meta_data'][ $mk ] );
             }
         }
 
@@ -1313,7 +1475,7 @@ class Shipping_Calculator {
 
         /* Maybe return from an instance $arg */
         $found = $this->get( $key, null );
-        if( $found ) return $found;
+        if( $found && ( 'warehouse' !== $key || is_array( $found ) ) ) return $found;
 
         /* Otherwise request it from the API */
         $value = $default;
@@ -1345,20 +1507,118 @@ class Shipping_Calculator {
             case 'carrier_ids':
 
                 $enabled  = array();
-                $carriers = $this->get( 'ssopt.carriers', array() );
+                $carriers = array_values( array_filter( (array)$this->get( 'ssopt.carriers', array() ) ) );
                 $saved_services = $this->get( 'services', array() );
 
-                if( ! empty( $saved_services ) ) {
-                    foreach( $saved_services as $c => $sa ) {
-                        foreach( $sa as $sk => $s ) {
-                            if( ! isset( $s['enabled'] ) || ! $s['enabled'] ) continue;
-                            $enabled[] = $c;
+                if( ! empty( $saved_services ) && ! empty( $carriers ) ) {
+
+                    // Keep the original selected ID for the API request, while
+                    // comparing IDs case-insensitively.
+                    $selected_ids = array();
+                    foreach( $carriers as $carrier_id ) {
+                        $normalized_id = $this->normalize_service_identifier( $carrier_id );
+                        if( ! empty( $normalized_id ) ) {
+                            $selected_ids[ $normalized_id ] = $carrier_id;
                         }
                     }
 
-                    if( ! empty( $carriers ) && ! empty( $enabled ) ) {
-                        $value = array_values( array_intersect( $enabled, $carriers ) );
+                    // Group enabled services by their saved carrier. Reconnected
+                    // accounts can retain the old account ID in zone settings.
+                    $carrier_groups = array();
+                    foreach( $saved_services as $carrier_id => $carrier_services ) {
+                        foreach( (array)$carrier_services as $service_arr ) {
+                            if( ! is_array( $service_arr ) || empty( $service_arr['enabled'] ) ) continue;
+
+                            $group_key = $this->normalize_service_identifier( $carrier_id );
+                            if( empty( $group_key ) ) {
+                                $group_key = $this->normalize_service_identifier( $service_arr['carrier_id'] ?? '' );
+                            }
+                            if( empty( $group_key ) ) continue;
+
+                            if( ! isset( $carrier_groups[ $group_key ] ) ) {
+                                $carrier_groups[ $group_key ] = array(
+                                    'carrier_ids'   => array(),
+                                    'carrier_codes' => array(),
+                                );
+                            }
+
+                            foreach( array( $carrier_id, $service_arr['carrier_id'] ?? '' ) as $saved_carrier_id ) {
+                                $saved_carrier_id = $this->normalize_service_identifier( $saved_carrier_id );
+                                if( ! empty( $saved_carrier_id ) ) {
+                                    $carrier_groups[ $group_key ]['carrier_ids'][] = $saved_carrier_id;
+                                }
+                            }
+
+                            $saved_carrier_code = $this->normalize_service_identifier( $service_arr['carrier_code'] ?? '' );
+                            if( ! empty( $saved_carrier_code ) ) {
+                                $carrier_groups[ $group_key ]['carrier_codes'][] = $saved_carrier_code;
+                            }
+                        }
                     }
+
+                    $unresolved_groups = array();
+                    foreach( $carrier_groups as $group_key => $carrier_group ) {
+                        $carrier_group['carrier_ids'] = array_values( array_unique( $carrier_group['carrier_ids'] ) );
+                        $carrier_group['carrier_codes'] = array_values( array_unique( $carrier_group['carrier_codes'] ) );
+
+                        $exact_matches = array_intersect_key( $selected_ids, array_flip( $carrier_group['carrier_ids'] ) );
+                        if( 1 === count( $exact_matches ) ) {
+                            $enabled[] = reset( $exact_matches );
+                        } else if( empty( $exact_matches ) ) {
+                            $unresolved_groups[ $group_key ] = $carrier_group;
+                        } else {
+                            $this->log( esc_html__( 'An enabled shipping-zone carrier matched more than one selected ShipStation carrier ID.', 'live-rates-for-shipstation' ), 'warning', array(
+                                'configured_carrier_ids' => $carrier_group['carrier_ids'],
+                                'selected_carrier_ids'   => array_values( $exact_matches ),
+                            ) );
+                        }
+                    }
+
+                    // If ShipStation refreshed an account ID, map the saved
+                    // carrier code only when exactly one selected current
+                    // carrier has that code. Never guess between accounts.
+                    if( ! empty( $unresolved_groups ) ) {
+                        $current_carriers = $this->api()->get_carriers();
+
+                        if( ! is_wp_error( $current_carriers ) && is_array( $current_carriers ) ) {
+                            $selected_carrier_data = array();
+                            foreach( $current_carriers as $current_key => $current_carrier ) {
+                                if( ! is_array( $current_carrier ) ) continue;
+
+                                $current_id = $this->normalize_service_identifier( $current_carrier['carrier_id'] ?? $current_key );
+                                if( empty( $current_id ) || ! isset( $selected_ids[ $current_id ] ) ) continue;
+
+                                $selected_carrier_data[] = array(
+                                    'carrier_id'   => $selected_ids[ $current_id ],
+                                    'carrier_code' => $this->normalize_service_identifier( $current_carrier['carrier_code'] ?? '' ),
+                                );
+                            }
+
+                            foreach( $unresolved_groups as $carrier_group ) {
+                                $code_matches = array();
+                                if( 1 === count( $carrier_group['carrier_codes'] ) ) {
+                                    $saved_carrier_code = reset( $carrier_group['carrier_codes'] );
+                                    $code_matches = array_values( array_filter(
+                                        $selected_carrier_data,
+                                        fn( $current_carrier ) => $saved_carrier_code === $current_carrier['carrier_code']
+                                    ) );
+                                }
+
+                                if( 1 === count( $code_matches ) ) {
+                                    $enabled[] = $code_matches[0]['carrier_id'];
+                                    continue;
+                                }
+
+                                $this->log( esc_html__( 'Could not safely map an enabled shipping-zone carrier to a selected ShipStation account.', 'live-rates-for-shipstation' ), 'warning', array(
+                                    'configured_carrier_ids' => $carrier_group['carrier_ids'],
+                                    'carrier_codes'          => $carrier_group['carrier_codes'],
+                                    'matching_accounts'      => array_column( $code_matches, 'carrier_id' ),
+                                ) );
+                            }
+                        }
+                    }
+
+                    $value = array_values( array_unique( $enabled ) );
                 }
 
             break;
