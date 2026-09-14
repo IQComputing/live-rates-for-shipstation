@@ -356,7 +356,8 @@ class Settings_Shipstation {
 		}
 
 		// Backwards compatibility for v1.0.3 when only percentage was supported by default.
-		$global_adjustment = \IQLRSS\Driver::get_ss_opt( 'global_adjustment', '0' );
+		$global_adjustment 		 = \IQLRSS\Driver::get_ss_opt( 'global_adjustment', '0' );
+		$global_adjustment_type  = \IQLRSS\Driver::get_ss_opt( 'global_adjustment_type', '' );
 		$adjustment_type_default = ( empty( $global_adjustment_type ) && ! empty( $global_adjustment ) ) ? 'percentage' : '';
 
 		// Different append keys depending on installed ShipStation for WooCommerce version.
