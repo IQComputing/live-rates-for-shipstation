@@ -77,7 +77,7 @@ function iqlrssPrintCustomBoxItem( $box ) {
 		// Warehouse?
 		$item_html .= sprintf( '<td data-assoc="box_warehouse" data-label="%s">%s</td>',
 			esc_attr__( 'Location', 'live-rates-for-shipstation' ),
-			( isset( $box_arr['warehouse'] ) ) ? $box_arr['warehouse'] : ''
+			( isset( $box_arr['warehouse'] ) ) ? esc_html( $box_arr['warehouse'] ) : ''
 		);
 
 		// Enabler Switch
