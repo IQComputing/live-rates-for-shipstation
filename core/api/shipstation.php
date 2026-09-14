@@ -485,6 +485,9 @@ class Shipstation {
 
 
 	/**
+	 * @ignore - This is a legacy method which should be ignored.
+	 * 			It's an incomplete method.
+	 * 
 	 * Purchase a shipping label by a carrier.
 	 *
 	 * @link https://docs.shipstation.com/openapi/labels/create_label
@@ -512,6 +515,9 @@ class Shipstation {
 
 
 	/**
+	 * @ignore - This is a legacy method which should be ignored.
+	 * 			It's an incomplete method.
+	 * 
 	 * Create Shipments from given WC_Orders.
 	 *
 	 * @param Array $wc_orders - Array of WC_Order objects.
