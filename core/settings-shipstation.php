@@ -91,10 +91,10 @@ class Settings_Shipstation {
 		}
 
 		$data = array(
-			'api_verified'	=> \IQLRSS\Driver::get_ss_opt( 'api_key_valid', false ),
+			'api_verified' => \IQLRSS\Driver::get_ss_opt( 'api_key_valid', false ),
 			'global_adjustment_type' => \IQLRSS\Driver::get_ss_opt( 'global_adjustment_type', '' ),
 			'store' => array(
-				'currency_symbol' => get_woocommerce_currency_symbol( get_woocommerce_currency() ),
+				'currency_symbol' => esc_html( get_woocommerce_currency_symbol( get_woocommerce_currency() ) ),
 			),
 			'rest' => array(
 				'nonce'		=> wp_create_nonce( 'wp_rest' ),
@@ -120,7 +120,7 @@ class Settings_Shipstation {
 		?><script type="text/javascript">
 
 			/* JS Localization */
-			const iqlrss = JSON.parse( '<?php echo wp_json_encode( $data ); ?>' );
+			const iqlrss = JSON.parse( '<?php echo wp_json_encode( $data, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ); ?>' );
 
 			/* Early setting field JS */
 			if( document.getElementById( 'woocommerce_shipstation_iqlrss_api_key' ) ) { ( function() {
