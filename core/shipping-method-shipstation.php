@@ -796,15 +796,15 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method {
 
 		/**
 		 * Allow overriding the Shipping Calculator object.
-		 * Must inherit IQLRSS\Core\Classes\Shipping_Calculator
+		 * Must inherit IQLRSS\Core\Classes\Shipping_Calculator.
 		 *
 		 * @hook filter
 		 *
-		 * @param \IQLRSS\Core\Classes\Shipping_Calculator $calculator
-		 * @param Array $packages - The cart contents. See $packages['contents'] for items.
-		 * @param \IQLRSS\Core\Shipping_Method_Shipstation $this
+		 * @param \IQLRSS\Core\Classes\Shipping_Calculator $calculator - The Shipping Calculator object.
+		 * @param Array $cart - The cart package. See $cart['contents'] for items.
+		 * @param \IQLRSS\Core\Shipping_Method_Shipstation $this - The Shipping Method object.
 		 *
-		 * @return Array $settings
+		 * @return \IQLRSS\Core\Classes\Shipping_Calculator $calculator
 		 */
 		$maybe_calc = apply_filters( 'iqlrss/shipping/calculator_object', $calculator, $cart, $this );
 		if( is_object( $maybe_calc ) && $maybe_calc !== $calculator ) {
