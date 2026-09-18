@@ -3,7 +3,7 @@
  * Plugin Name: Live Rates for ShipStation
  * Plugin URI: https://iqcomputing.com/contact/
  * Description: ShipStation shipping method with live rates.
- * Version: 1.2.11
+ * Version: 1.2.14
  * Requires at least: 6.5
  * Author: IQComputing
  * Author URI: https://iqcomputing.com/
@@ -25,7 +25,7 @@ class Driver {
 	 *
 	 * @var String
 	 */
-	protected static $version = '1.2.11';
+	protected static $version = '1.2.14';
 
 
 	/**
@@ -62,7 +62,7 @@ class Driver {
 
 		if( ! $skip_prefix ) $key = static::plugin_prefix( $key );
 		$settings = get_option( 'woocommerce_shipstation_settings' );
-		return ( isset( $settings[ $key ] ) && '' !== $settings[ $key ] ) ? maybe_unserialize( $settings[ $key ] ) : $default;
+		return ( isset( $settings[ $key ] ) && '' !== $settings[ $key ] ) ? $settings[ $key ] : $default;
 
 	}
 
@@ -105,7 +105,7 @@ class Driver {
 	 */
 	public static function get_opt( $key, $default = '' ) {
 		$settings = get_option( static::plugin_prefix( 'plugin' ) );
-		return ( isset( $settings[ $key ] ) && '' !== $settings[ $key ] ) ? maybe_unserialize( $settings[ $key ] ) : $default;
+		return ( isset( $settings[ $key ] ) && '' !== $settings[ $key ] ) ? $settings[ $key ] : $default;
 	}
 
 
@@ -136,12 +136,21 @@ class Driver {
 	/**
 	 * Clear the Plugin API cache.
 	 *
+	 * @param Boolean $rotate_generation Whether to switch to a fresh cache namespace.
+	 *
 	 * @return void
 	 */
-	public static function clear_cache() {
+	public static function clear_cache( $rotate_generation = true ) {
 
 		global $wpdb;
 
+		// Direct transient-row deletion cannot invalidate transients held by an
+		// external object cache. Rotating the namespace makes every prior API
+		// cache entry unreachable immediately; old entries expire naturally.
+		if( $rotate_generation ) {
+			$cache_generation = absint( static::get_opt( 'cache_generation', 0 ) ) + 1;
+			static::set_opt( 'cache_generation', $cache_generation );
+		}
 
 		/**
 		 * The API Class creates various transients to cache carrier services.
@@ -155,13 +164,19 @@ class Driver {
 			'%' . $wpdb->esc_like( '_' . static::get( 'slug' ) . '_' ) . '%'
 		) );
 
+		// Persistent object caches can otherwise retain stale API credentials and package data.
+		wp_cache_delete( 'iqlrss_api', 'iqlrss' );
+		wp_cache_delete( 'packages', static::get( 'slug' ) );
+
 
 		/**
 		 * WooCommerce caches the shipping rates with a transient version.
 		 * Forcing a refresh on the version invalidates all customer
 		 * shipping calculations, forcing the system to recalculate the cart.
 		 */
-		\WC_Cache_Helper::get_transient_version( 'shipping', true );
+		if( class_exists( '\WC_Cache_Helper' ) ) {
+			\WC_Cache_Helper::get_transient_version( 'shipping', true );
+		}
 
 	}
 

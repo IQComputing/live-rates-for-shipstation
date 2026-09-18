@@ -53,7 +53,7 @@ class Rest_Router {
 		register_rest_route( "{$prefix}/v1", 'settings', array(
             'methods'   => array( 'POST' ),
 			'callback'  => array( $this, 'route_settings_request' ),
-			'permission_callback' => fn() => is_user_logged_in(),
+			'permission_callback' => fn() => current_user_can( 'manage_woocommerce' ),
         ) );
 
 	}
@@ -244,7 +244,7 @@ class Rest_Router {
         if( is_wp_error( $request ) || empty( $request ) ) {
 
             // Revert to old key.
-            \IQLRSS\Driver::get_ss_opt( 'api_key', $keydata['old']['key'] );
+            \IQLRSS\Driver::set_ss_opt( 'api_key', $keydata['old']['key'] );
             wp_send_json_error(
                 ( is_wp_error( $request ) ) ? $request->get_error_message() : '',
                 ( is_wp_error( $request ) ) ? $request->get_error_code()    : 400

@@ -57,15 +57,15 @@ function iqlrssPrintCustomBoxItem( $box ) {
 				( ! isset( $data['clone'] ) ) ? esc_attr( wp_json_encode( $box_arr ) ) : ''
 			);
 			$item_html .= sprintf( '<a href="#" data-iqlrss-modal="customBoxesFormModal" data-assoc="nickname">%s</a>',
-				$box_arr['nickname'],
+				esc_html( $box_arr['nickname'] ),
 			);
 		$item_html .= '</td>';
 
 		// Package / Dimensions
 		$item_html .= sprintf( '<td data-assoc="box_dimensions" data-label="%s">%s%s</td>',
 			esc_attr__( 'Box Dimensions', 'live-rates-for-shipstation' ),
-			( is_array( $box_arr['outer'] ) ) ? implode( ' x ', $box_arr['outer'] ) : '',
-			( is_array( $box_arr['inner'] ) && ! empty( array_filter( $box_arr['inner'] ) ) ) ? ' (' . implode( ' x ', $box_arr['inner'] ) . ')' : ''
+			esc_html( ( is_array( $box_arr['outer'] ) ) ? implode( ' x ', $box_arr['outer'] ) : '' ),
+			esc_html( ( is_array( $box_arr['inner'] ) && ! empty( array_filter( $box_arr['inner'] ) ) ) ? ' (' . implode( ' x ', $box_arr['inner'] ) . ')' : '' )
 		);
 
 		// Price
@@ -77,7 +77,7 @@ function iqlrssPrintCustomBoxItem( $box ) {
 		// Warehouse?
 		$item_html .= sprintf( '<td data-assoc="box_warehouse" data-label="%s">%s</td>',
 			esc_attr__( 'Location', 'live-rates-for-shipstation' ),
-			( isset( $box_arr['warehouse'] ) ) ? $box_arr['warehouse'] : ''
+			( isset( $box_arr['warehouse'] ) ) ? esc_html( $box_arr['warehouse'] ) : ''
 		);
 
 		// Enabler Switch

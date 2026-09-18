@@ -91,10 +91,10 @@ class Settings_Shipstation {
 		}
 
 		$data = array(
-			'api_verified'	=> \IQLRSS\Driver::get_ss_opt( 'api_key_valid', false ),
+			'api_verified' => \IQLRSS\Driver::get_ss_opt( 'api_key_valid', false ),
 			'global_adjustment_type' => \IQLRSS\Driver::get_ss_opt( 'global_adjustment_type', '' ),
 			'store' => array(
-				'currency_symbol' => get_woocommerce_currency_symbol( get_woocommerce_currency() ),
+				'currency_symbol' => esc_html( get_woocommerce_currency_symbol( get_woocommerce_currency() ) ),
 			),
 			'rest' => array(
 				'nonce'		=> wp_create_nonce( 'wp_rest' ),
@@ -120,7 +120,7 @@ class Settings_Shipstation {
 		?><script type="text/javascript">
 
 			/* JS Localization */
-			const iqlrss = JSON.parse( '<?php echo wp_json_encode( $data ); ?>' );
+			const iqlrss = JSON.parse( '<?php echo wp_json_encode( $data, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ); ?>' );
 
 			/* Early setting field JS */
 			if( document.getElementById( 'woocommerce_shipstation_iqlrss_api_key' ) ) { ( function() {
@@ -233,7 +233,7 @@ class Settings_Shipstation {
 		printf( '<tr><th>%s</th><td>%s %s</td></tr>',
 			esc_html__( 'Total Weight', 'live-rates-for-shipstation' ),
 			esc_html( WC()->cart->get_cart_contents_weight() ),
-			iqlrss_convert_unit_term( get_option( 'woocommerce_weight_unit', 'lbs' ), 'plural' )
+			esc_html( iqlrss_convert_unit_term( get_option( 'woocommerce_weight_unit', 'lbs' ), 'plural' ) )
 		);
 
 	}
@@ -356,7 +356,8 @@ class Settings_Shipstation {
 		}
 
 		// Backwards compatibility for v1.0.3 when only percentage was supported by default.
-		$global_adjustment = \IQLRSS\Driver::get_ss_opt( 'global_adjustment', '0' );
+		$global_adjustment 		 = \IQLRSS\Driver::get_ss_opt( 'global_adjustment', '0' );
+		$global_adjustment_type  = \IQLRSS\Driver::get_ss_opt( 'global_adjustment_type', '' );
 		$adjustment_type_default = ( empty( $global_adjustment_type ) && ! empty( $global_adjustment ) ) ? 'percentage' : '';
 
 		// Different append keys depending on installed ShipStation for WooCommerce version.

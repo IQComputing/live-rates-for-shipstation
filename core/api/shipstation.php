@@ -39,7 +39,7 @@ class Shipstation {
 	 *
 	 * @var Integer
 	 */
-	protected $cache_time;
+	protected $cache_time = 604800;
 
 
 	/**
@@ -73,7 +73,14 @@ class Shipstation {
 	 */
 	public function __construct( $skip_cache = false ) {
 
-		$this->prefix 	= \IQLRSS\Driver::get( 'slug' );
+		// Version and rotate the transient namespace so legacy entries and
+		// external object-cache entries cannot suppress refreshed data.
+		$this->prefix 	= sprintf(
+			'%s_%s_%d',
+			\IQLRSS\Driver::get( 'slug' ),
+			str_replace( '.', '_', \IQLRSS\Driver::get( 'version' ) ),
+			absint( \IQLRSS\Driver::get_opt( 'cache_generation', 0 ) )
+		);
 		$this->key 		= \IQLRSS\Driver::get_ss_opt( 'api_key', '' );
 
 
@@ -98,7 +105,7 @@ class Shipstation {
 		 *
 		 * @param Integer $cache_time - Week in seconds.
 		 *
-		 * @return Boolean
+		 * @return Integer
 		 */
 		if( $this->cache ) {
 			$cache_time = apply_filters( 'iqlrss/cache/shipstation_expires', $this->cache_time, $this );
@@ -285,6 +292,11 @@ class Shipstation {
 		}
 
 		$data = array();
+		$requested_package_type = $api_args['package_code'] ?? '';
+		$allowed_package_types = array_filter( array(
+			'package',
+			$requested_package_type,
+		) );
 		foreach( $body as $rate ) {
 
 			// Sometimes rates come with error messages - skip them.
@@ -292,7 +304,14 @@ class Shipstation {
 
 			// Sometimes rates can be cost $0, which isn't right - skip them.
 			if( $rate['shipping_amount']['amount'] <= 0 ) continue;
-			if( ! empty( $rate['package_type'] ) && 'package' != $rate['package_type'] ) continue;
+
+			// Without an explicit preset, ShipStation chooses each carrier's
+			// default package type. Those returned defaults are valid quotes.
+			if(
+				! empty( $requested_package_type )
+				&& ! empty( $rate['package_type'] )
+				&& ! in_array( $rate['package_type'], $allowed_package_types, true )
+			) continue;
 
 			$est = array(
 				'name'					=> $rate['service_type'],
@@ -466,6 +485,9 @@ class Shipstation {
 
 
 	/**
+	 * @ignore - This is a legacy method which should be ignored.
+	 * 			It's an incomplete method.
+	 * 
 	 * Purchase a shipping label by a carrier.
 	 *
 	 * @link https://docs.shipstation.com/openapi/labels/create_label
@@ -493,6 +515,9 @@ class Shipstation {
 
 
 	/**
+	 * @ignore - This is a legacy method which should be ignored.
+	 * 			It's an incomplete method.
+	 * 
 	 * Create Shipments from given WC_Orders.
 	 *
 	 * @param Array $wc_orders - Array of WC_Order objects.

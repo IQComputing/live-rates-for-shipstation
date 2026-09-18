@@ -61,6 +61,13 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method {
 	 */
 	protected $logger = null;
 
+	/**
+	 * Fingerprint of the package most recently calculated by this object.
+	 *
+	 * @var String
+	 */
+	protected $calculated_package_hash = '';
+
 
 	/**
 	 * Setup shipping class
@@ -77,15 +84,9 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method {
 		$this->instance_id 			= absint( $instance_id );
 		$this->method_title 		= esc_html__( 'Live Rates for ShipStation', 'live-rates-for-shipstation' );
 		$this->method_description 	= esc_html__( 'Get live shipping rates from all ShipStation supported carriers.', 'live-rates-for-shipstation' );
-		$this->supports 			= array( 'instance-settings' );
+		$this->supports 			= array( 'shipping-zones', 'instance-settings' );
 
 		$this->carriers = \IQLRSS\Driver::get_ss_opt( 'carriers', array() );
-		$saved_key 		= \IQLRSS\Driver::get_ss_opt( 'api_key_valid', false ); // v2 key.
-
-		// Only show in Shipping Zones if API Key is invalid.
-		if( ! empty( $saved_key ) && ! empty( $this->carriers ) ) {
-			$this->supports[] = 'shipping-zones';
-		}
 
 		/**
 		 * Init shipping methods.
@@ -170,6 +171,47 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method {
 		add_filter( 'woocommerce_order_item_display_meta_key',	array( $this, 'labelify_meta_keys' ) );
 		add_filter( 'woocommerce_order_item_display_meta_value',array( $this, 'format_meta_values' ), 10, 2 );
 		add_filter( 'woocommerce_hidden_order_itemmeta',		array( $this, 'hide_metadata_from_admin_order' ) );
+		add_filter( 'woocommerce_package_rates',				array( $this, 'log_removed_package_rates' ), 10000, 2 );
+
+	}
+
+
+	/**
+	 * Best-effort diagnostic for rates missing from WooCommerce's package-rate
+	 * pipeline after this method generated them.
+	 *
+	 * @param Array $package_rates Final WooCommerce package rates.
+	 * @param Array $package       Shipping package.
+	 *
+	 * @return Array
+	 */
+	public function log_removed_package_rates( $package_rates, $package ) {
+
+		$package_hash = $this->get_package_diagnostic_hash( $package );
+		if(
+			empty( $this->rates )
+			|| empty( $this->calculated_package_hash )
+			|| ! hash_equals( $this->calculated_package_hash, $package_hash )
+		) {
+			return $package_rates;
+		}
+		$this->calculated_package_hash = '';
+
+		$remaining = array_filter( (array)$package_rates, function( $rate ) {
+			return is_a( $rate, 'WC_Shipping_Rate' )
+				&& $this->id === $rate->get_method_id()
+				&& absint( $this->instance_id ) === absint( $rate->get_instance_id() );
+		} );
+
+		if( empty( $remaining ) ) {
+			$this->log( esc_html__( 'Live rates were calculated and added, but none were present at this point in WooCommerce\'s package-rate pipeline. A later filter or a WooCommerce rate-hiding rule may have removed them.', 'live-rates-for-shipstation' ), 'warning', array(
+				'instance_id'        => $this->instance_id,
+				'generated_rate_ids' => array_keys( $this->rates ),
+				'final_rate_ids'     => array_keys( (array)$package_rates ),
+			) );
+		}
+
+		return $package_rates;
 
 	}
 
@@ -228,23 +270,36 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method {
 				// Rates
 				case 'rates':
 					$value = json_decode( $display, true );
+					if( ! is_array( $value ) ) {
+						break;
+					}
+
+					// Older versions stored these beside, rather than within, a package rate.
+					unset( $value['adjustment'], $value['other_costs'] );
 
 					$display_arr = array();
-					foreach( $value as $i => $rate_arr ) {
+					$package_number = 0;
+					foreach( $value as $rate_arr ) {
+
+						if( ! is_array( $rate_arr ) || ! isset( $rate_arr['rate'] ) ) {
+							continue;
+						}
+						$package_number++;
 
 						/* translators: %1$d is box/package count (1,2,3). */
-						$name = sprintf( esc_html__( 'Package %1$d', 'live-rates-for-shipstation' ), $i + 1 );
+						$name = sprintf( esc_html__( 'Package %1$d', 'live-rates-for-shipstation' ), $package_number );
 						if( ! empty( $rate_arr['_name'] ) ) {
 							$name = $this->format_shipitem_name( $rate_arr['_name'] );
 						}
+						$quantity = $rate_arr['qty'] ?? $rate_arr['quantity'] ?? 0;
 
 						if( isset( $rate_arr['adjustment'] ) ) {
 
-							if( ! empty( $rate_arr['qty'] ) ) {
+							if( ! empty( $quantity ) ) {
 
-								$new_display = sprintf( '%s [ %s &times; ( %s + %s',
+								$new_display = sprintf( '%s [ ( ( %s &times; %s ) + %s',
 									$name,
-									$rate_arr['qty'],
+									$quantity,
 									wc_price( $rate_arr['rate'] ),
 									wc_price( $rate_arr['adjustment']['cost'] ),
 								);
@@ -279,11 +334,11 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method {
 						} else {
 
 							$new_display = '';
-							if( ! empty( $rate_arr['qty'] ) ) {
+							if( ! empty( $quantity ) ) {
 
 								$new_display = sprintf( '%s [ %s x %s',
 									$name,
-									$rate_arr['qty'],
+									$quantity,
 									wc_price( $rate_arr['rate'] ),
 								);
 
@@ -316,12 +371,21 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method {
 				// Boxes
 				case 'boxes':
 					$value = json_decode( $display, true );
+					if( ! is_array( $value ) ) {
+						break;
+					}
 
 					$display_arr = array();
-					foreach( $value as $i => $box_arr ) {
+					$package_number = 0;
+					foreach( $value as $box_arr ) {
+
+						if( ! is_array( $box_arr ) ) {
+							continue;
+						}
+						$package_number++;
 
 						/* translators: %1$d is box/package count (1,2,3). */
-						$box_name = sprintf( esc_html__( 'Package %1$d', 'live-rates-for-shipstation' ), $i + 1 );
+						$box_name = sprintf( esc_html__( 'Package %1$d', 'live-rates-for-shipstation' ), $package_number );
 						if( ! empty( $box_arr['nickname'] ) ) {
 							$box_name = $box_arr['nickname'];
 						}
@@ -577,9 +641,9 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method {
 	 *
 	 * @return String - HTML
 	 */
-	public function generate_services_html() {
+	public function generate_services_html( $key = 'services', $data = array() ) {
 
-		$prefix 		= $this->plugin_prefix;
+		$services_field_key = $this->get_field_key( $key );
 		$settings 		= get_option( 'woocommerce_shipstation_settings' );
 		$saved_services = $this->get_option( 'services', array() );
 		$saved_carriers = \IQLRSS\Driver::get_ss_opt( 'carriers', array() );
@@ -592,12 +656,6 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method {
 			// See $this->validate_services_field()
 			foreach( $saved_services as $carrier_id => $carrier_services ) {
 
-				// Skip any old carrier services.
-				if( ! in_array( $carrier_id, $saved_carriers ) ) {
-					unset( $saved_services[ $carrier_id ] );
-					continue;
-				}
-
 				// Skip any services which are not enabled.
 				foreach( $carrier_services as $service_code => $service_arr ) {
 					if( ! isset( $service_arr['enabled'] ) ) {
@@ -605,8 +663,15 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method {
 					}
 				}
 
-				$sorted_services[ $carrier_id ] = $carrier_services;
-				unset( $saved_services[ $carrier_id ] );
+				// Selected carriers display first. Retain enabled services from a
+				// stale carrier ID so reconnecting an account cannot silently
+				// erase the zone configuration when the settings page is saved.
+				if( in_array( $carrier_id, $saved_carriers, true ) ) {
+					$sorted_services[ $carrier_id ] = $carrier_services;
+					unset( $saved_services[ $carrier_id ] );
+				} else {
+					$saved_services[ $carrier_id ] = $carrier_services;
+				}
 			}
 
 			$saved_services = array_merge( $sorted_services, $saved_services );
@@ -624,23 +689,22 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method {
 	 *
 	 * @return Array $services
 	 */
-	public function validate_services_field() {
-
-		if( ! isset( $_POST['_wpnonce'] ) ) {
-			return;
-		}
+	public function validate_services_field( $key = 'services', $value = null ) {
 
 		$prefix = $this->plugin_prefix;
-		$nonce  = sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) );
 
-		if( ! wp_verify_nonce( $nonce, 'woocommerce-settings' ) ) {
-			return;
-		} else if( ! isset( $_POST[ $prefix ] ) || ! is_array( $_POST[ $prefix ] ) ) {
-			return;
+		// WC_Settings_API passes the canonical field value here. Keep support for
+		// the legacy iqlrss[...] field name through WooCommerce's normalized
+		// post-data store (including the shipping-zone AJAX save path).
+		if( is_array( $value ) ) {
+			$posted_services = $value;
+		} else {
+			$post_data = (array)$this->get_post_data();
+			if( ! isset( $post_data[ $prefix ] ) || ! is_array( $post_data[ $prefix ] ) ) {
+				return array();
+			}
+			$posted_services = $post_data[ $prefix ];
 		}
-
-		// Input sanitized during processing.
-		$posted_services = wp_unslash( $_POST[ $prefix ] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 
 		// Global adjustment
 		$global_adjustment 		= \IQLRSS\Driver::get_ss_opt( 'global_adjustment', '' );
@@ -650,7 +714,9 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method {
 		$services = array();
 
 		foreach( $posted_services as $carrier_id => $carrier_services ) {
+			if( ! is_array( $carrier_services ) ) continue;
 			foreach( $carrier_services as $service_code => $service_arr ) {
+				if( ! is_array( $service_arr ) ) continue;
 
 				$carrier_id 	= sanitize_text_field( $carrier_id );
 				$service_code 	= sanitize_text_field( $service_code );
@@ -658,20 +724,20 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method {
 
 					// User Input
 					'enabled'		=> boolval( ( isset( $service_arr['enabled'] ) ) ),
-					'nickname'		=> sanitize_text_field( $service_arr['nickname'] ),
+					'nickname'		=> sanitize_text_field( $service_arr['nickname'] ?? '' ),
 
 					// Metadata
-					'service_name'	=> sanitize_text_field( $service_arr['service_name'] ),
+					'service_name'	=> sanitize_text_field( $service_arr['service_name'] ?? '' ),
 					'service_code'	=> sanitize_text_field( $service_code ),
-					'carrier_name'	=> sanitize_text_field( $service_arr['carrier_name'] ),
+					'carrier_name'	=> sanitize_text_field( $service_arr['carrier_name'] ?? '' ),
 					'carrier_code'	=> ( isset( $service_arr['carrier_code'] ) ) ? sanitize_text_field( $service_arr['carrier_code'] ) : '',
 					'carrier_id'	=> ( isset( $service_arr['carrier_id'] ) ) ? sanitize_text_field( $service_arr['carrier_id'] ) : $carrier_id,
 				) );
 
 				// The above removes empty values.
 				// Price Adjustments
-				$data['adjustment']		= ( $service_arr['adjustment'] ) ? floatval( $service_arr['adjustment'] ) : '';
-				$data['adjustment_type']= $service_arr['adjustment_type'];
+				$data['adjustment']		= ( ! empty( $service_arr['adjustment'] ) ) ? floatval( $service_arr['adjustment'] ) : '';
+				$data['adjustment_type']= sanitize_text_field( $service_arr['adjustment_type'] ?? '' );
 
 				// Maybe unset if we don't need the data.
 				if( $data['adjustment_type'] == $global_adjustment_type ) {
@@ -715,6 +781,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method {
 		if( empty( $cart ) || empty( $cart['contents'] ) || empty( $cart['destination'] ) ) {
 			return;
 		}
+		$this->calculated_package_hash = $this->get_package_diagnostic_hash( $cart );
 
 		// Grab the calculator to be filtered.
 		$calculator = new Classes\Shipping_Calculator( $cart, array(
@@ -772,6 +839,32 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method {
 	/**------------------------------------------------------------------------------------------------ **/
 	/** :: Helper Methods :: **/
 	/**------------------------------------------------------------------------------------------------ **/
+	/**
+	 * Build a stable, non-sensitive package fingerprint for diagnostics.
+	 *
+	 * @param Array $package Shipping package.
+	 *
+	 * @return String
+	 */
+	protected function get_package_diagnostic_hash( $package ) {
+
+		$contents = array();
+		foreach( (array)( $package['contents'] ?? array() ) as $cart_item_key => $cart_item ) {
+			$contents[ $cart_item_key ] = array(
+				'product_id'   => absint( $cart_item['product_id'] ?? 0 ),
+				'variation_id' => absint( $cart_item['variation_id'] ?? 0 ),
+				'quantity'     => absint( $cart_item['quantity'] ?? 0 ),
+			);
+		}
+
+		return md5( wp_json_encode( array(
+			'contents'    => $contents,
+			'destination' => (array)( $package['destination'] ?? array() ),
+		) ) );
+
+	}
+
+
 	/**
 	 * Map known packages.
 	 * @see assets/json

@@ -40,9 +40,9 @@ class WC_Boxpack_Item {
 		$this->width  = floatval( $dimensions[1] );
 		$this->height = floatval( $dimensions[0] );
 
-		$this->volume = floatval( $width * $height * $length );
+		$this->volume = $this->width * $this->height * $this->length;
 		$this->weight = floatval( $weight );
-		$this->value  = $value;
+		$this->value  = floatval( $value );
 		$this->meta   = $meta;
 	}
 
