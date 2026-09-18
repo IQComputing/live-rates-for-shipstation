@@ -13,6 +13,7 @@ if( ! defined( 'ABSPATH' ) ) {
  * ShipStation unit term.
  *
  * @param String $unit
+ * @param String $type - singular|plural
  *
  * @return String $term
  */

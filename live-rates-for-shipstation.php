@@ -99,7 +99,6 @@ class Driver {
 	 *
 	 * @param String $key
 	 * @param Mixed $default
-	 * @param Boolean $skip_prefix - Skip Plugin Prefix and return a core ShipStation setting value.
 	 *
 	 * @return Mixed
 	 */

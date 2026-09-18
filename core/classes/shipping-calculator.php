@@ -470,8 +470,6 @@ class Shipping_Calculator {
     /**
 	 * Return an array of API requests for individual products.
 	 *
-	 * @param Array $items
-	 *
 	 * @return Array $requests
 	 */
 	public function get_requestsby_individual() {
@@ -550,8 +548,6 @@ class Shipping_Calculator {
 	/**
 	 * One Big Box
 	 * Group all the products by weight and get rates by total weight.
-	 *
-	 * @param Array $items
 	 *
 	 * @return Array $requests
 	 */
@@ -993,7 +989,7 @@ class Shipping_Calculator {
      * @param Array $shiprate     - ShipStation API Result
      * @param Array $package_arr  - Array( $idx => $package )
      *
-     * @param Array $wc_rate - WC_Cart compatible rate.
+     * @param Array - WC_Cart compatible rate.
      */
     protected function process_available_rate( $shiprate, $package_arr ) {
 

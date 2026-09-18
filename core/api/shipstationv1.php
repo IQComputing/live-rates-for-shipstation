@@ -690,7 +690,7 @@ class Shipstationv1 extends Shipstation {
 	 *
 	 * @return WP_Error
 	 */
-	public function get_shipping_estimates( $est_opts ) {
+	public function get_shipping_estimates() {
 		return $this->log( new \WP_Error( 400, esc_html__( 'Live Rates for ShipStation v1 API Class does not support this endpoint. Use the v2 API Class: \IQLRSS\Core\Api\Shipstation', 'live-rates-for-shipstation' ) ), 'notice' );
 	}
 

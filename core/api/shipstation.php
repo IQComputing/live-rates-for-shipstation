@@ -90,6 +90,7 @@ class Shipstation {
 		 * @hook filter
 		 *
 		 * @param Bolean FALSE
+		 * @param Object $this
 		 *
 		 * @return Boolean
 		 */
@@ -806,7 +807,7 @@ class Shipstation {
 	/**
 	 * Prefix a string with the plugin slug.
 	 *
-	 * @param String $str
+	 * @param String $key
 	 * @param String $sep
 	 *
 	 * @return String

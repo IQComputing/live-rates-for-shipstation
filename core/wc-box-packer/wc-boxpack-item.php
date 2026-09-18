@@ -111,6 +111,7 @@ class WC_Boxpack_Item {
 	 * get_meta function.
 	 *
 	 * @access public
+	 * @param String $key
 	 * @return mixed
 	 */
 	function get_meta( $key = '' ) {

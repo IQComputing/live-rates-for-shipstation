@@ -45,6 +45,13 @@ class WC_Boxpack {
 
 	/**
 	 * add_item function.
+	 * 
+	 * @param Float $length
+	 * @param Float $width
+	 * @param Float $height
+	 * @param Float $weight
+	 * @param String $value
+	 * @param Array $meta
 	 *
 	 * @access public
 	 * @return void
@@ -174,7 +181,7 @@ class WC_Boxpack {
 
 	/**
 	 * Order boxes by weight and volume
-	 * $param array $sort
+	 * @param array $sort
 	 * @return array
 	 */
 	private function order_boxes( $sort ) {
@@ -186,7 +193,7 @@ class WC_Boxpack {
 
 	/**
 	 * Order items by weight and volume
-	 * $param array $sort
+	 * @param array $sort
 	 * @return array
 	 */
 	private function order_items( $sort ) {

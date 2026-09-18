@@ -116,7 +116,7 @@ class WC_Boxpack_Box {
 	 * set_id function.
 	 *
 	 * @access public
-	 * @param mixed $weight
+	 * @param mixed $id
 	 * @return void
 	 */
 	public function set_id( $id ) {

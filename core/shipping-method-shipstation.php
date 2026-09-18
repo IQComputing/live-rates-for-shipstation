@@ -258,7 +258,6 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method {
 	 *
 	 * @param String $display
 	 * @param WC_Meta_Data $wc_meta
-	 * @param WC_Order $wc_order
 	 *
 	 * @return String $display
 	 */
@@ -426,7 +425,7 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method {
 	 * Hide certain metadata from the Admin Order screen.
 	 * Otherwise, it formats it as label value pairs.
 	 *
-	 * @param Arary $meta_keys
+	 * @param Array $meta_keys
 	 *
 	 * @return Array $meta_keys
 	 */
@@ -638,6 +637,9 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method {
 	/**
 	 * Automatic dynamic method inherited from parent.
 	 * Generate HTML for service fields.
+	 * 
+	 * @param String $key
+	 * @param Array $data
 	 *
 	 * @return String - HTML
 	 */
@@ -686,6 +688,9 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method {
 
 	/**
 	 * Validate service field.
+	 * 
+	 * @param String $key
+	 * @param Mixed $value
 	 *
 	 * @return Array $services
 	 */
@@ -940,6 +945,8 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method {
 
 	/**
 	 * Return an array of Price Adjustment Type options.
+	 * 
+	 * @param Boolean $include_empty
 	 *
 	 * @return Array
 	 */
