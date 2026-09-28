@@ -3,7 +3,7 @@
  * Plugin Name: Live Rates for ShipStation
  * Plugin URI: https://iqcomputing.com/contact/
  * Description: ShipStation shipping method with live rates.
- * Version: 1.2.14
+ * Version: 1.2.15
  * Requires at least: 6.5
  * Author: IQComputing
  * Author URI: https://iqcomputing.com/
@@ -25,7 +25,7 @@ class Driver {
 	 *
 	 * @var String
 	 */
-	protected static $version = '1.2.14';
+	protected static $version = '1.2.15';
 
 
 	/**

@@ -2,8 +2,8 @@
 Contributors: iqcomputing
 Tags: woocommerce, shipstation, usps, ups, fedex
 Requires at least: 6.5
-Tested up to: 7.0
-Stable tag: 1.2.14
+Tested up to: 7.1
+Stable tag: 1.2.15
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -50,7 +50,7 @@ Don't have a ShipStation account? [Open a ShipStation account today!](https://ww
 
 == Changelog ==
 
-= 1.2.14 (2026-09-14) =
+= 1.2.15 (2026-09-14) =
 * Fixes PHP 8 operand type errors in WooCommerce order rate metadata and custom box calculations.
 * Correctly associates adjustments and other costs with package rates while safely handling legacy metadata.
 * Normalizes box-packer item values and dimensions before arithmetic.
