@@ -356,8 +356,7 @@ class Settings_Shipstation {
 		}
 
 		// Backwards compatibility for v1.0.3 when only percentage was supported by default.
-		$global_adjustment 		 = \IQLRSS\Driver::get_ss_opt( 'global_adjustment', '0' );
-		$global_adjustment_type  = \IQLRSS\Driver::get_ss_opt( 'global_adjustment_type', '' );
+		$global_adjustment = \IQLRSS\Driver::get_ss_opt( 'global_adjustment', '0' );
 		$adjustment_type_default = ( empty( $global_adjustment_type ) && ! empty( $global_adjustment ) ) ? 'percentage' : '';
 
 		// Different append keys depending on installed ShipStation for WooCommerce version.
@@ -410,6 +409,13 @@ class Settings_Shipstation {
 					} )(),
 					'desc_tip'		=> esc_html__( 'This can be overridden per Shipping Zone.', 'live-rates-for-shipstation' ),
 					'default'		=> '',
+				);
+
+				$appended_fields[ \IQLRSS\Driver::plugin_prefix( 'store_phone' ) ] = array(
+					'title' => esc_html__( 'Store Phone Number', 'live-rates-for-shipstation' ),
+					'type' => 'text',
+					'description' => esc_html__( 'Contact phone for the Website Store Address. Enables Quick Rates when the customer address is complete. ShipStation warehouse addresses use their own contact phone; otherwise shipping estimates remain available.', 'live-rates-for-shipstation' ),
+					'default' => '',
 				);
 
 				$appended_fields[ \IQLRSS\Driver::plugin_prefix( 'global_adjustment_type' ) ] = array(

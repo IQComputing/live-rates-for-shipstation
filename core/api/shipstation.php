@@ -271,8 +271,7 @@ class Shipstation {
 	/**
 	 * Return an array of avaialble rates by a carrier.
 	 *
-	 * @note ShipStation does have a /rates/ endpoint, but it requires the customers address_line1
-	 * In addition, it really is not much faster than the rates/estimate endpoint.
+	 * Estimates remain available when a complete shipment address is not known.
 	 *
 	 * @todo Look into `delivery_days` field. UPS has, is it carrier consistent?
 	 *
@@ -284,30 +283,89 @@ class Shipstation {
 	 * @return Array|WP_Error
 	 */
 	public function get_shipping_estimates( $api_args ) {
-
 		$body = $this->make_request( 'post', 'rates/estimate', $api_args );
+		return is_wp_error( $body ) ? $body : $this->normalize_rates( $body, $api_args );
+	}
 
-		// Return Early - API Request error - see logs.
-		if( is_wp_error( $body ) ) {
-			return $body;
+
+	/**
+	 * Retrieve estimates or Quick Rates in bounded concurrent batches.
+	 * Package keys survive out-of-order responses.
+	 *
+	 * @param Array $requests Keyed API payloads.
+	 * @param Boolean $quick Use /rates with rate_type=quick.
+	 * @return Array Each value is a normalized rate list or WP_Error.
+	 */
+	public function get_shipping_rates_batch( $requests, $quick = false ) {
+		$started = microtime( true );
+		$endpoint = $quick ? 'rates' : 'rates/estimate';
+		$limit = max( 1, min( 6, (int)apply_filters( 'iqlrss/api/rate_concurrency', 3, $this ) ) );
+		$results = array();
+		$batch_times = array();
+		$dispatched = 0;
+		foreach( array_chunk( $requests, $limit, true ) as $batch ) {
+			$pending = array();
+			foreach( $batch as $key => $args ) {
+				$error = $this->request_error();
+				if( $error ) {
+					$results[ $key ] = $error;
+					continue;
+				}
+				if( $quick ) $args['rate_options']['rate_type'] = 'quick';
+				$batch[ $key ] = $args;
+				$pending[ $key ] = array(
+					'url' => $this->get_endpoint_url( $endpoint ),
+					'args' => $this->request_args( $args ),
+				);
+			}
+			if( empty( $pending ) ) continue;
+			$batch_started = microtime( true );
+			$responses = Rate_Transport::post_multiple( $pending );
+			$batch_times[] = round( ( microtime( true ) - $batch_started ) * 1000, 2 );
+			$dispatched += count( $pending );
+			foreach( $pending as $key => $request ) {
+				$body = $this->parse_response( $responses[ $key ], $endpoint, $batch[ $key ] );
+				if( is_wp_error( $body ) ) {
+					$results[ $key ] = $body;
+					continue;
+				}
+				if( $quick ) {
+					$rate_response = $body['rate_response'] ?? array();
+					$packages = $batch[ $key ]['shipment']['packages'] ?? array();
+					$package_args = count( $packages ) === 1 ? reset( $packages ) : array();
+					$results[ $key ] = $this->normalize_rates( (array)( $rate_response['rates'] ?? array() ), $package_args, true );
+					if( empty( $results[ $key ] ) ) {
+						$results[ $key ] = new \WP_Error( 'iqlrss_quick_unavailable', esc_html__( 'Quick Rates did not return usable rates.', 'live-rates-for-shipstation' ), array( 'fallback' => true ) );
+					}
+				} else {
+					$results[ $key ] = $this->normalize_rates( $body, $batch[ $key ] );
+				}
+			}
 		}
+		$this->log( esc_html__( 'ShipStation rate retrieval timing', 'live-rates-for-shipstation' ), 'debug', array(
+			'endpoint' => $endpoint,
+			'rate_type' => $quick ? 'quick' : 'estimate',
+			'request_count' => count( $requests ),
+			'dispatched_requests' => $dispatched,
+			'concurrency_limit' => $limit,
+			'parallel_available' => Rate_Transport::supports_parallel(),
+			'batch_count' => count( $batch_times ),
+			'batch_times_ms' => $batch_times,
+			'elapsed_ms' => round( ( microtime( true ) - $started ) * 1000, 2 ),
+			'error_count' => count( array_filter( $results, 'is_wp_error' ) ),
+		) );
+		return $results;
+	}
 
+
+	/** Map both response shapes to the calculator's rate format. */
+	protected function normalize_rates( $body, $api_args = array(), $quick = false ) {
 		$data = array();
 		$requested_package_type = $api_args['package_code'] ?? '';
-		$allowed_package_types = array_filter( array(
-			'package',
-			$requested_package_type,
-		) );
+		$allowed_package_types = array_filter( array( 'package', $requested_package_type ) );
 		foreach( $body as $rate ) {
-
-			// Sometimes rates come with error messages - skip them.
-			if( ! empty( $rate['error_messages'] ) ) continue;
-
-			// Sometimes rates can be cost $0, which isn't right - skip them.
-			if( $rate['shipping_amount']['amount'] <= 0 ) continue;
-
-			// Without an explicit preset, ShipStation chooses each carrier's
-			// default package type. Those returned defaults are valid quotes.
+			if( ! is_array( $rate ) || empty( $rate['service_code'] ) || empty( $rate['carrier_id'] ) || ! isset( $rate['shipping_amount']['amount'] ) ) continue;
+			if( ! empty( $rate['error_messages'] ) || ! is_numeric( $rate['shipping_amount']['amount'] ) || $rate['shipping_amount']['amount'] <= 0 ) continue;
 			if(
 				! empty( $requested_package_type )
 				&& ! empty( $rate['package_type'] )
@@ -315,29 +373,30 @@ class Shipstation {
 			) continue;
 
 			$est = array(
-				'name'					=> $rate['service_type'],
-				'code'					=> $rate['service_code'],
-				'cost'					=> $rate['shipping_amount']['amount'],
-				'currency'				=> $rate['shipping_amount']['currency'],
-				'carrier_id'			=> $rate['carrier_id'],
-				'carrier_code'			=> $rate['carrier_code'],
-				'carrier_nickname'		=> $rate['carrier_nickname'],
-				'carrier_friendly_name'	=> $rate['carrier_friendly_name'],
-				'carrier_name'			=> $rate['carrier_friendly_name'],
-				'other_costs'			=> array(),
+				'name' => $rate['service_type'] ?? $rate['service_code'],
+				'code' => $rate['service_code'],
+				'cost' => $rate['shipping_amount']['amount'],
+				'currency' => $rate['shipping_amount']['currency'] ?? '',
+				'carrier_id' => $rate['carrier_id'],
+				'carrier_code' => $rate['carrier_code'] ?? '',
+				'carrier_nickname' => $rate['carrier_nickname'] ?? '',
+				'carrier_friendly_name' => $rate['carrier_friendly_name'] ?? '',
+				'carrier_name' => $rate['carrier_friendly_name'] ?? $rate['carrier_code'] ?? '',
+				'other_costs' => array(),
 			);
-
-			// If other amount has a value, return it to the estimate.
-			if( isset( $rate['other_amount'], $rate['other_amount']['amount'] ) && ! empty( $rate['other_amount']['amount'] ) ) {
+			if( ! empty( $rate['other_amount']['amount'] ) ) {
 				$est['other_costs']['service_other'] = $rate['other_amount'];
 			}
-
+			if( $quick ) {
+				foreach( array( 'insurance_amount', 'confirmation_amount' ) as $charge ) {
+					if( ! empty( $rate[ $charge ]['amount'] ) ) {
+						$est['other_costs'][ $charge ] = $rate[ $charge ];
+					}
+				}
+			}
 			$data[] = $est;
-
 		}
-
 		return $data;
-
 	}
 
 
@@ -486,9 +545,6 @@ class Shipstation {
 
 
 	/**
-	 * @ignore - This is a legacy method which should be ignored.
-	 * 			It's an incomplete method.
-	 * 
 	 * Purchase a shipping label by a carrier.
 	 *
 	 * @link https://docs.shipstation.com/openapi/labels/create_label
@@ -516,9 +572,6 @@ class Shipstation {
 
 
 	/**
-	 * @ignore - This is a legacy method which should be ignored.
-	 * 			It's an incomplete method.
-	 * 
 	 * Create Shipments from given WC_Orders.
 	 *
 	 * @param Array $wc_orders - Array of WC_Order objects.
@@ -724,66 +777,99 @@ class Shipstation {
 	 * @return Array|WP_Error $response
 	 */
 	protected function make_request( $method, $endpoint, $args = array() ) {
-
-		// Return Early - No API Key found.
-		if( empty( $this->key ) ) {
-			return $this->log( new \WP_Error( 401, esc_html__( 'No ShipStation REST API Key found.', 'live-rates-for-shipstation' ) ), 'warning' );
-		}
+		$error = $this->request_error();
+		if( $error ) return $this->log( $error, 'warning' );
 
 		$endpoint_url = $this->get_endpoint_url( $endpoint );
-		$callback = ( 'post' == $method ) ? 'wp_remote_post' : 'wp_remote_get';
-		$req_args = array(
-			'headers' => array(
-				'API-Key' => $this->key,
-				'Content-Type' => 'application/json',
-			),
-		);
+		$callback = ( 'post' === $method ) ? 'wp_remote_post' : 'wp_remote_get';
+		$req_args = $this->request_args( 'post' === $method ? $args : null );
+		if( 'get' === $method && ! empty( $args ) ) {
+			$endpoint_url = add_query_arg( $args, $endpoint_url );
+		}
+		$request = call_user_func( $callback, esc_url( $endpoint_url ), $req_args );
+		return $this->parse_response( $request, $endpoint, $args );
+	}
 
-		if( ! empty( $args ) && is_array( $args ) ) {
-			if( 'post' == $method ) {
-				$req_args['body'] = wp_json_encode( $args );
-			} else if( 'get' == $method ) {
-				$endpoint_url = add_query_arg( $args, $endpoint_url );
+
+	/** Request options shared by the WordPress and concurrent transports. */
+	protected function request_args( $args = null ) {
+		$request = array(
+			'timeout' => 20,
+			'httpversion' => '1.1',
+			'redirection' => 0,
+			'headers' => array( 'API-Key' => $this->key, 'Content-Type' => 'application/json' ),
+		);
+		if( null !== $args ) $request['body'] = wp_json_encode( $args );
+		return $request;
+	}
+
+
+	/** Stop additional batches during ShipStation's Retry-After period. */
+	protected function request_error() {
+		if( empty( $this->key ) ) {
+			return new \WP_Error( 401, esc_html__( 'No ShipStation REST API Key found.', 'live-rates-for-shipstation' ) );
+		}
+		$until = (int)get_transient( $this->backoff_key() );
+		if( $until > time() ) {
+			return new \WP_Error( 429, esc_html__( 'ShipStation rate limit reached. Please try again shortly.', 'live-rates-for-shipstation' ), array( 'status' => 429, 'retry_after' => $until - time() ) );
+		}
+		return null;
+	}
+
+
+	protected function backoff_key() {
+		return 'iqlrss_backoff_' . md5( (string)$this->key );
+	}
+
+
+	/** Decode responses consistently, including concurrent transport failures. */
+	protected function parse_response( $request, $endpoint, $args ) {
+		if( is_wp_error( $request ) ) return $this->log( $request, 'error' );
+		$code = (int)wp_remote_retrieve_response_code( $request );
+		$body = json_decode( wp_remote_retrieve_body( $request ), true );
+		if( 429 === $code ) {
+			$retry = wp_remote_retrieve_header( $request, 'retry-after' );
+			$seconds = is_numeric( $retry ) ? (int)$retry : ( strtotime( (string)$retry ) - time() );
+			$seconds = max( 1, $seconds > 0 ? $seconds : 60 );
+			$until = max( time() + $seconds, (int)get_transient( $this->backoff_key() ) );
+			set_transient( $this->backoff_key(), $until, $until - time() );
+			return $this->log( new \WP_Error( 429, esc_html__( 'ShipStation rate limit reached. Please try again shortly.', 'live-rates-for-shipstation' ), array( 'status' => 429, 'retry_after' => $until - time() ) ), 'warning' );
+		}
+		// Carrier throttling can be embedded in a successful HTTP response.
+		// Keep any successful rates, but do not immediately retry the failures.
+		foreach( (array)( $body['rate_response']['errors'] ?? array() ) as $error ) {
+			$error_code = strtolower( (string)( $error['error_code'] ?? '' ) );
+			if( false !== strpos( $error_code, 'rate_limit' ) || false !== strpos( $error_code, 'throttl' ) ) {
+				$until = max( time() + 60, (int)get_transient( $this->backoff_key() ) );
+				set_transient( $this->backoff_key(), $until, $until - time() );
+				if( empty( $body['rate_response']['rates'] ) ) return $this->request_error();
+				break;
 			}
 		}
-
-		$request = call_user_func( $callback, esc_url( $endpoint_url ), $req_args );
-		$code = wp_remote_retrieve_response_code( $request );
-		$body = json_decode( wp_remote_retrieve_body( $request ), true );
-
-		// Return Early - API encountered an error.
-		if( is_wp_error( $request ) ) {
-			return $this->log( $request, 'error' );
-		} else if( 200 != $code || ! is_array( $body ) ) {
-
+		if( 200 !== $code || ! is_array( $body ) ) {
 			$err_code = $code;
 			$err_msg = esc_html__( 'Error encountered during request.', 'live-rates-for-shipstation' );
-
 			if( ! empty( $body['errors'] ) && is_array( $body['errors'] ) ) {
-				$error = array_shift( $body['errors'] );
-				$err_code = ( isset( $error['error_code'] ) && 'unspecified' != $error['error_code'] ) ? $error['error_code'] : $err_code;
-				$err_msg = ( isset( $error['message'] ) ) ? $error['message'] : $err_msg;
-
-				// Add a bit more context.
-				if( 'unauthorized' == $err_code ) {
+				$error = reset( $body['errors'] );
+				$err_code = ! empty( $error['error_code'] ) && 'unspecified' !== $error['error_code'] ? $error['error_code'] : $err_code;
+				$err_msg = $error['message'] ?? $err_msg;
+				if( 'unauthorized' === $err_code ) {
 					$err_msg .= ' ' . esc_html__( '(API Key may be invalid)', 'live-rates-for-shipstation' );
 				}
-
 			}
-
-			return $this->log( new \WP_Error( $err_code, $err_msg ), 'error' );
+			return $this->log( new \WP_Error( $err_code ?: 'iqlrss_invalid_response', $err_msg, array(
+				'status' => $code,
+				'fallback' => in_array( $code, array( 400, 404, 422 ), true ),
+			) ), 'error' );
 		}
 
-		// Log API Request Result
-		/* translators: %s is the API endpoint (example: carriers/rates). */
+		/* translators: %s is the API endpoint (example: rates/estimate). */
 		$this->log( sprintf( esc_html__( 'ShipStation API Request to %s', 'live-rates-for-shipstation' ), $endpoint ), 'info', array(
-			'args'		=> $args,
-			'code'		=> $code,
-			'response'	=> $body,
+			'args' => $args,
+			'code' => $code,
+			'response' => $body,
 		) );
-
 		return $body;
-
 	}
 
 

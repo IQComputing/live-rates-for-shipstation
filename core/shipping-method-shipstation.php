@@ -945,8 +945,6 @@ class Shipping_Method_Shipstation extends \WC_Shipping_Method {
 
 	/**
 	 * Return an array of Price Adjustment Type options.
-	 * 
-	 * @param Boolean $include_empty
 	 *
 	 * @return Array
 	 */

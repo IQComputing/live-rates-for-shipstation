@@ -865,22 +865,21 @@ class Shipping_Calculator {
             return;
         }
 
-        // Run the API Requests.
-        $cart_rates = array();
-        $unmatched_services = array();
+        // Build independent jobs before issuing any rate requests.
+        $this->requests['reqs'] = array();
         foreach( $this->packed as $idx => $package ) {
-
-            /**
-             * API Request!
-             * The API returns rates for all enabled carriers, and all services.
-             * self::process_available_rate() "gates" the returned services to those enabled in the Shiping Zone.
-             */
             $this->requests['reqs'][ $idx ] = array_merge(
                 $package,
                 $this->requests['base'],
                 array( 'carrier_ids' => $carrier_ids ),
             );
-            $available_rates = $this->api()->get_shipping_estimates( $this->requests['reqs'][ $idx ] );
+        }
+        $cart_rates = array();
+        $responses = $this->get_package_rate_responses( $carrier_ids, $cart_rates );
+        $unmatched_services = array();
+        foreach( $this->packed as $idx => $package ) {
+            if( ! array_key_exists( $idx, $responses ) ) continue;
+            $available_rates = $responses[ $idx ];
 
             // Continue - Something's wrong with rates.
             if( is_wp_error( $available_rates ) || empty( $available_rates ) ) {
@@ -981,6 +980,246 @@ class Shipping_Calculator {
 
 
     /**
+     * Retrieve all estimates before combining them. Quick Rates uses full domestic
+     * addresses; partial addresses and unsupported custom API options use estimates.
+     */
+    protected function get_package_rate_responses( $carrier_ids, &$shipment_rates ) {
+        $quick = $this->build_quick_rate_requests( $carrier_ids );
+        if( empty( $quick ) ) {
+            return $this->api()->get_shipping_rates_batch( $this->requests['reqs'] );
+        }
+        $combined = count( $quick ) === 1 && count( $this->packed ) > 1 && isset( $quick['shipment'] );
+        $responses = $this->api()->get_shipping_rates_batch( $quick, true );
+        if( $combined ) {
+            $result = $responses['shipment'];
+            if( is_wp_error( $result ) ) {
+                return $this->can_fallback_quick_rate( $result )
+                    ? $this->api()->get_shipping_rates_batch( $this->requests['reqs'] )
+                    : array_fill_keys( array_keys( $this->packed ), $result );
+            }
+            $covered_carriers = array();
+            foreach( $result as $shiprate ) {
+                $rate = $this->process_shipment_rate( $shiprate );
+                if( empty( $rate ) ) continue;
+                $hash = $this->get_rate_hash( array( 'shiprate' => $shiprate ) );
+                $method = $this->get( 'shipping_method' );
+                $rate['id'] = is_object( $method ) && is_callable( array( $method, 'get_rate_id' ) ) ? $method->get_rate_id( $hash ) : $hash;
+                if( ! isset( $shipment_rates[ $hash ] ) || array_sum( $rate['cost'] ) < array_sum( $shipment_rates[ $hash ]['cost'] ) ) {
+                    $shipment_rates[ $hash ] = $rate;
+                }
+                $covered_carriers[] = $shiprate['carrier_id'];
+            }
+            // A carrier may not support this shipment even though others returned
+            // quotes. Preserve their successful shipment totals and estimate only
+            // the carriers that returned no usable enabled service.
+            $missing = array_values( array_udiff( $carrier_ids, $covered_carriers, 'strcasecmp' ) );
+            if( empty( $missing ) ) return array();
+            $fallback = $this->requests['reqs'];
+            foreach( $fallback as &$request ) $request['carrier_ids'] = $missing;
+            unset( $request );
+            return $this->api()->get_shipping_rates_batch( $fallback );
+        }
+
+        $fallback = array();
+        foreach( $responses as $key => $result ) {
+            if( $this->can_fallback_quick_rate( $result ) ) {
+                $fallback[ $key ] = $this->requests['reqs'][ $key ];
+            } else if( ! is_wp_error( $result ) ) {
+                $covered = array();
+                foreach( $result as $shiprate ) {
+                    if( $this->resolve_enabled_service( $shiprate ) ) $covered[] = $shiprate['carrier_id'];
+                }
+                $missing = array_values( array_udiff( $carrier_ids, $covered, 'strcasecmp' ) );
+                if( ! empty( $missing ) ) {
+                    $fallback[ $key ] = $this->requests['reqs'][ $key ];
+                    $fallback[ $key ]['carrier_ids'] = $missing;
+                }
+            }
+        }
+        if( ! empty( $fallback ) ) {
+            foreach( $this->api()->get_shipping_rates_batch( $fallback ) as $key => $result ) {
+                if( is_wp_error( $responses[ $key ] ) ) {
+                    $responses[ $key ] = $result;
+                } else if( ! is_wp_error( $result ) ) {
+                    $responses[ $key ] = array_merge( $responses[ $key ], $result );
+                }
+            }
+        }
+        return $responses;
+    }
+
+
+    protected function can_fallback_quick_rate( $result ) {
+        if( ! is_wp_error( $result ) ) return false;
+        $data = $result->get_error_data();
+        return is_array( $data ) && ! empty( $data['fallback'] );
+    }
+
+
+    /** Build service-filtered Quick Rates payloads without local packing metadata. */
+    protected function build_quick_rate_requests( $carrier_ids ) {
+        if( ! apply_filters( 'iqlrss/api/quick_rates', true, $this ) ) return array();
+        $to = $this->get_quick_address( 'to' );
+        $from = $this->get_quick_address( 'from' );
+        // International shipments need customs information this calculator does
+        // not collect. Retain estimates rather than inventing customs declarations.
+        if( empty( $to ) || empty( $from ) || $to['country_code'] !== $from['country_code'] ) return array();
+
+        $services = array();
+        foreach( $this->get( 'services_enabled', array() ) as $carrier_services ) {
+            foreach( $carrier_services as $code => $service ) {
+                $code = trim( (string)( $service['service_code'] ?? $code ) );
+                if( '' !== $code ) $services[] = $code;
+            }
+        }
+        $services = array_values( array_unique( $services ) );
+        if( empty( $services ) ) return array();
+        $base = array(
+            'rate_options' => array( 'carrier_ids' => $carrier_ids, 'service_codes' => $services, 'rate_type' => 'quick' ),
+            'shipment' => array( 'validate_address' => 'no_validation', 'ship_to' => $to, 'ship_from' => $from ),
+        );
+        $known = array_flip( array(
+            'carrier_ids', 'from_country_code', 'from_postal_code', 'from_city_locality', 'from_state_province',
+            'to_country_code', 'to_postal_code', 'to_city_locality', 'to_state_province', 'address_residential_indicator',
+            'weight', 'dimensions', 'package_code', 'confirmation', '_name', 'quantity', 'packed', 'price',
+            'nickname', 'box_weight', 'box_max_weight', 'box_max_volume', 'carrier_code',
+        ) );
+        $requests = array();
+        $packages = array();
+        $confirmations = array();
+        foreach( $this->requests['reqs'] as $key => $request ) {
+            // Keep extension-provided options intact on the estimate path until
+            // there is an explicit mapping to the full shipment schema.
+            if( array_diff_key( $request, $known ) ) return array();
+            $package = array_intersect_key( $request, array_flip( array( 'weight', 'dimensions', 'package_code' ) ) );
+            if( empty( $package['package_code'] ) ) unset( $package['package_code'] );
+            if( empty( $package['weight']['value'] ) ) return array();
+            $requests[ $key ] = $base;
+            $requests[ $key ]['shipment']['packages'] = array( $package );
+            $confirmation = $request['confirmation'] ?? 'none';
+            $requests[ $key ]['shipment']['confirmation'] = $confirmation;
+            $confirmations[] = $confirmation;
+            $packages[] = $package;
+        }
+        if( count( array_unique( $confirmations ) ) === 1 && $this->can_combine_quick_packages( $carrier_ids ) ) {
+            $base['shipment']['packages'] = $packages;
+            $base['shipment']['confirmation'] = reset( $confirmations );
+            return array( 'shipment' => $base );
+        }
+        return $requests;
+    }
+
+
+    /** Only combine services explicitly advertised as multi-package capable. */
+    protected function can_combine_quick_packages( $carrier_ids ) {
+        if( count( $this->packed ) < 2 || count( $this->packed ) > 20 ) return false;
+        foreach( $this->packed as $package ) {
+            // Individual packing represents repeated boxes with a quantity and
+            // applies some adjustments once per group. Keep that existing behavior.
+            if( 1.0 !== (float)( $package['quantity'] ?? 1 ) ) return false;
+        }
+        foreach( $carrier_ids as $carrier_id ) {
+            $carrier = $this->api()->get_carrier( $carrier_id );
+            if( is_wp_error( $carrier ) || empty( $carrier['services'] ) ) return false;
+            $found = false;
+            foreach( $carrier['services'] as $service ) {
+                $enabled = $this->resolve_enabled_service( array(
+                    'code' => $service['service_code'] ?? '',
+                    'carrier_id' => $carrier_id,
+                    'carrier_code' => $carrier['carrier']['carrier_code'] ?? '',
+                ) );
+                if( empty( $enabled ) ) continue;
+                $found = true;
+                if( empty( $service['is_multi_package_supported'] ) ) return false;
+            }
+            if( ! $found ) return false;
+        }
+        return true;
+    }
+
+
+    /** Preserve per-package fixed adjustments and box fees on a shipment total. */
+    protected function process_shipment_rate( $shiprate ) {
+        $package = array(
+            /* translators: %d is the number of packages in the shipment. */
+            '_name' => sprintf( esc_html__( 'Shipment (%d packages)', 'live-rates-for-shipstation' ), count( $this->packed ) ),
+            'quantity' => 1,
+            'price' => array_sum( array_column( $this->packed, 'price' ) ),
+        );
+        $rate = $this->process_available_rate( $shiprate, array( $package ) );
+        if( empty( $rate ) ) return array();
+        $adjustment = $rate['meta_data']['rates'][0]['adjustment'] ?? array();
+        if( ! empty( $adjustment ) && 'percentage' !== $adjustment['type'] ) {
+            $extra = $adjustment['cost'] * ( count( $this->packed ) - 1 );
+            $rate['cost'][] = $extra;
+            $rate['meta_data']['rates'][0]['adjustment']['cost'] += $extra;
+        }
+        // The API returned one shipment quote, not invented per-box prices.
+        $rate['meta_data']['boxes'] = array_values( $this->packed );
+        return $rate;
+    }
+
+
+    /** Return the actual full checkout/store/warehouse address, or no Quick Rate. */
+    protected function get_quick_address( $direction ) {
+        $base = $this->requests['base'];
+        if( 'to' === $direction ) {
+            $raw = $this->get( 'to', $this->get( 'destination', array() ) );
+            if( 'cart' === $this->datatype && isset( WC()->customer ) ) {
+                $customer = WC()->customer;
+                if( empty( $raw['name'] ) && empty( $raw['first_name'] ) && is_callable( array( $customer, 'get_shipping_first_name' ) ) ) {
+                    $raw['name'] = trim( $customer->get_shipping_first_name() . ' ' . $customer->get_shipping_last_name() );
+                }
+                if( empty( $raw['phone'] ) && is_callable( array( $customer, 'get_shipping_phone' ) ) ) {
+                    $raw['phone'] = $customer->get_shipping_phone();
+                }
+                if( empty( $raw['phone'] ) && is_callable( array( $customer, 'get_billing_phone' ) ) ) {
+                    $raw['phone'] = $customer->get_billing_phone();
+                }
+            }
+        } else {
+            $raw = $this->get( 'from', array() );
+            $warehouse_id = $this->get( 'warehouse', $this->get( 'ssopt.global_warehouse' ) );
+            if( ! empty( $warehouse_id ) && '_woo_default' !== $warehouse_id ) {
+                if( ! is_string( $warehouse_id ) ) return array();
+                $warehouse = $this->api()->get_warehouse( $warehouse_id );
+                if( is_wp_error( $warehouse ) || empty( $warehouse['origin_address'] ) ) return array();
+                $raw = $warehouse['origin_address'];
+                // Do not pair a warehouse street with a different fallback origin.
+                foreach( array( 'country_code', 'postal_code', 'city_locality', 'state_province' ) as $field ) {
+                    if( ! isset( $raw[ $field ] ) || (string)$raw[ $field ] !== (string)( $base[ 'from_' . $field ] ?? '' ) ) return array();
+                }
+            } else if( empty( $raw ) ) {
+                $raw = array(
+                    'name' => get_bloginfo( 'name' ),
+                    'phone' => $this->get( 'ssopt.store_phone', '' ),
+                    'address_line1' => get_option( 'woocommerce_store_address', '' ),
+                    'address_line2' => get_option( 'woocommerce_store_address_2', '' ),
+                );
+            }
+        }
+        $address = array(
+            'name' => trim( (string)( $raw['name'] ?? ( ( $raw['first_name'] ?? '' ) . ' ' . ( $raw['last_name'] ?? '' ) ) ) ),
+            'company_name' => trim( (string)( $raw['company_name'] ?? $raw['company'] ?? '' ) ),
+            'phone' => trim( (string)( $raw['phone'] ?? '' ) ),
+            'address_line1' => trim( (string)( $raw['address_line1'] ?? $raw['address_1'] ?? $raw['address'] ?? '' ) ),
+            'address_line2' => trim( (string)( $raw['address_line2'] ?? $raw['address_2'] ?? '' ) ),
+            'city_locality' => $base[ $direction . '_city_locality' ] ?? '',
+            'state_province' => $base[ $direction . '_state_province' ] ?? '',
+            'postal_code' => $base[ $direction . '_postal_code' ] ?? '',
+            'country_code' => $base[ $direction . '_country_code' ] ?? '',
+            'address_residential_indicator' => 'to' === $direction ? ( $base['address_residential_indicator'] ?? 'unknown' ) : ( $raw['address_residential_indicator'] ?? 'unknown' ),
+        );
+        if( empty( $address['name'] ) && empty( $address['company_name'] ) ) return array();
+        foreach( array( 'phone', 'address_line1', 'city_locality', 'postal_code', 'country_code' ) as $field ) {
+            if( empty( $address[ $field ] ) ) return array();
+        }
+        if( in_array( $address['country_code'], array( 'US', 'CA' ), true ) && empty( $address['state_province'] ) ) return array();
+        return $address;
+    }
+
+
+    /**
      * Loop Method
      * Process the available rates and return the WC Rate metadata.
      *
@@ -989,7 +1228,7 @@ class Shipping_Calculator {
      * @param Array $shiprate     - ShipStation API Result
      * @param Array $package_arr  - Array( $idx => $package )
      *
-     * @param Array - WC_Cart compatible rate.
+     * @param Array $wc_rate - WC_Cart compatible rate.
      */
     protected function process_available_rate( $shiprate, $package_arr ) {
 
@@ -1273,16 +1512,31 @@ class Shipping_Calculator {
 			return;
 		}
 
+        $started = microtime( true );
         $this->setup_base();
+        $base_finished = microtime( true );
         $this->setup_packages();
+        $packing_finished = microtime( true );
         $this->setup_rates();
+        $rates_finished = microtime( true );
 
         // Log processed rates
 		$this->log( esc_html__( 'Calcualtor Processed Rates', 'live-rates-for-shipstation' ), 'debug', array(
 			'rates' => $this->rates,
 		) );
 
-        return $this->prepare_rates( $this->rates );
+        $rates = $this->prepare_rates( $this->rates );
+        $this->log( esc_html__( 'Shipping calculation timing', 'live-rates-for-shipstation' ), 'debug', array(
+            'version' => \IQLRSS\Driver::get( 'version' ),
+            'packing_mode' => $this->get( 'packing' ),
+            'packed_packages' => count( $this->packed ),
+            'returned_services' => count( $rates ),
+            'base_ms' => round( ( $base_finished - $started ) * 1000, 2 ),
+            'packing_ms' => round( ( $packing_finished - $base_finished ) * 1000, 2 ),
+            'rates_ms' => round( ( $rates_finished - $packing_finished ) * 1000, 2 ),
+            'total_ms' => round( ( microtime( true ) - $started ) * 1000, 2 ),
+        ) );
+        return $rates;
 
     }
 
