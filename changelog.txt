@@ -2,6 +2,36 @@
 
 This is a brief text document keeping track of changes to the plugin. For a full history, see the Github Repository.
 
+= 1.2.17 =
+
+Release Date: October 05, 2026
+* Restores the default concurrent package-rate request limit from four to three.
+* Updates request-batching regression expectations and documentation.
+
+= 1.2.16 =
+
+Release Date: October 05, 2026
+* Improves retrieval time for four-package carts, including Maximum Linear Measurement packages.
+	* Raises the default concurrent request limit from three to four; retains the configurable 1-6 bound and rate-limit cooldowns.
+	* Adds debug timing summaries for address setup, packing, rate retrieval, request counts, batch durations, and returned services.
+	* Adds regression coverage for four distinct package quotes, fallback timing, and logging preferences.
+
+= 1.2.15 =
+
+Release Date: October 05, 2026
+* Speeds up ShipStation rate retrieval.
+	* Fetches independent package quotes in bounded concurrent batches (three requests by default).
+	* Uses /v2/rates with rate_type=quick and the shipping zone's enabled service codes for complete domestic addresses.
+	* Combines boxes into one shipment request when every selected service supports multiple packages and each packed entry has quantity one.
+	* Preserves shipment totals, per-package fixed adjustments, percentage adjustments, box fees, and physical-package metadata.
+	* Keeps individual quantity groups on per-package quotes and falls back to estimates for incomplete addresses, international shipments, unsupported options, and recoverable Quick Rates failures.
+	* Retains successful carrier quotes while estimating carriers that returned no usable Quick Rates.
+	* Adds Store Phone Number to the integration settings; configured warehouses use their own contact information.
+	* Respects Retry-After and avoids retry traffic during rate-limit cooldowns.
+	* Preserves WordPress HTTP filters, outbound request restrictions, TLS verification, and proxy settings; uses sequential requests when cURL multi is unavailable.
+	* Adds regression tests for quote totals, fallback behavior, HTTP compatibility, and concurrent transport.
+	* Adds iqlrss/api/rate_concurrency and iqlrss/api/quick_rates filters.
+
 = 1.2.14 =
 
 Release Date: September 14, 2026

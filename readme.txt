@@ -2,8 +2,8 @@
 Contributors: iqcomputing
 Tags: woocommerce, shipstation, usps, ups, fedex
 Requires at least: 6.5
-Tested up to: 7.1
-Stable tag: 1.2.15
+Tested up to: 7.0
+Stable tag: 1.2.17
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -50,19 +50,16 @@ Don't have a ShipStation account? [Open a ShipStation account today!](https://ww
 
 == Changelog ==
 
-= 1.2.15 (2026-09-14) =
-* Fixes PHP 8 operand type errors in WooCommerce order rate metadata and custom box calculations.
-* Correctly associates adjustments and other costs with package rates while safely handling legacy metadata.
-* Normalizes box-packer item values and dimensions before arithmetic.
+= 1.2.17 (2026-10-05) =
+* Restores the default limit to three simultaneous package-rate requests.
 
-= 1.2.13 (2026-09-04) =
-* Fixes ShipStation rates being returned but not displayed by WooCommerce.
-* Safely remaps reconnected carrier accounts and matches enabled zone services.
-* Fixes shipping-zone service field saving and clears stale shipping caches on upgrade.
-* Accepts carrier-default package quotes and uses instance-aware WooCommerce rate IDs.
-* Preserves enabled service selections and safely handles incomplete carrier, service, or warehouse data.
-* Improves Shipping Zone availability and initializes the intended ShipStation API cache lifetime.
+= 1.2.16 (2026-10-05) =
+* Raises the default concurrent request limit to four so four-package carts can retrieve individual quotes in one batch on hosts with cURL multi support.
+* Adds debug timing summaries for address setup, packing, rate retrieval, request counts, and individual HTTP batches.
 
-= 1.2.12 (2026-08-17) =
-* New "Max Packing Percentage" field to Custom Boxes (Thanks @ils1225 - Good idea!)
-* Updates Custom Box unit/dimension labels to match WooCommerce Settings (Thanks @ils1225)!
+= 1.2.15 (2026-10-05) =
+* Retrieves package rates concurrently, with three requests at a time by default.
+* Uses service-filtered Quick Rates for complete domestic shipment addresses and combines eligible multi-package shipments.
+* Preserves package quantities, shipping adjustments, box fees, and available carrier options when falling back to estimates.
+* Adds a Store Phone Number setting for Quick Rates from the website store address.
+* Honors API rate-limit cooldowns and retains WordPress HTTP filters, proxy settings, and sequential transport fallback.
