@@ -65,11 +65,11 @@ class Rate_Transport {
 
 			// These checks normally run after pre_http_request in WP_Http.
 			if( $http->block_request( $url ) ) {
-				$responses[ $key ] = new \WP_Error( 'http_request_not_executed', __( 'User has blocked requests through HTTP.' ) );
+				$responses[ $key ] = new \WP_Error( 'http_request_not_executed', esc_html__( 'User has blocked requests through HTTP.', 'live-rates-for-shipstation' ) );
 				continue;
 			}
 			if( ! empty( $prepared['reject_unsafe_urls'] ) && ! wp_http_validate_url( $url ) ) {
-				$responses[ $key ] = new \WP_Error( 'http_request_failed', __( 'A valid URL was not provided.' ) );
+				$responses[ $key ] = new \WP_Error( 'http_request_failed', esc_html__( 'A valid URL was not provided.', 'live-rates-for-shipstation' ) );
 				continue;
 			}
 			// Let core handle unusual transport options added by another plugin.
@@ -133,7 +133,7 @@ class Rate_Transport {
 				$response = $wrapper->to_array();
 				$response['http_response'] = $wrapper;
 			} else {
-				$response = new \WP_Error( 'http_request_failed', $result instanceof \Exception ? $result->getMessage() : 'Missing rate response.' );
+				$response = new \WP_Error( 'http_request_failed', $result instanceof \Exception ? $result->getMessage() : esc_html__( 'Missing rate response.', 'live-rates-for-shipstation' ) );
 			}
 			do_action( 'http_api_debug', $response, 'response', 'WpOrg\\Requests\\Requests', $requests[ $key ]['args'], $request['url'] );
 			$responses[ $key ] = is_wp_error( $response ) ? $response : apply_filters( 'http_response', $response, $requests[ $key ]['args'], $request['url'] );

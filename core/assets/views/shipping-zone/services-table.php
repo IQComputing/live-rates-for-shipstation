@@ -8,11 +8,11 @@
  *
  * phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound
  *
- * @param \IQLRSS\Core\Shipping_Method_Shipstation $this
- * @param \IQLRSS\Core\Api\Shipstation $shipStationAPI
- * @param String $services_field_key - Canonical WC_Settings_API field name
- * @param Array $saved_services - Saved Zone Services
- * @param Array $saved_carriers - Saved ShipStation Carriers
+ * @var \IQLRSS\Core\Shipping_Method_Shipstation $this
+ * @var \IQLRSS\Core\Api\Shipstation $shipStationAPI
+ * @var String $services_field_key - Canonical WC_Settings_API field name
+ * @var Array $saved_services - Saved Zone Services
+ * @var Array $saved_carriers - Saved ShipStation Carriers
  */
 
 if( ! defined( 'ABSPATH' ) ) {
