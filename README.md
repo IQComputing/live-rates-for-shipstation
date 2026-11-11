@@ -42,6 +42,8 @@ For more information, please review our support article [Live Rates for ShipStat
 
 Package quotes run up to three requests at a time on hosts with cURL multi support. Other hosts use WordPress's normal HTTP transport.
 
+Identical package payloads share one request within each batch call, for both estimates and Quick Rates. Results are returned for every original package so carton quantities, carrier charges, adjustments, and box metadata are preserved. For example, nine identical full cartons and one smaller carton send two requests while still charging for all ten cartons. Requests with different addresses, carriers, services, or other payload options remain separate; results are not cached across calculations.
+
 Quick Rates is used for domestic shipments once the recipient and origin have complete street addresses and contact information. If you ship from the Website Store Address, enter **Store Phone Number** under **WooCommerce > Settings > Integration > ShipStation**. ShipStation warehouse addresses use their existing contact phone. Shipping estimates remain available while checkout details are incomplete and for international shipments.
 
 Quick Rates requests only enabled service codes. For up to 20 boxes, when every selected service supports multiple packages and each packed entry has quantity one, the plugin requests a single shipment quote. Repeated quantity groups and other services use individual package quotes. Shipment quotes retain all box metadata and apply fixed adjustments per packed entry, percentage adjustments to the shipment's shipping amount, and configured box fees.
@@ -51,6 +53,10 @@ Recoverable Quick Rates failures fall back to estimates. Authentication failures
 For developers, `iqlrss/api/rate_concurrency` controls the batch size (default 3, clamped to 1–6). Return false from `iqlrss/api/quick_rates` to use estimates exclusively.
 
 To investigate slow rates, enable logging and select **Debug** in the ShipStation integration settings, then reproduce the cart. In **WooCommerce > Status > Logs**, open the `live-rates-for-shipstation` log and look for **Shipping calculation timing** (setup, packing, rate retrieval, and total milliseconds) and **ShipStation rate retrieval timing** (endpoint, request counts, concurrency limit, and batch durations). Quick Rates and estimate fallback calls receive separate retrieval summaries. These summaries contain timings and counts rather than customer addresses or credentials. Logging stays subject to the existing logging and level settings.
+
+The retrieval summary reports `request_count` for original package jobs, `unique_request_count` for distinct payloads, `reused_requests` for duplicates, and `dispatched_requests` for calls actually sent. Rate-limit cooldowns can reduce dispatched requests further. `error_count` continues to count affected original jobs.
+
+Run the focused request-reuse regression checks with `php tests/rate-request-reuse.php`. These standalone checks mock the HTTP transport and require neither WordPress nor ShipStation credentials.
 
 Run the regression suite against an extracted WordPress installation with `IQLRSS_WP_ROOT=/path/to/wordpress php tests/rate-retrieval.php`. The suite uses mock API responses and a local HTTP fixture; it does not require ShipStation credentials.
 

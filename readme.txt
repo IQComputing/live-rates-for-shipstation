@@ -2,8 +2,8 @@
 Contributors: iqcomputing
 Tags: woocommerce, shipstation, usps, ups, fedex
 Requires at least: 6.5
-Tested up to: 7.1
-Stable tag: 1.2.17
+Tested up to: 7.0
+Stable tag: 1.2.18
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -50,16 +50,13 @@ Don't have a ShipStation account? [Open a ShipStation account today!](https://ww
 
 == Changelog ==
 
+= 1.2.18 (2026-11-11) =
+* Reuses identical package-rate requests within each calculation while retaining every carton's shipping charges, adjustments, and metadata.
+* Adds unique and reused request counts to the rate retrieval debug summary.
+
 = 1.2.17 (2026-10-05) =
 * Restores the default limit to three simultaneous package-rate requests.
 
 = 1.2.16 (2026-10-05) =
 * Raises the default concurrent request limit to four so four-package carts can retrieve individual quotes in one batch on hosts with cURL multi support.
 * Adds debug timing summaries for address setup, packing, rate retrieval, request counts, and individual HTTP batches.
-
-= 1.2.15 (2026-10-05) =
-* Retrieves package rates concurrently, with three requests at a time by default.
-* Uses service-filtered Quick Rates for complete domestic shipment addresses and combines eligible multi-package shipments.
-* Preserves package quantities, shipping adjustments, box fees, and available carrier options when falling back to estimates.
-* Adds a Store Phone Number setting for Quick Rates from the website store address.
-* Honors API rate-limit cooldowns and retains WordPress HTTP filters, proxy settings, and sequential transport fallback.

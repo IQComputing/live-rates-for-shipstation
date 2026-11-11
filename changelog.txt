@@ -2,6 +2,14 @@
 
 This is a brief text document keeping track of changes to the plugin. For a full history, see the Github Repository.
 
+= 1.2.18 =
+
+Release Date: November 11, 2026
+* Sends one request per distinct package payload within each estimate or Quick Rates batch call.
+* Restores a result for every original package, retaining carton charges, adjustments, metadata, and failure handling.
+* Reports unique and reused request counts alongside actual dispatched requests in debug timing summaries.
+* Adds offline regression checks for repeated cartons, totals, Quick Rates, and rate-limit/error behavior.
+
 = 1.2.17 =
 
 Release Date: October 05, 2026

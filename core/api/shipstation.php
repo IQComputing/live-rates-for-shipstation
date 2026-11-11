@@ -290,7 +290,8 @@ class Shipstation {
 
 	/**
 	 * Retrieve estimates or Quick Rates in bounded concurrent batches.
-	 * Package keys survive out-of-order responses.
+	 * Identical payloads share a request within this call. Every original package
+	 * key still receives a result so the calculator charges for every carton.
 	 *
 	 * @param Array $requests Keyed API payloads.
 	 * @param Boolean $quick Use /rates with rate_type=quick.
@@ -300,10 +301,24 @@ class Shipstation {
 		$started = microtime( true );
 		$endpoint = $quick ? 'rates' : 'rates/estimate';
 		$limit = max( 1, min( 6, (int)apply_filters( 'iqlrss/api/rate_concurrency', 3, $this ) ) );
+		$unique_requests = array();
+		$request_keys = array();
+		$fingerprints = array();
+		foreach( $requests as $key => $args ) {
+			if( $quick ) $args['rate_options']['rate_type'] = 'quick';
+			// Compare the entire payload, including extension-provided options.
+			// Do not share results across separate calculations or API instances.
+			$fingerprint = hash( 'sha256', serialize( $args ) );
+			if( ! array_key_exists( $fingerprint, $fingerprints ) ) {
+				$fingerprints[ $fingerprint ] = $key;
+				$unique_requests[ $key ] = $args;
+			}
+			$request_keys[ $key ] = $fingerprints[ $fingerprint ];
+		}
 		$results = array();
 		$batch_times = array();
 		$dispatched = 0;
-		foreach( array_chunk( $requests, $limit, true ) as $batch ) {
+		foreach( array_chunk( $unique_requests, $limit, true ) as $batch ) {
 			$pending = array();
 			foreach( $batch as $key => $args ) {
 				$error = $this->request_error();
@@ -311,8 +326,6 @@ class Shipstation {
 					$results[ $key ] = $error;
 					continue;
 				}
-				if( $quick ) $args['rate_options']['rate_type'] = 'quick';
-				$batch[ $key ] = $args;
 				$pending[ $key ] = array(
 					'url' => $this->get_endpoint_url( $endpoint ),
 					'args' => $this->request_args( $args ),
@@ -342,19 +355,29 @@ class Shipstation {
 				}
 			}
 		}
+		// Restore the caller's keys and order, including packages whose shared
+		// request failed. Arrays retain PHP's copy-on-write isolation; errors are
+		// cloned so handling one package cannot mutate another package's result.
+		$package_results = array();
+		foreach( $request_keys as $key => $unique_key ) {
+			$result = $results[ $unique_key ];
+			$package_results[ $key ] = is_wp_error( $result ) ? clone $result : $result;
+		}
 		$this->log( esc_html__( 'ShipStation rate retrieval timing', 'live-rates-for-shipstation' ), 'debug', array(
 			'endpoint' => $endpoint,
 			'rate_type' => $quick ? 'quick' : 'estimate',
 			'request_count' => count( $requests ),
+			'unique_request_count' => count( $unique_requests ),
+			'reused_requests' => count( $requests ) - count( $unique_requests ),
 			'dispatched_requests' => $dispatched,
 			'concurrency_limit' => $limit,
 			'parallel_available' => Rate_Transport::supports_parallel(),
 			'batch_count' => count( $batch_times ),
 			'batch_times_ms' => $batch_times,
 			'elapsed_ms' => round( ( microtime( true ) - $started ) * 1000, 2 ),
-			'error_count' => count( array_filter( $results, 'is_wp_error' ) ),
+			'error_count' => count( array_filter( $package_results, 'is_wp_error' ) ),
 		) );
-		return $results;
+		return $package_results;
 	}
 
 
